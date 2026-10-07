@@ -1,6 +1,6 @@
 {
   "name": "marry-me",
-  "version": "21.0.0",
+  "version": "23.0.0",
   "private": true,
   "description": "결혼 준비 앱과 브라우저 회귀 시험",
   "scripts": {

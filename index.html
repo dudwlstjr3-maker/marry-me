@@ -230,9 +230,16 @@ select{width:auto;min-width:140px}
 /* region table */
 .rcap{margin:16px 0 4px;font-weight:600;font-size:15px}
 .rwrap{overflow-x:auto}
+.pt-nav{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
+.pt-sec{font-family:var(--serif);font-size:18px;font-weight:700;margin:26px 0 4px;padding-top:12px;border-top:2px solid var(--ink);scroll-margin-top:calc(env(safe-area-inset-top,0px) + 64px)}
+.pt-sec:focus{outline:none}
 .refline{margin:4px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
-.ptable td{white-space:normal}
-.ptable th[scope=row]{white-space:normal;max-width:14em}
+.rtable.ptable thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.rtable.ptable tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto);gap:2px 12px;padding:9px 0;border-bottom:1px solid var(--line)}
+.rtable.ptable th[scope=row],.rtable.ptable td{border:0;padding:0;white-space:normal;max-width:none}
+.rtable.ptable th[scope=row]{grid-column:1;grid-row:1;text-align:left}
+.rtable.ptable td.avg{grid-column:2;grid-row:1;text-align:right;max-width:11em}
+.rtable.ptable td:last-child{grid-column:1/-1;grid-row:2;text-align:left;font-size:13px;color:var(--muted)}
 .rtable{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
 .rtable th,.rtable td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
 .rtable thead th{font-size:13px;color:var(--muted);font-weight:600}
@@ -342,6 +349,13 @@ html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + var(--tabs-height) +
 @media (max-width:380px){.tab{font-size:13px}.tabs .wrap{padding-inline:4px}}
 @media (max-width:359px){:root{--tabs-height:64px}.tab{white-space:normal;word-break:keep-all;line-height:1.4}.tabs .wrap{grid-template-columns:repeat(6,minmax(0,1fr))}.phase-head{padding-left:44px}.sum .v{font-size:22px}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.strand i{transition:none}}
+
+/* 좌우로 밀리지 않게: 화면 폭 밖으로 나가는 것은 잘라내고, 진행 순서는 세로로만 움직이게 */
+html,body{overflow-x:clip}
+@supports not (overflow:clip){html{overflow-x:hidden}}
+#panel-timeline{touch-action:pan-y pinch-zoom}
+/* 접는 상자(details) 안에서는 box-sizing이 상속되지 않아 입력칸이 8px 넘쳤음 */
+input,textarea,select,button{box-sizing:border-box}
 </style>
 </head>
 <body>
@@ -1059,6 +1073,7 @@ function regionTable(cap, key, unit, dec){
   });
   return h + '</tbody></table></div>';
 }
+function ptSec(id, title){ return '<h4 class="pt-sec" id="'+id+'" tabindex="-1">'+title+'</h4>'; }
 function priceTable(cap, rows, head){
   head = head || ['항목', '중간값', '조사 시점'];
   var h = '<p class="rcap">'+cap+'</p><div class="rwrap"><table class="rtable ptable"><thead><tr>' +
@@ -1126,63 +1141,115 @@ function knowHTML(){
     '<li>검사 전에 e보건소나 주소지 보건소에 먼저 신청해 검사의뢰서를 받아야 해요. 검사부터 받으면 지원되지 않아요.</li>' +
     '<li>참여 의료기관에서만 지원되고, 지역에 따라 예산이 떨어지면 일찍 마감되기도 해요.</li></ul>',
     a('https://www.e-health.go.kr','e보건소'));
-  h += card('k10', '결혼식장 비용, 보통 얼마일까',
-    '한국소비자원이 매달 조사하는 계약 금액(중간값)이에요. 선택 품목은 빠진 값이라 실제로는 더 들어요.',
-    '<ul><li>결혼식장과 스드메를 합친 전국 평균은 2,139만원이에요(2026년 2월). 2025년 8월 기준 수도권 2,665만원, 비수도권 1,511만원으로 차이가 커요.</li>' +
-    '<li>1인당 식대 중간값은 전국 약 6만원(2025년 8월)이고, 서울 강남은 2025년 12월에 9만원을 넘었어요.</li>' +
-    '<li>최소 보증인원 중간값은 200명이에요. 하객이 덜 와도 보증인원만큼 식대를 내니, 식대 × 보증인원이 식장 비용의 대부분이에요.</li>' +
-    '<li>대관료 중간값은 성수기 350만원, 비수기 250만원이에요.</li>' +
-    '<li>4월 예식이 평균 2,238만원으로 가장 비싸고 1월이 1,913만원으로 가장 싸요. 성수기(3~6월, 9~12월)가 비수기보다 평균 202만원 더 들어요.</li>' +
-    '<li>예식 10개월 전에 계약한 경우가 평균 2,231만원으로 가장 비쌌고, 2개월 전 계약은 1,626만원이었어요. 대신 남은 날짜 안에서 골라야 해요.</li>' +
-    '<li>스드메 패키지 중간값은 292만원, 스튜디오를 뺀 드메는 160만원이에요.</li>' +
-    '<li>조사 업체 가운데 가격을 공개한 곳은 36%뿐이었어요(2025년 4월). 견적은 여러 곳에서 받아 비교하세요.</li></ul>',
-    a('https://www.price.go.kr','참가격 예상 견적 조회'));
-  h += card('k12', '지역별 결혼 비용 (저·평균·고)',
-    '한국소비자원이 2025년 4월부터 2026년 2월까지 발표한 지역별 값을 모아 지역마다 가장 낮을 때, 평균, 가장 높을 때를 냈어요.',
-    regionTable('결혼서비스 총비용(식장+스드메)', 't', '만원', false) +
-    regionTable('1인당 식대', 'm', '만원', true) +
-    regionTable('대관료', 'h', '만원', false) +
-    '<p class="tip" style="margin-top:10px">저·고는 업체별 최저·최고가 아니라, 발표 시점마다 바뀐 값 중 가장 낮고 높은 값이에요. 평균은 그 발표값들의 평균이고, 자료가 1건뿐인 지역은 저·고를 비웠어요. 식대·대관료는 중간값 기준, 총비용은 대구·대전·울산·강원·충청·제주에 참가격에 게시된 최근 평균값(게시 시점 미표기)을 더했어요. 선택 품목은 빠진 금액이에요.</p>',
-    a('https://www.price.go.kr','참가격 지역별 가격정보'));
-  h += card('k13', '스드메·추가금 가격표',
-    '한국소비자원이 조사한 중간값이에요. 업체마다 차이가 크니, 받은 견적이 어디쯤인지 보는 기준으로 쓰세요.',
-    priceTable('스드메 기본 가격', [
-      ['스드메 패키지', '292만원', '2025년 6월'],
-      ['스드메 평균(전국)', '약 319만원', '2026년 4월'],
-      ['스드메 평균(서울)', '399만원', '2026년 4월'],
-      ['드메(스튜디오 제외)', '160만원', '2025년 4월~2026년 6월'],
-      ['스튜디오(20P 앨범·20R 액자)', '132만원', '2025년 8월'],
-      ['드레스(본식 1벌+촬영 3벌)', '155만원', '2025년 8월'],
-      ['메이크업(본식+촬영, 원장급)', '77만원', '2025년 8월']
-    ], ['항목', '가격', '조사 시점']) +
-    '<p class="tip" style="margin-top:6px">\'평균\'이라고 적은 줄만 평균이고, 나머지는 중간값이에요. 비싼 업체가 섞이면 평균이 중간값보다 높게 나와요.</p>' +
-    priceTable('지역별 가장 비싼 곳·싼 곳 (2025년 4월)', [
-      ['스튜디오', '강원 159만원', '경기·충청 100만원'],
-      ['드레스', '대전 222만원', '서울(강남 외) 110만원'],
-      ['메이크업', '서울 강남 99만원', '광주 32만원']
-    ], ['항목', '가장 비싼 곳', '가장 싼 곳']) +
-    '<p class="tip" style="margin-top:6px">서울 강남은 스튜디오 150만원, 드레스 205만원, 메이크업 99만원이었어요.</p>' +
-    priceTable('추가금(선택 품목)', [
-      ['스튜디오 원본 파일 전체', '22만원', '2025년 4월'],
-      ['앨범 페이지 추가', '장당 3만원', '2025년 4월'],
-      ['야외 촬영 / 야간 촬영', '각 15만원', '2025년 4월'],
-      ['드레스 시착(피팅)', '6만원', '2025년 4월'],
-      ['기본 개수 넘는 추가 시착', '5만원', '2025년 4월'],
-      ['드레스 도우미(헬퍼)', '25만원', '2025년 4월'],
-      ['메이크업 얼리스타트 오전 4시대', '20만원', '2025년 4월'],
-      ['얼리스타트 오전 5시대 / 6시대', '11만원 / 5만원', '2025년 4월'],
-      ['혼주 헤어·메이크업 여성', '23만원', '2025년 4월'],
-      ['혼주 헤어·메이크업 남성', '10만원', '2025년 4월'],
-      ['식장 생화 꽃장식', '262만원', '2025년 12월'],
-      ['본식 촬영', '80만원', '2025년 6월']
-    ]) +
-    '<ul style="margin-top:12px">' +
-    '<li>얼리스타트는 조사 업체의 27%만 운영하고, 시간이 이를수록 비싸요.</li>' +
-    '<li>공정위는 2024년 11월 18개 업체에 사진 파일 구입비, 드레스 피팅비, 메이크업 얼리스타트비를 기본 서비스에 포함하라고 약관을 고치게 했어요. 그런데 2025년 9월 소비자원이 20개 업체 계약서를 보니 19곳(95%)이 여전히 이런 항목을 따로 받았고, 13곳(65%)은 금액 없이 \'별도\'라고만 적었어요. 계약 전에 기본 포함인지 묻고, 따로라면 금액을 계약서에 적게 하세요.</li>' +
-    '<li>2025년 11월부터 업체는 기본·선택 품목 가격과 위약금·환급 기준을 홈페이지나 참가격 중 한 곳과 계약서 표지에 표시해야 해요. 공정위는 2026년 8월 1일부터 이를 집중 점검하고 있고, 어기면 과태료가 최대 1억원이에요. 업체별 실제 가격은 거기서 확인하고, 표시가 없으면 요구하세요.</li>' +
-    '<li>드레스 도우미 비용을 현금으로만 받고 현금영수증을 주지 않거나 교통비를 따로 받는 관행도 보도됐어요. 현금으로 낸다면 영수증을 요청하세요.</li>' +
-    '<li>혼주 헤어·메이크업은 2025년 12월 조사에서 15만원으로 나왔어요. 조사 시점과 품목 구성이 달라 4월 값과 차이가 있어요.</li></ul>',
-    a('https://www.price.go.kr','참가격 업체별 가격'));
+  h += card('k13', '항목별 가격 비교표',
+    '공개된 결혼 가격을 항목별로 모았어요. 받은 견적이 어디쯤인지 같은 항목끼리 비교하세요.',
+    '<div class="pt-nav" role="group" aria-label="가격표 항목">' +
+      [['pt-read','읽는 법'],['pt-total','전체 비용'],['pt-hall','예식장'],['pt-studio','스튜디오'],['pt-dress','드레스'],['pt-makeup','메이크업'],['pt-package','스드메 묶음'],['pt-timing','시기·계약 시점'],['pt-check','업체별 가격 확인']]
+        .map(function(x){ return '<button class="mchip" type="button" data-act="pt-jump" data-sec="'+x[0]+'">'+x[1]+'</button>'; }).join('') +
+    '</div>' +
+
+    ptSec('pt-read', '읽는 법') +
+    '<ul><li><b>중간값</b>: 가격을 줄 세웠을 때 가운데 값이에요. 비싼 업체 몇 곳에 덜 흔들려서 이 표는 대부분 중간값이에요.</li>' +
+    '<li><b>평균</b>: 비싼 업체가 섞이면 중간값보다 높게 나와요. 평균인 줄은 \'평균\'이라고 따로 적었어요.</li>' +
+    '<li>모두 한국소비자원 조사값이고, 조사 시점이 항목마다 달라요. 같은 항목에 시점이 다른 값이 있으면 최신 값을 위에 두었어요.</li>' +
+    '<li>기본 가격에는 선택 품목(추가금)이 빠져 있어요. 추가금은 항목마다 따로 정리했어요.</li></ul>' +
+
+    ptSec('pt-total', '전체 비용 (예식장+스드메)') +
+    priceTable('전국', [
+      ['결혼서비스 전체 비용', '2,139만원', '평균, 2026년 2월'],
+      ['  그중 식대 비중', '61.4%', '참가격 통계'],
+      ['  그중 대관료 비중', '20.9%', '참가격 통계'],
+      ['  그중 기본 장식비 비중', '3.5%', '참가격 통계']
+    ], ['항목', '금액', '기준·시점']) +
+    regionTable('지역별 전체 비용', 't', '만원', false) +
+
+    ptSec('pt-hall', '예식장') +
+    priceTable('기본(필수) 항목', [
+      ['결혼식장 계약금(대관료+식대+기본 장식)', '1,550만원', '중간값, 2026년 2월'],
+      ['  성수기 / 비수기', '1,610만원 / 1,250만원', '중간값, 2025년 4월~2026년 6월'],
+      ['최소 보증인원', '200명', '중간값, 성수기·비수기 같음'],
+      ['대관료 성수기 / 비수기', '350만원 / 250만원', '중간값, 2025년 4월~2026년 6월'],
+      ['1인 식대(전국)', '6만원', '중간값, 2025년 8월'],
+      ['  서울 강남 1인 식대', '9만원', '중간값, 2025년 12월']
+    ], ['항목', '금액', '기준·시점']) +
+    regionTable('지역별 1인 식대', 'm', '만원', true) +
+    regionTable('지역별 대관료', 'h', '만원', false) +
+    priceTable('추가금(선택 항목)', [
+      ['생화 꽃장식', '280만원', '중간값, 2026년 2월'],
+      ['  (이전 조사)', '262만원', '중간값, 2025년 12월'],
+      ['본식 촬영', '80만원', '중간값, 2025년 6월'],
+      ['본식 원판 사진 구매', '51만원', '중간값, 2025년 12월'],
+      ['본식 사회자', '30만원', '참가격 통계(전국)'],
+      ['본식 도우미', '30만원', '참가격 통계(전국)'],
+      ['폐백 음식', '30만원', '참가격 통계(전국)'],
+      ['폐백 수모비', '10만원', '참가격 통계(전국)'],
+      ['혼주 헤어·메이크업 여성 / 남성', '23만원 / 10만원', '중간값, 2025년 4월'],
+      ['  (다른 구성 조사)', '15만원', '중간값, 2025년 12월']
+    ], ['항목', '금액', '기준·시점']) +
+    '<p class="tip">식장이 많이 취급하는 추가 항목은 본식 촬영(67.8%), 혼주 헤어·메이크업(62.4%), 본식 사회자(46.7%) 순이에요. 성수기 주말엔 생화 장식이나 본식 도우미를 필수로 붙이는 식장이 32.8%였어요.</p>' +
+
+    ptSec('pt-studio', '스튜디오') +
+    priceTable('기본(20P 앨범·20R 액자)', [
+      ['스튜디오 기본', '137만원', '중간값, 2026년 2월'],
+      ['  (이전 조사)', '132만원', '중간값, 2025년 8월'],
+      ['가장 비싼 지역 / 싼 지역', '강원 159만원 / 경기·충청 100만원', '중간값, 2025년 4월'],
+      ['서울 강남', '150만원', '중간값, 2025년 4월']
+    ], ['항목', '금액', '기준·시점']) +
+    priceTable('추가금(선택 항목)', [
+      ['원본 파일 전체 구매', '22만원', '중간값, 2025년 4월'],
+      ['앨범 페이지 추가', '장당 3만원', '중간값, 2025년 4월'],
+      ['야외 촬영 / 야간 촬영', '각 15만원', '중간값, 2025년 4월'],
+      ['촬영 출장비', '20만원', '참가격 통계(전국)'],
+      ['들러리 촬영', '8만원', '참가격 통계(전국)'],
+      ['반려동물 촬영', '8만원', '참가격 통계(전국)']
+    ], ['항목', '금액', '기준·시점']) +
+
+    ptSec('pt-dress', '드레스') +
+    priceTable('기본(본식 1벌+촬영 3벌)', [
+      ['드레스 기본', '160만원', '중간값, 2026년 2월'],
+      ['가장 비싼 지역 / 싼 지역', '대전 220만원 / 서울(강남 외) 118만원', '중간값, 2025년 12월'],
+      ['서울 강남', '198만원', '중간값, 2025년 12월']
+    ], ['항목', '금액', '기준·시점']) +
+    priceTable('추가금(선택 항목)', [
+      ['피팅(시착)', '6만원', '중간값, 2025년 4월'],
+      ['기본 개수 넘는 추가 시착', '5만원', '중간값, 2025년 4월'],
+      ['헬퍼(도우미) 촬영 / 본식', '각 25만원', '참가격 통계(전국)']
+    ], ['항목', '금액', '기준·시점']) +
+
+    ptSec('pt-makeup', '메이크업') +
+    priceTable('기본(본식+촬영, 원장급)', [
+      ['메이크업 기본', '79만원', '중간값, 2026년 2월'],
+      ['가장 비싼 지역 / 싼 지역', '서울 강남 101만원 / 광주 33만원', '중간값, 2025년 12월']
+    ], ['항목', '금액', '기준·시점']) +
+    priceTable('추가금(선택 항목)', [
+      ['얼리스타트 오전 4시대', '20만원', '중간값, 2025년 4월'],
+      ['얼리스타트 오전 5시대 / 6시대', '11만원 / 5만원', '중간값, 2025년 4월'],
+      ['촬영 출장비', '20만원', '참가격 통계(전국)']
+    ], ['항목', '금액', '기준·시점']) +
+    '<p class="tip">얼리스타트는 조사 업체의 27%만 운영하고, 시간이 이를수록 비싸요.</p>' +
+
+    ptSec('pt-package', '스드메 묶음(패키지)') +
+    priceTable('스튜디오+드레스+메이크업', [
+      ['스드메 패키지', '292만원', '중간값, 2025년 6월'],
+      ['스드메 전국 / 서울', '약 319만원 / 399만원', '평균, 2026년 4월'],
+      ['드메(스튜디오 제외)', '160만원', '중간값, 2025년 4월~2026년 6월']
+    ], ['항목', '금액', '기준·시점']) +
+    '<p class="tip">드메는 같은 기간 140만원에서 180만원으로 올랐어요.</p>' +
+
+    ptSec('pt-timing', '시기·계약 시점') +
+    priceTable('언제 하고 언제 계약하나', [
+      ['가장 비싼 달 / 싼 달', '4월 2,238만원 / 1월 1,913만원', '평균, 2025년 4월~2026년 6월'],
+      ['성수기(3~6월, 9~12월) 추가 비용', '평균 202만원 더', '2025년 4월~2026년 6월'],
+      ['비수기 평일 대관료', '성수기 주말 점심의 69.1%', '2025년 4월~2026년 6월'],
+      ['예식 10개월 전 계약 / 2개월 전 계약', '2,231만원 / 1,626만원', '평균, 2025년 10월 발표']
+    ], ['항목', '금액', '기준·시점']) +
+
+    ptSec('pt-check', '업체별 가격 확인') +
+    '<ul><li>참가격에서는 가격을 스스로 공개한 예식장의 홀별 대관료·장식비·식대·보증인원과, 결혼준비대행 업체의 제휴 스드메 기본·선택 가격을 검색할 수 있어요. 공개한 업체만 나와요.</li>' +
+    '<li>참가격이 공개하는 선택 품목은 예식장 17개, 스튜디오 20개, 드레스 14개, 메이크업 16개예요.</li>' +
+    '<li>2025년 11월부터 업체는 기본·선택 품목 가격과 위약금·환급 기준을 홈페이지나 참가격 중 한 곳과 계약서 표지에 표시해야 해요. 공정위가 2026년 8월 1일부터 집중 점검 중이고, 어기면 과태료가 최대 1억원이에요. 표시가 없으면 요구하세요.</li>' +
+    '<li>공정위는 2024년 11월 사진 파일 구입비·드레스 피팅비·얼리스타트비를 기본 서비스에 포함하라고 했지만, 2025년 9월 조사에서도 20곳 중 19곳이 따로 받았어요. 따로라면 금액을 계약서에 적게 하세요.</li></ul>',
+    a('https://www.price.go.kr','참가격 업체별 가격·예상 견적'));
   h += card('k6', '웨딩 계약 전에 볼 것',
     '결혼 서비스 분쟁의 80% 이상이 해지·위약금 문제예요. 사인하기 전에 위약금 조항부터 보세요.',
     '<ul><li>피해구제 신청은 2024년 905건에서 2025년 1,076건으로 늘었고, 최근 2년 1,981건 중 82%가 계약해지·위약금 문제였어요.</li>' +
@@ -1198,12 +1265,11 @@ function knowHTML(){
     a('https://www.price.go.kr','참가격') + a('https://www.1372.go.kr','1372 소비자상담센터'));
   h += card('k11', '견적서 밖에서 나오는 돈',
     '기본 견적에 없다가 계약 뒤에 붙는 항목이 많아요. 아래 항목이 포함인지 별도인지 계약 전에 물어보세요.',
-    '<ul><li>식장: 생화 꽃장식(중간값 262만원, 2025년 12월), 본식 촬영(중간값 80만원), 본식 도우미, 폐백, 주류·음료, 부가세 포함 여부, 외부 촬영 업체를 쓸 때 반입료.</li>' +
-    '<li>성수기 주말엔 생화 장식이나 본식 도우미를 필수로 붙이는 식장이 3곳 중 1곳꼴(32.8%)이에요.</li>' +
-    '<li>스드메: 원본 사진 구매(중간값 22만원, 2025년 4월), 앨범 페이지 추가, 드레스 도우미, 드레스 투어·피팅비, 메이크업 이른 시간 추가금이나 담당자 지정비.</li>' +
+    '<ul><li>식장: 생화 꽃장식, 본식 촬영, 본식 도우미, 폐백, 주류·음료, 부가세 포함 여부, 외부 촬영 업체를 쓸 때 반입료.</li>' +
+    '<li>스드메: 원본 사진 구매, 앨범 페이지 추가, 드레스 도우미, 드레스 투어·피팅비, 메이크업 이른 시간 추가금이나 담당자 지정비.</li>' +
     '<li>앨범 페이지 추가, 드레스 도우미, 본식 촬영은 10명 중 6~7명이 쓰는 사실상 필수 항목이에요.</li>' +
-    '<li>혼주 헤어·메이크업은 중간값 15만원이에요(2025년 12월).</li>' +
-    '<li>식대가 오르면 차액을 내야 하는지, 보증인원을 줄일 수 있는 마감일이 언제인지도 계약서에서 확인하세요.</li></ul>');
+    '<li>식대가 오르면 차액을 내야 하는지, 보증인원을 줄일 수 있는 마감일이 언제인지도 계약서에서 확인하세요.</li>' +
+    '<li>항목별 금액은 위의 \'항목별 가격 비교표\'에 모아 두었어요.</li></ul>');
   h += card('k7', '부부재산약정',
     '결혼 전 재산을 어떻게 나눌지 미리 정하는 계약이에요. 혼인신고 전에만 할 수 있어요.',
     '<ul><li>혼인신고 전에 약정해야 하고, 제3자에게도 주장하려면 혼인신고 전에 등기까지 해 둬야 해요.</li>' +
@@ -1281,7 +1347,8 @@ function budgetHTML(){
     list.sort(function(x, y){ return x.order - y.order; });
     var sub = list.filter(function(r){ return !r.hidden; }).reduce(function(acc, r){ return acc + (r.expect || 0); }, 0);
     h += '<section class="bcat"><div class="bcat-head"><h3>'+esc(c.name)+'</h3><span class="meta">'+fmtMan(sub)+'</span></div>' +
-      (c.id === 'sdm' ? '<p class="refline"><button class="link" type="button" data-act="goto-know" data-k="k13">스드메·추가금 가격표 보기</button></p>' : '') + '<ul class="blist">';
+      (c.id === 'sdm' ? '<p class="refline"><button class="link" type="button" data-act="goto-know" data-k="k13" data-sec="pt-studio">스드메 항목별 가격 보기</button></p>' :
+       c.id === 'wed' ? '<p class="refline"><button class="link" type="button" data-act="goto-know" data-k="k13" data-sec="pt-hall">예식장 항목별 가격 보기</button></p>' : '') + '<ul class="blist">';
     list.forEach(function(r){ h += budgetItemHTML(r); });
     h += '</ul></section>';
   });
@@ -1388,11 +1455,12 @@ function quoteHTML(){
   return h + '</section>';
 }
 var SDM_REF = {
-  b05: {v:132, t:'스튜디오 전국 중간값 132만원(2025년 8월)'},
-  b06: {v:155, t:'드레스 전국 중간값 155만원(2025년 8월)'},
-  b07: {v:77, t:'메이크업 전국 중간값 77만원(2025년 8월)'},
-  b03: {v:null, t:'본식 촬영 중간값 80만원(2025년 6월, 영상 별도)'},
-  b27: {v:null, t:'생화 꽃장식 중간값 262만원(2025년 12월)'}
+  b05: {v:137, t:'스튜디오 전국 중간값 137만원(2026년 2월)', sec:'pt-studio'},
+  b06: {v:160, t:'드레스 전국 중간값 160만원(2026년 2월)', sec:'pt-dress'},
+  b07: {v:79, t:'메이크업 전국 중간값 79만원(2026년 2월)', sec:'pt-makeup'},
+  b03: {v:null, t:'본식 촬영 중간값 80만원(2025년 6월, 영상 별도)', sec:'pt-hall'},
+  b27: {v:null, t:'생화 꽃장식 중간값 280만원(2026년 2월)', sec:'pt-hall'},
+  b08: {v:null, t:'추가금 예: 원본 파일 22만원, 드레스 피팅 6만원, 헬퍼 25만원', sec:'pt-studio'}
 };
 function budgetRefHTML(r){
   var reg = (state.budget && state.budget.region) || '전국';
@@ -1790,10 +1858,13 @@ document.addEventListener('click', function(e){
   } else if (act === 'month') {
     ui.honeyMonth = Number(b.getAttribute('data-m')); lsSet('wd-honey', String(ui.honeyMonth)); render();
   } else if (act === 'goto-know') {
-    var k = b.getAttribute('data-k');
+    var k = b.getAttribute('data-k'), sec = b.getAttribute('data-sec');
     ui.tab = 'know'; lsSet('wd-tab', 'know'); ui.openKnow[k] = true; render();
-    var el = document.querySelector('details[data-k="'+k+'"]');
-    if (el) el.scrollIntoView({block:'start'});
+    var el = (sec && document.getElementById(sec)) || document.querySelector('details[data-k="'+k+'"]');
+    if (el) { el.scrollIntoView({block:'start'}); if (sec) try { el.focus({preventScroll:true}); } catch(e5){} }
+  } else if (act === 'pt-jump') {
+    var tgt = document.getElementById(b.getAttribute('data-sec'));
+    if (tgt) { tgt.scrollIntoView({block:'start'}); try { tgt.focus({preventScroll:true}); } catch(e6){} }
   }
 });
 

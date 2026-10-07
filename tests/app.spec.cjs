@@ -118,15 +118,19 @@ test('storage and fixed content remain byte-for-byte unchanged',async()=>{
  expect(normalize(block(current,'function knowHTML(){','function num('))).toBe(normalize(block(original,'function knowHTML(){','function num(')));
 });
 
-test('price table card and budget reference lines',async({page})=>{
+test('item-by-item price table and budget reference lines',async({page})=>{
  const {app,errors}=await openApp(page);await app.locator('#tab-budget').click();
- const hall=app.locator('[data-act="b-open"][data-id="b01"]').locator('xpath=ancestor::li[1]');
- await expect(hall.locator('.refline')).toHaveText('전국 대관료 평균 317만원, 내 금액이 33만원 높아요');
- const meal=app.locator('[data-act="b-open"][data-id="b02"]').locator('xpath=ancestor::li[1]');
- await expect(meal.locator('.refline')).toHaveText('전국 1인 식대 평균 5.9만원, 내 금액이 0.3만원 높아요');
- await app.locator('[data-act="goto-know"][data-k="k13"]').click();
- await expect(app.locator('details[data-k="k13"]')).toHaveJSProperty('open',true);
- await expect(app.locator('details[data-k="k13"]')).toContainText('스드메 기본 가격');
- await expect(app.locator('details[data-k="k13"] .ptable')).toHaveCount(3);
+ const row=id=>app.locator(`[data-act="b-open"][data-id="${id}"]`).locator('xpath=ancestor::li[1]');
+ await expect(row('b01').locator('.refline')).toHaveText('전국 대관료 평균 317만원, 내 금액이 33만원 높아요');
+ await expect(row('b02').locator('.refline')).toHaveText('전국 1인 식대 평균 5.9만원, 내 금액이 0.3만원 높아요');
+ await expect(row('b05').locator('.refline')).toContainText('스튜디오 전국 중간값 137만원(2026년 2월)');
+ await app.locator('[data-act="goto-know"][data-k="k13"][data-sec="pt-hall"]').click();
+ const card=app.locator('details[data-k="k13"]');
+ await expect(card).toHaveJSProperty('open',true);
+ for (const id of ['pt-read','pt-total','pt-hall','pt-studio','pt-dress','pt-makeup','pt-package','pt-timing','pt-check']) await expect(card.locator('#'+id)).toHaveCount(1);
+ await expect(card.locator('.ptable')).toHaveCount(11);
+ await card.locator('[data-act="pt-jump"][data-sec="pt-dress"]').click();
+ await expect(card.locator('#pt-dress')).toBeFocused();
+ for (const old of ['k10','k12']) await expect(app.locator(`details[data-k="${old}"]`)).toHaveCount(0);
  expect(errors).toEqual([]);
 });
