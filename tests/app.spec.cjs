@@ -162,3 +162,20 @@ test('ceremony decorations are inert, compact and respect motion preferences',as
  await expect(app.locator('.petals')).toBeHidden();
  expect(await app.locator('.petal').first().evaluate(e=>getComputedStyle(e).animationName)).toBe('none');
 });
+
+test('standalone website keeps saved data after reload and shares its own URL',async({page})=>{
+ // No init script clears storage here: a deployed page must survive a real reload.
+ await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({status:200,contentType:'text/css',body:''}));
+ await page.goto('/index.html');
+ await expect(page.locator('#status')).toHaveText('이 기기에만 저장돼요');
+ await page.locator('#heroGroom').fill('준호');await page.locator('#heroBride').fill('민지');
+ await page.locator('#heroDate').fill('2027-05-08');
+ await page.locator('[data-act="hero-save"]').click();
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('wedding-plan-v1'))?.weddingDate)).toBe('2027-05-08');
+ await page.reload();
+ await expect(page.locator('.names')).toContainText('준호');
+ await expect(page.locator('.names')).toContainText('민지');
+ await expect(page.locator('.when')).toContainText('2027년 5월 8일');
+ await page.locator('#openShare').click();
+ await expect(page.locator('#shareLink')).toHaveValue(page.url());
+});

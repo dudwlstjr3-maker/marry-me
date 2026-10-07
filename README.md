@@ -2,6 +2,27 @@
 
 결혼식 날짜를 넣으면 준비 일정, 예산, 하객·축의금, 신혼여행, 알아둘 제도, 둘이 정할 것을 한 화면에서 관리하는 한 파일짜리 웹앱이에요.
 
+## 웹주소로 사용하기 (GitHub Pages)
+
+앱 주소: **https://dudwlstjr3-maker.github.io/marry-me/**
+
+최초 활성화와 배포가 끝나면 이 주소를 즐겨찾기해 사용하세요. 앞으로 main에 수정이 반영되면 GitHub Actions가 전체 시험을 통과한 앱을 자동 배포해요. 배포 완료 후 같은 주소를 새로고침하면 최신 화면이 나와요. 열려 있는 화면은 저절로 다시 로드하지 않아요.
+
+### 처음 한 번 설정
+
+1. 저장소 [Settings → Pages](https://github.com/dudwlstjr3-maker/marry-me/settings/pages)를 열어요.
+2. **Build and deployment → Source → GitHub Actions**를 선택해요.
+3. [Actions → Test and deploy GitHub Pages](https://github.com/dudwlstjr3-maker/marry-me/actions/workflows/pages.yml)에서 **Run workflow → Branch: main → Run workflow**로 첫 배포를 실행해요. 설정 후 main에 변경이 반영되어도 자동으로 시작해요.
+4. `test`와 `deploy`가 모두 초록색이면 앱 주소를 열어요. 첫 배포는 잠시 걸릴 수 있어요.
+
+### 업데이트와 저장
+
+- PR은 시험만 실행하고, main 반영과 main에서의 수동 실행만 배포해요. 시험이나 배포가 실패하면 기존 공개 버전이 유지돼요. Actions 실행 결과에서 실패한 단계를 확인할 수 있어요.
+- 공개되는 파일은 `index.html`과 `.nojekyll`뿐이에요. 시험 데이터·스크린샷·개발 파일은 배포 묶음에 넣지 않아요.
+- 이름·일정·예산·하객 입력값은 해당 브라우저의 localStorage에만 저장돼요. 코드 업데이트와 새로고침으로 지워지지 않지만, 브라우저 데이터를 삭제하면 없어져요. 기기 간 데이터 동기화는 지원하지 않아요.
+- Claude 아티팩트나 내려받은 파일에서 쓰던 데이터는 새 웹주소로 자동 이전되지 않아요. 앱 공유 링크를 보내도 입력 데이터가 함께 전송되지는 않아요.
+- 이전 디자인으로 돌아가려면 원하는 변경의 되돌리기 PR을 main에 반영하세요. 그 버전도 시험 후 같은 주소로 자동 배포돼요.
+
 ## 파일
 
 - `index.html` — 앱 전체(HTML·CSS·JS). 밖에서 불러오는 건 Google Fonts뿐이에요.
@@ -65,7 +86,7 @@ npm run screenshots -- after
 
 1. **GPT(Codex)에게 시킬 때**: Codex에서 이 저장소를 고르고 "AGENTS.md 규칙대로 ○○ 해 줘"라고 하면 돼요. 작업이 끝나면 PR이 올라오고, 확인한 뒤 병합하면 돼요.
 2. **Claude에게 시킬 때**: claude.ai 대화에서 저장소 주소와 함께 요청하세요. Claude가 최신 `main`을 가져와 고친 `index.html`을 주면, GitHub 웹에서 그 파일을 올리면 돼요.
-3. **앱에 반영할 때**: 병합한 뒤 Claude에게 "깃허브 최신으로 앱 업데이트해 줘"라고 하면, Claude가 검사하고 같은 앱 링크에 반영해요.
+3. **앱에 반영할 때**: GitHub Pages는 main에 병합하면 자동 배포돼요. Actions 배포 완료 후 고정 웹주소를 새로고침하세요. Claude 아티팩트를 계속 사용한다면 별도로 Claude에게 "깃허브 최신으로 앱 업데이트해 줘"라고 요청하세요.
 4. 한 번에 한 AI만 고치세요. 한 작업이 병합된 뒤 다음 작업을 시작해야 서로 덮어쓰지 않아요.
 
 바뀐 내용은 [docs/CHANGELOG.md](docs/CHANGELOG.md)에 적어요.
