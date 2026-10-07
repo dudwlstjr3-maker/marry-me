@@ -134,3 +134,31 @@ test('item-by-item price table and budget reference lines',async({page})=>{
  for (const old of ['k10','k12']) await expect(app.locator(`details[data-k="${old}"]`)).toHaveCount(0);
  expect(errors).toEqual([]);
 });
+
+test('ceremony decorations are inert, compact and respect motion preferences',async({page})=>{
+ const {app}=await openApp(page);
+ const audit=await app.locator('body').evaluate(()=>{
+  const svg=[...document.querySelectorAll('svg[aria-hidden="true"]')];
+  const decor=[...document.querySelectorAll('.ceremony-decor,.bow')];
+  const frames=[...document.styleSheets].filter(s=>s.ownerNode.tagName==='STYLE').flatMap(s=>[...s.cssRules]).filter(r=>r.type===CSSRule.KEYFRAMES_RULE);
+  return {
+   bytes:new TextEncoder().encode(svg.map(e=>e.outerHTML).join('')).length,
+   inert:decor.every(e=>e.getAttribute('aria-hidden')==='true'&&getComputedStyle(e).pointerEvents==='none'),
+   animated:[...document.querySelectorAll('*')].filter(e=>getComputedStyle(e).animationName!=='none').map(e=>e.className),
+   keyframeProperties:frames.flatMap(r=>[...r.cssRules].flatMap(f=>[...f.style])),
+   overflow:[document.documentElement,document.body].map(e=>getComputedStyle(e).overflowX),
+   touch:getComputedStyle(document.querySelector('#panel-timeline')).touchAction,
+   fill:document.querySelector('.aisle-fill').style.width,
+   strand:document.querySelector('.strand i').style.width
+  };
+ });
+ expect(audit.bytes).toBeLessThanOrEqual(30000);
+ expect(audit.inert).toBe(true);
+ expect(audit.animated).toEqual(['petal','petal','petal']);
+ expect([...new Set(audit.keyframeProperties)].sort()).toEqual(['opacity','transform']);
+ expect(audit.overflow).toEqual(['clip','clip']);expect(audit.touch).toContain('pan-y');
+ expect(audit.fill).toBe(audit.strand);
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await expect(app.locator('.petals')).toBeHidden();
+ expect(await app.locator('.petal').first().evaluate(e=>getComputedStyle(e).animationName)).toBe('none');
+});

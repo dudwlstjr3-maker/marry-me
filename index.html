@@ -9,8 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --paper:#F5F6F8; --surface:#FFFFFF; --ink:#1A2233; --muted:#5E6779; --line:#DCE0E7; --focus:var(--chung); --on-knot:#FFFFFF; --backdrop:rgba(10,14,22,.45); --tabs-height:52px;
-  --chung:#2A4A8F; --hong:#C2304A; --chung-soft:rgba(42,74,143,.09); --hong-soft:rgba(194,48,74,.09);
+  --paper:#FAF7F0; --surface:#FFFDF9; --ink:#34312F; --muted:#6D625B; --line:#DED4C4; --focus:var(--chung); --on-knot:#FFFFFF; --backdrop:rgba(10,14,22,.45); --tabs-height:52px;
+  --chung:#365B74; --hong:#963F53; --chung-soft:rgba(54,91,116,.07); --hong-soft:rgba(150,63,83,.06);
+  --blush:#F5E9E6; --gold:#80612E; --gold-line:#BEA578; --gold-soft:#F1E8D8; --leaf:#9CA78F; --flower:#FFFDF7; --petal-line:#D9CCB6; --shadow:rgba(91,66,33,.06);
   --serif:"Hahmlet","Noto Serif KR","Noto Serif CJK KR","AppleMyungjo",serif;
   --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR","Noto Sans CJK KR",sans-serif;
   color-scheme:light;
@@ -20,13 +21,15 @@
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --paper:#10151F; --surface:#171E2B; --ink:#E7EAF0; --muted:#9AA3B5; --line:#283143;
+    --paper:#111B2D; --surface:#19253A; --ink:#F2EBDE; --muted:#C0B8AB; --line:#3F4959;
+    --blush:#21283A; --gold:#E5C287; --gold-line:#9F845C; --gold-soft:#303344; --leaf:#7C9087; --flower:#D8D5C9; --petal-line:#A79C85; --shadow:rgba(0,0,0,.12);
     --chung:#86A5EE; --hong:#F2788C; --chung-soft:rgba(134,165,238,.12); --hong-soft:rgba(242,120,140,.12);
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --paper:#10151F; --surface:#171E2B; --ink:#E7EAF0; --muted:#9AA3B5; --line:#283143;
+  --paper:#111B2D; --surface:#19253A; --ink:#F2EBDE; --muted:#C0B8AB; --line:#3F4959;
+    --blush:#21283A; --gold:#E5C287; --gold-line:#9F845C; --gold-soft:#303344; --leaf:#7C9087; --flower:#D8D5C9; --petal-line:#A79C85; --shadow:rgba(0,0,0,.12);
   --chung:#86A5EE; --hong:#F2788C; --chung-soft:rgba(134,165,238,.12); --hong-soft:rgba(242,120,140,.12);
   color-scheme:dark;
 }
@@ -71,9 +74,6 @@ button,input,textarea,select{font:inherit;color:inherit}
 .strand.c i{background:var(--chung)} .strand.h i{background:var(--hong)}
 .bow{width:58px;height:36px;flex:none;overflow:visible}
 .bow path{fill:none;stroke-width:2.2;stroke-linecap:round}
-@media (prefers-reduced-motion:no-preference){
-  .strand i{transition:width .9s cubic-bezier(.2,.7,.2,1)}
-}
 .stats{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:14px;color:var(--muted);margin:0}
 .stats b{color:var(--ink);font-weight:600}
 .stats .alert b{color:var(--hong)}
@@ -356,6 +356,74 @@ html,body{overflow-x:clip}
 #panel-timeline{touch-action:pan-y pinch-zoom}
 /* 접는 상자(details) 안에서는 box-sizing이 상속되지 않아 입력칸이 8px 넘쳤음 */
 input,textarea,select,button{box-sizing:border-box}
+
+/* v24 — an invitation at the entrance, an aisle through the preparations. */
+body{background:linear-gradient(155deg,var(--paper),var(--blush)) fixed;background-color:var(--paper)}
+.bar{background:var(--paper);border-bottom:1px solid var(--line)}
+.brand{font-family:var(--serif);color:var(--gold);font-weight:500}
+.btn{border-radius:5px;border-color:var(--gold-line)}
+.btn.primary{background:var(--gold);border-color:var(--gold);color:var(--surface)}
+.hero{padding-top:24px;padding-bottom:0}
+.invitation{position:relative;isolation:isolate;text-align:center;background:var(--surface);border:1px solid var(--gold-line);border-radius:120px 120px 6px 6px;padding:100px 22px 34px;box-shadow:0 4px 16px var(--shadow)}
+.invitation::before{content:"";position:absolute;inset:9px;border:1px solid var(--line);border-radius:112px 112px 2px 2px;pointer-events:none;z-index:-1}
+.ceremony-decor,.ceremony-decor *,.bow{pointer-events:none}
+.bouquet{position:absolute;top:12px;left:50%;width:210px;height:82px;transform:translateX(-50%)}
+.botanical-stem{fill:none;stroke:var(--leaf);stroke-width:1.2;stroke-linecap:round}
+.botanical-leaf{fill:var(--leaf);opacity:.65}
+.botanical-flower{fill:var(--flower);stroke:var(--petal-line);stroke-width:.8}
+.botanical-center{fill:var(--gold-line)}
+.lace{position:absolute;top:120px;width:10px;height:150px;color:var(--gold-line);opacity:.18}
+.lace.left{left:-14px}.lace.right{right:-14px;transform:scaleX(-1)}
+.invitation .couple{margin:0 0 24px}
+.names{font-size:clamp(21px,5.8vw,28px);line-height:1.65;letter-spacing:.035em}
+.names .who-l{font-size:13px;letter-spacing:0}
+.congrats{font-size:14px;line-height:1.8;margin-top:10px}
+.dday{font-size:clamp(56px,18vw,104px);font-weight:500;line-height:1.2;letter-spacing:-.065em;color:var(--gold);margin:0 0 20px}
+.when{font-size:15px;line-height:1.9;max-width:20em;margin:auto}
+.setup-q{font-size:clamp(23px,6vw,32px);line-height:1.6;color:var(--gold)}
+.setup-row{text-align:left;gap:14px}
+.setup-row>.field{flex:1 1 120px}
+#heroForm input[type=text]{width:100%}
+.setup-row>.btn{width:100%}
+.petals{position:absolute;inset:0;overflow:hidden;border-radius:inherit;z-index:-1}
+.petal{position:absolute;top:75px;width:6px;height:12px;border-radius:85% 10% 80% 20%;background:var(--petal-line);opacity:0}
+.petal:nth-child(1){left:3%;--drift:3px;--turn:140deg}
+.petal:nth-child(2){right:3%;--drift:-3px;--turn:-90deg;animation-delay:2s}
+.petal:nth-child(3){left:4%;--drift:-5px;--turn:80deg;animation-delay:5s}
+@keyframes ceremony-petal{0%{opacity:0;transform:translate3d(0,-20px,0) rotate(0)}15%{opacity:.45}85%{opacity:.3}100%{opacity:0;transform:translate3d(var(--drift),260px,0) rotate(var(--turn))}}
+@media (prefers-reduced-motion:no-preference){.petal{animation-name:ceremony-petal;animation-duration:12s;animation-timing-function:linear;animation-iteration-count:1}}
+@media (prefers-reduced-motion:reduce){.petals{display:none}}
+.tie{position:relative;height:70px;margin:18px 8px 8px;padding-right:48px;gap:0}
+.aisle{position:relative;flex:1;height:22px;border-block:1px solid var(--gold-line);background:var(--surface)}
+.aisle-fill{display:block;height:100%;background:var(--gold-soft);border-right:2px solid var(--gold-line)}
+.aisle-flowers{position:absolute;inset:-22px 0;width:100%;height:64px;overflow:visible}
+.strands{position:absolute;right:38px;width:30px;gap:8px;z-index:1}
+.strand{background:var(--line)}
+.bow{position:absolute;right:-8px;width:58px;height:36px}
+.stats{justify-content:center;gap:6px 16px;font-size:14px;padding:12px 0 0;border-top:1px solid var(--line)}
+.notice{background:var(--surface);border:1px solid var(--line);border-left:2px solid var(--hong);border-radius:3px;margin-top:18px;padding:14px 16px}
+.tabs{background:var(--surface);border-top:1px solid var(--line);margin-top:24px}
+.tab[aria-selected="true"]{color:var(--gold);border-bottom-color:var(--gold);background:var(--gold-soft)}
+.panel{background:var(--paper)}
+.phase-head,.bcat-head{background:var(--paper)}
+.phase-head h3,.bcat-head h3,.tgroup h3,.ghead,.add h3,.badd h3{color:var(--gold)}
+.rail{background:var(--surface);border:1px solid var(--line);border-radius:5px;margin-top:8px;padding-inline:0 12px}
+.rail::before{background:var(--gold-line);opacity:.6}.rail::after{background:var(--gold-line);opacity:.3}
+.phase.after .rail::before{background:var(--gold-line)}
+.task{padding-left:44px}
+.knot{border-color:var(--gold-line)}
+.knot[aria-checked="true"]{background:var(--gold);border-color:var(--gold)}
+.knot svg{color:var(--surface)}
+.sumgrid{gap:12px}
+.sum{background:var(--surface);border:1px solid var(--line);border-top:2px solid var(--gold-line);border-radius:3px;padding:14px 12px;gap:8px}
+.sum .v{color:var(--gold);font-size:22px}
+.sum .v.neg{color:var(--hong)}
+.blist,.glist,.tlist{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding-inline:12px}
+.bitem:last-child,.gitem:last-child,.titem:last-child{border-bottom:0}
+.know details{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:12px 16px;margin-block:12px}
+input[type=date],input[type=text],textarea,select{border-radius:4px}
+.calc,.calcval{border-radius:4px}
+@media (max-width:359px){.invitation{padding-inline:18px}.names{letter-spacing:0}.invitation .couple{margin-bottom:18px}.sum{padding-inline:10px}.sum .v{font-size:20px}.when{font-size:14px}}
 </style>
 </head>
 <body>
@@ -900,11 +968,31 @@ function namesHTML(){
   }
   return h + '<p class="congrats">'+esc(congratsText())+'</p></div>';
 }
+// Decorative flowers are inline, unfocusable and hidden from assistive technology.
+function ceremonyFlower(x,y,scale){
+  return '<g transform="translate('+x+' '+y+') scale('+scale+')"><path class="botanical-flower" d="M0-7C-12-22-24-6-13 2C-25 12-7 23 0 12C8 24 25 11 13 2C25-8 11-22 0-7Z"/><path class="botanical-flower" d="M0-4C-9-13-15-1-7 4C-9 13 6 14 8 5C17-3 5-13 0-4Z"/><path class="botanical-stem" d="M-3 2Q1-5 5 1Q7 6 0 7"/><circle class="botanical-center" r="1.5"/></g>';
+}
+function invitationDecorHTML(){
+  return '<svg class="ceremony-decor bouquet" viewBox="0 0 240 94" aria-hidden="true" focusable="false">' +
+    '<path class="botanical-stem" d="M18 72Q59 80 120 40Q176 78 223 64M43 44Q64 64 101 53M143 50Q173 47 192 22"/>' +
+    '<path class="botanical-leaf" d="M36 71Q17 55 24 46Q40 50 36 71M49 69Q48 88 68 82Q62 71 49 69M67 63Q47 40 56 35Q74 39 67 63M80 58Q80 77 95 73Q94 61 80 58M166 62Q167 80 184 79Q181 64 166 62M186 66Q187 46 202 45Q206 59 186 66M211 67Q220 49 231 54Q230 66 211 67M173 42Q157 28 165 21Q181 27 173 42"/>' +
+    ceremonyFlower(96,45,.9)+ceremonyFlower(132,39,1.3)+ceremonyFlower(159,57,.72)+ceremonyFlower(55,66,.55)+
+    '</svg>' +
+    '<svg class="ceremony-decor lace left" viewBox="0 0 18 150" aria-hidden="true" focusable="false"><path d="M1 0Q31 15 1 30Q31 45 1 60Q31 75 1 90Q31 105 1 120Q31 135 1 150M1 0V150" fill="none" stroke="currentColor"/><path d="M2 10L10 15L2 20M2 40L10 45L2 50M2 70L10 75L2 80M2 100L10 105L2 110M2 130L10 135L2 140" fill="none" stroke="currentColor"/></svg>' +
+    '<svg class="ceremony-decor lace right" viewBox="0 0 18 150" aria-hidden="true" focusable="false"><path d="M1 0Q31 15 1 30Q31 45 1 60Q31 75 1 90Q31 105 1 120Q31 135 1 150M1 0V150" fill="none" stroke="currentColor"/></svg>' +
+    '<div class="ceremony-decor petals" aria-hidden="true"><i class="petal"></i><i class="petal"></i><i class="petal"></i></div>';
+}
+function aisleDecorHTML(){
+  return '<svg class="ceremony-decor aisle-flowers" viewBox="0 0 280 64" preserveAspectRatio="none" aria-hidden="true" focusable="false">' +
+    '<path class="botanical-stem" d="M4 14Q65 4 136 14T276 14M4 50Q65 60 136 50T276 50"/>' +
+    '<path class="botanical-leaf" d="M32 10q-10-13-17-6q2 11 17 6M100 11q-1-14-12-10q-2 10 12 10M176 15q9-14 18-9q-3 12-18 9M240 14q9-13 18-8q-3 12-18 8M35 54q-10 12-18 7q3-10 18-7M100 54q-1 12-12 9q-2-10 12-9M180 50q9 14 18 9q-3-12-18-9M245 50q9 13 18 8q-3-12-18-8"/>' +
+    ceremonyFlower(51,10,.4)+ceremonyFlower(142,14,.35)+ceremonyFlower(222,15,.4)+ceremonyFlower(51,54,.4)+ceremonyFlower(142,50,.35)+ceremonyFlower(222,49,.4)+'</svg>';
+}
 function renderHero(list){
   var el = document.getElementById('hero');
   var wd = parseYMD(state.weddingDate), t0 = today();
   if (!wd) {
-    el.innerHTML = namesHTML() +
+    el.innerHTML = '<div class="invitation">'+invitationDecorHTML()+namesHTML() +
       '<p class="setup-q">결혼식 날짜를 넣으면<br>할 일마다 날짜가 붙어요.</p>' +
       (Store.readOnly ? '<p class="tip">아직 결혼식 날짜가 정해지지 않았어요.</p>' :
       '<div class="setup-row" id="heroForm"><label class="field">신랑 이름(선택)<input type="text" id="heroGroom" data-fk="heroGroom" maxlength="12" value="'+esc(state.groom || '')+'"'+dis()+'></label>' +
@@ -912,7 +1000,7 @@ function renderHero(list){
       '<label class="field">결혼식 날짜<input type="date" id="heroDate" data-fk="heroDate"'+dis()+'></label>' +
       '<div class="field">예식 시간(선택)<div class="timepick">'+timePickHTML('hero', '', !Store.ready || Store.readOnly)+'</div></div>' +
       '<button class="btn primary" type="button" data-act="hero-save"'+dis()+'>저장</button></div>' +
-      '<p class="tip" id="heroMsg" aria-live="polite"></p>');
+      '<p class="tip" id="heroMsg" aria-live="polite"></p>') + '</div>';
     return;
   }
   var d = diffDays(wd, t0);
@@ -931,11 +1019,12 @@ function renderHero(list){
     notice = '<p class="notice">결혼세액공제(1인 50만원)는 현행법상 <b>2026년 12월 31일까지</b> 혼인신고한 경우에만 받아요. 2027년 이후 신고분은 연장 법안이 발의만 된 상태예요. ' +
       '<button class="link" type="button" data-act="goto-know" data-k="k1">혼인신고 시기 따져 보기</button></p>';
   }
-  el.innerHTML = namesHTML() +
+  el.innerHTML = '<div class="invitation">'+invitationDecorHTML()+namesHTML() +
     '<div class="dday" aria-label="결혼식까지 '+esc(big)+'">'+esc(big)+'</div>' +
-    '<p class="when">'+esc(fmtLong(wd))+(state.weddingTime ? ' '+esc(fmtTime(state.weddingTime)) : '')+'</p>' +
+    '<p class="when">'+esc(fmtLong(wd))+(state.weddingTime ? ' '+esc(fmtTime(state.weddingTime)) : '')+'</p></div>' +
     '<div class="tie" role="img" aria-label="할 일 '+c.total+'개 중 '+c.done+'개 완료">' +
-      '<div class="strands"><span class="strand c"><i style="width:'+pct+'%"></i></span><span class="strand h"><i style="width:'+pct+'%"></i></span></div>' +
+      '<div class="aisle ceremony-decor" aria-hidden="true"><span class="aisle-fill" style="width:'+pct+'%"></span>'+aisleDecorHTML()+'</div>' +
+      '<div class="strands ceremony-decor" aria-hidden="true"><span class="strand c"><i style="width:'+pct+'%"></i></span><span class="strand h"><i style="width:'+pct+'%"></i></span></div>' +
       '<svg class="bow" viewBox="0 0 58 36" aria-hidden="true">' +
         '<path d="M0 12 C12 12 16 26 27 18 C35 12 44 2 52 9 C58 15 44 22 30 18" stroke="var(--chung)"/>' +
         '<path d="M0 24 C12 24 16 10 27 18 C35 24 44 34 52 27 C58 21 44 14 30 18" stroke="var(--hong)"/>' +
