@@ -1170,7 +1170,7 @@ function regionTable(cap, key, unit, dec){
   });
   return h + '</tbody></table></div>';
 }
-function ptSec(id, title){ return '<details class="pt-accordion"><summary><h4 class="pt-sec" id="'+id+'" tabindex="-1">'+title+'</h4></summary><div class="pt-content">'; }
+function ptSec(id, title){ return '<details class="pt-accordion" data-k="'+id+'"'+(ui.openKnow[id]?' open':'')+'><summary><h4 class="pt-sec" id="'+id+'" tabindex="-1">'+title+'</h4></summary><div class="pt-content">'; }
 function ptEnd(){ return '</div></details>'; }
 function priceTable(cap, rows, head){
   head = head || ['항목', '중간값', '조사 시점'];
