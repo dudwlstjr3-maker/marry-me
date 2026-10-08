@@ -161,6 +161,8 @@ test('price comparison keeps regional prices with their item and supports per-it
  await app.locator('#tab-budget').click();
  await app.locator('#panel-budget select[data-bregion]').selectOption('서울 강남');
  await expect.poll(async()=> (await stored(app))?.budget.region).toBe('서울 강남');
+ await app.locator('#tab-price').click();
+ await expect(section('pt-dress')).toHaveJSProperty('open',true);
  await app.locator('#tab-budget').click();
  await expect(row('b02').locator('.refline')).toContainText('서울 강남 1인 식대 평균 8.7만원');
  await expect(app.locator('#panel-know details[data-k="k13"]')).toHaveCount(0);
