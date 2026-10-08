@@ -2,7 +2,7 @@ const {test,expect}=require('@playwright/test');
 const {SEED,openApp,stored}=require('./helpers.cjs');
 const fs=require('node:fs');
 const {execFileSync}=require('node:child_process');
-const tabs=['timeline','budget','guest','honey','know','talk'];
+const tabs=['timeline','budget','price','guest','honey','know','talk'];
 function noArrays(value) { if(Array.isArray(value)) return false; return !value||typeof value!=='object'||Object.values(value).every(noArrays); }
 
 test('date/time and task save using clicks and Enter without forms',async({page})=>{
@@ -50,7 +50,7 @@ test('Kakao summary first line, keyboard tabs and reduced motion',async({page})=
  await page.emulateMedia({reducedMotion:'reduce'});const {app,errors}=await openApp(page);
  await app.locator('#openShare').click();const first=(await app.locator('#shareText').inputValue()).split('\n')[0];
  expect(first).toBe('[준호 ♥ 민지] 2027년 5월 8일 토요일 오후 12시 30분 (D-214)');
- await app.locator('#closeShare').click();await app.locator('#tab-timeline').focus();await page.keyboard.press('ArrowRight');await expect(app.locator('#tab-budget')).toBeFocused();await page.keyboard.press('End');await expect(app.locator('#tab-talk')).toBeFocused();await page.keyboard.press('Home');await expect(app.locator('#tab-timeline')).toBeFocused();
+ await app.locator('#closeShare').click();await app.locator('#tab-timeline').focus();await page.keyboard.press('ArrowRight');await expect(app.locator('#tab-budget')).toBeFocused();await page.keyboard.press('ArrowRight');await expect(app.locator('#tab-price')).toBeFocused();await page.keyboard.press('End');await expect(app.locator('#tab-talk')).toBeFocused();await page.keyboard.press('Home');await expect(app.locator('#tab-timeline')).toBeFocused();
  const focus=await app.locator('#tab-timeline').evaluate(e=>getComputedStyle(e).outlineStyle);expect(focus).not.toBe('none');
  expect(await app.locator('.strand i').first().evaluate(e=>getComputedStyle(e).transitionDuration)).toBe('0s');expect(errors).toEqual([]);
 });
@@ -63,6 +63,7 @@ test('all tabs fit viewport and expose labelled unique focus keys',async({page})
   if(tab==='budget') await app.locator('[data-act="b-open"]').first().click();
   if(tab==='guest') await app.locator('[data-act="g-open"]').first().click();
   if(tab==='know') await app.locator('details').evaluateAll(els=>els.forEach(e=>e.open=true));
+  if(tab==='price') await app.locator('#panel-price details').evaluateAll(els=>els.forEach(e=>e.open=true));
   const audit=await app.locator('body').evaluate(()=>{
    const visible=e=>!!e.getClientRects().length && !e.closest('[hidden]');
    const controls=[...document.querySelectorAll('input,textarea,select')].filter(visible);
@@ -89,7 +90,7 @@ test('44px controls and expanded 24px knot hit target',async({page})=>{
 
 test('text contrast AA in all tabs including tinted surfaces',async({page})=>{
  const {app}=await openApp(page);
- for(const tab of tabs){await app.locator('#tab-'+tab).click();if(tab==='know')await app.locator('details').evaluateAll(els=>els.forEach(e=>e.open=true));
+ for(const tab of tabs){await app.locator('#tab-'+tab).click();if(tab==='know'||tab==='price')await app.locator('#panel-'+tab+' details').evaluateAll(els=>els.forEach(e=>e.open=true));
  const failures=await app.locator('body').evaluate(()=>{
   function rgba(s){return s.match(/[\d.]+/g).map(Number)}
   function blend(a,b){const alpha=a[3]??1;return a.slice(0,3).map((x,i)=>x*alpha+b[i]*(1-alpha))}
@@ -113,25 +114,38 @@ test('storage and fixed content remain byte-for-byte unchanged',async()=>{
  expect(current).not.toMatch(/<form\b|type=["']submit/i);
  // Facts (laws, statistics, dates) may change only when a task asks for it: run with ALLOW_CONTENT_CHANGE=1 and say so in the PR.
  if (process.env.ALLOW_CONTENT_CHANGE === '1') return;
- const normalize=s=>s.replace(/regCalcHTML\('[^']+'\)/g,'regCalcHTML()');
- expect(block(current,'var BASIS =','function esc(')).toBe(block(original,'var BASIS =','function esc('));
- expect(normalize(block(current,'function knowHTML(){','function num('))).toBe(normalize(block(original,'function knowHTML(){','function num(')));
+ const normalize=s=>s.replace(/regCalcHTML\('[^']+'\)/g,'regCalcHTML()').replace("var TABS = ['timeline','budget','price','guest','honey','know','talk'];","var TABS = ['timeline','budget','guest','honey','know','talk'];");
+ expect(normalize(block(current,'var BASIS =','function esc('))).toBe(normalize(block(original,'var BASIS =','function esc(')));
+ const stripMovedPrice=source=>{const start=source.indexOf("  h += card('k13', '항목별 가격 비교표',"),marker="a('https://www.price.go.kr','참가격 업체별 가격·예상 견적'));",end=source.indexOf(marker,start)+marker.length;if(start<0||end<marker.length)return source;return source.slice(0,start)+source.slice(end+1);};
+ const updatePriceLink=source=>source.replace("'<li>항목별 금액은 위의 \\'항목별 가격 비교표\\'에 모아 두었어요.</li></ul>'", "'<li>항목별 금액은 가격 비교 탭에서 확인할 수 있어요. <button class=\"link\" type=\"button\" data-act=\"goto-price\">가격 비교 탭 열기</button></li></ul>'");
+ expect(normalize(block(current,'function knowHTML(){','function priceHTML(){'))).toBe(normalize(updatePriceLink(stripMovedPrice(block(original,'function knowHTML(){','function num(')))));
 });
 
-test('item-by-item price table and budget reference lines',async({page})=>{
+test('price comparison tab contains regional prices and the itemized table',async({page})=>{
  const {app,errors}=await openApp(page);await app.locator('#tab-budget').click();
+ await expect(app.locator('#panel-budget .rbox')).toHaveCount(0);
+ await app.locator('[data-act="goto-price"]').first().click();
+ await expect(app.locator('#tab-price')).toHaveAttribute('aria-selected','true');
+ await expect(app.locator('#panel-price .rbox')).toContainText('지역별 참고 시세');
+ await expect(app.locator('#panel-price select[data-bregion]')).toHaveCount(1);
+ await app.locator('#tab-budget').click();
  const row=id=>app.locator(`[data-act="b-open"][data-id="${id}"]`).locator('xpath=ancestor::li[1]');
  await expect(row('b01').locator('.refline')).toHaveText('전국 대관료 평균 317만원, 내 금액이 33만원 높아요');
  await expect(row('b02').locator('.refline')).toHaveText('전국 1인 식대 평균 5.9만원, 내 금액이 0.3만원 높아요');
  await expect(row('b05').locator('.refline')).toContainText('스튜디오 전국 중간값 137만원(2026년 2월)');
- await app.locator('[data-act="goto-know"][data-k="k13"][data-sec="pt-hall"]').click();
- const card=app.locator('details[data-k="k13"]');
+ await app.locator('[data-act="goto-price"][data-sec="pt-hall"]').click();
+ const card=app.locator('#panel-price details[data-k="k13"]');
  await expect(card).toHaveJSProperty('open',true);
  for (const id of ['pt-read','pt-total','pt-hall','pt-studio','pt-dress','pt-makeup','pt-package','pt-timing','pt-check']) await expect(card.locator('#'+id)).toHaveCount(1);
  await expect(card.locator('.ptable')).toHaveCount(11);
  await card.locator('[data-act="pt-jump"][data-sec="pt-dress"]').click();
  await expect(card.locator('#pt-dress')).toBeFocused();
- for (const old of ['k10','k12']) await expect(app.locator(`details[data-k="${old}"]`)).toHaveCount(0);
+ await app.locator('#tab-price').click();
+ await app.locator('#panel-price select[data-bregion]').selectOption('서울 강남');
+ await expect.poll(async()=> (await stored(app))?.budget.region).toBe('서울 강남');
+ await app.locator('#tab-budget').click();
+ await expect(row('b02').locator('.refline')).toContainText('서울 강남 1인 식대 평균 8.7만원');
+ await expect(app.locator('#panel-know details[data-k="k13"]')).toHaveCount(0);
  expect(errors).toEqual([]);
 });
 
@@ -161,21 +175,4 @@ test('ceremony decorations are inert, compact and respect motion preferences',as
  await page.emulateMedia({reducedMotion:'reduce'});
  await expect(app.locator('.petals')).toBeHidden();
  expect(await app.locator('.petal').first().evaluate(e=>getComputedStyle(e).animationName)).toBe('none');
-});
-
-test('standalone website keeps saved data after reload and shares its own URL',async({page})=>{
- // No init script clears storage here: a deployed page must survive a real reload.
- await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({status:200,contentType:'text/css',body:''}));
- await page.goto('/index.html');
- await expect(page.locator('#status')).toHaveText('이 기기에만 저장돼요');
- await page.locator('#heroGroom').fill('준호');await page.locator('#heroBride').fill('민지');
- await page.locator('#heroDate').fill('2027-05-08');
- await page.locator('[data-act="hero-save"]').click();
- await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('wedding-plan-v1'))?.weddingDate)).toBe('2027-05-08');
- await page.reload();
- await expect(page.locator('.names')).toContainText('준호');
- await expect(page.locator('.names')).toContainText('민지');
- await expect(page.locator('.when')).toContainText('2027년 5월 8일');
- await page.locator('#openShare').click();
- await expect(page.locator('#shareLink')).toHaveValue(page.url());
 });

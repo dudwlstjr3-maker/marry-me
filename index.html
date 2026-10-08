@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --paper:#FAF7F0; --surface:#FFFDF9; --ink:#34312F; --muted:#6D625B; --line:#DED4C4; --focus:var(--chung); --on-knot:#FFFFFF; --backdrop:rgba(10,14,22,.45); --tabs-height:52px;
+  --paper:#FAF7F0; --surface:#FFFDF9; --ink:#34312F; --muted:#6D625B; --line:#DED4C4; --focus:var(--chung); --on-knot:#FFFFFF; --backdrop:rgba(10,14,22,.45); --tabs-height:64px;
   --chung:#365B74; --hong:#963F53; --chung-soft:rgba(54,91,116,.07); --hong-soft:rgba(150,63,83,.06);
   --blush:#F5E9E6; --gold:#80612E; --gold-line:#BEA578; --gold-soft:#F1E8D8; --leaf:#9CA78F; --flower:#FFFDF7; --petal-line:#D9CCB6; --shadow:rgba(91,66,33,.06);
   --serif:"Hahmlet","Noto Serif KR","Noto Serif CJK KR","AppleMyungjo",serif;
@@ -82,8 +82,8 @@ button,input,textarea,select{font:inherit;color:inherit}
 
 /* tabs */
 .tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);margin-top:22px;border-bottom:1px solid var(--line)}
-.tabs .wrap{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(44px,.7fr) minmax(44px,.7fr) minmax(0,1.05fr) minmax(0,1.1fr) minmax(0,1.45fr);gap:0;padding-inline:8px}
-.tab{appearance:none;border:0;background:none;min-width:0;min-height:var(--tabs-height);padding:10px 0 8px;font-size:14px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;white-space:nowrap}
+.tabs .wrap{display:grid;grid-template-columns:repeat(7,minmax(44px,1fr));gap:0;padding-inline:4px}
+.tab{appearance:none;border:0;background:none;min-width:0;min-height:var(--tabs-height);padding:10px 0 8px;font-size:14px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;white-space:normal;word-break:keep-all;line-height:1.35}
 .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
 .panel{padding-bottom:64px}
 
@@ -347,7 +347,8 @@ html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + var(--tabs-height) +
   .bamt small{margin-top:4px}
 }
 @media (max-width:380px){.tab{font-size:13px}.tabs .wrap{padding-inline:4px}}
-@media (max-width:359px){:root{--tabs-height:64px}.tab{white-space:normal;word-break:keep-all;line-height:1.4}.tabs .wrap{grid-template-columns:repeat(6,minmax(0,1fr))}.phase-head{padding-left:44px}.sum .v{font-size:22px}}
+@media (max-width:359px){.phase-head{padding-left:44px}.sum .v{font-size:22px}}
+@media (max-width:430px){.tabs .wrap{grid-template-columns:repeat(7,minmax(44px,1fr));padding-inline:4px}.tab{padding:6px 0 5px;font-size:clamp(10px,2.8vw,13px)}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.strand i{transition:none}}
 
 /* 좌우로 밀리지 않게: 화면 폭 밖으로 나가는 것은 잘라내고, 진행 순서는 세로로만 움직이게 */
@@ -443,6 +444,7 @@ input[type=date],input[type=text],textarea,select{border-radius:4px}
     <div class="wrap" role="tablist">
       <button class="tab" role="tab" id="tab-timeline" aria-controls="panel-timeline" data-tab="timeline" type="button">진행 순서</button>
       <button class="tab" role="tab" id="tab-budget" aria-controls="panel-budget" data-tab="budget" type="button">예산</button>
+      <button class="tab" role="tab" id="tab-price" aria-controls="panel-price" data-tab="price" type="button">가격 비교</button>
       <button class="tab" role="tab" id="tab-guest" aria-controls="panel-guest" data-tab="guest" type="button">하객</button>
       <button class="tab" role="tab" id="tab-honey" aria-controls="panel-honey" data-tab="honey" type="button">신혼여행</button>
       <button class="tab" role="tab" id="tab-know" aria-controls="panel-know" data-tab="know" type="button">알아둘 것</button>
@@ -452,6 +454,7 @@ input[type=date],input[type=text],textarea,select{border-radius:4px}
 
   <section class="wrap panel" id="panel-timeline" role="tabpanel" aria-labelledby="tab-timeline"></section>
   <section class="wrap panel" id="panel-budget" role="tabpanel" aria-labelledby="tab-budget" hidden></section>
+  <section class="wrap panel" id="panel-price" role="tabpanel" aria-labelledby="tab-price" hidden></section>
   <section class="wrap panel" id="panel-guest" role="tabpanel" aria-labelledby="tab-guest" hidden></section>
   <section class="wrap panel" id="panel-honey" role="tabpanel" aria-labelledby="tab-honey" hidden></section>
   <section class="wrap panel" id="panel-know" role="tabpanel" aria-labelledby="tab-know" hidden></section>
@@ -616,7 +619,7 @@ var TALKS = [
   ]}
 ];
 
-var TABS = ['timeline','budget','guest','honey','know','talk'];
+var TABS = ['timeline','budget','price','guest','honey','know','talk'];
 
 var BUDGET_CATS = [
   {id:'wed', name:'예식'}, {id:'sdm', name:'스드메'}, {id:'gift', name:'예물·예단'}, {id:'wear', name:'예복·한복'},
@@ -928,6 +931,7 @@ function render(){
   renderTabs();
   document.getElementById('panel-timeline').innerHTML = timelineHTML(list);
   document.getElementById('panel-budget').innerHTML = budgetHTML();
+  document.getElementById('panel-price').innerHTML = priceHTML();
   document.getElementById('panel-guest').innerHTML = guestHTML();
   document.getElementById('panel-honey').innerHTML = honeyHTML();
   document.getElementById('panel-know').innerHTML = knowHTML();
@@ -1230,6 +1234,42 @@ function knowHTML(){
     '<li>검사 전에 e보건소나 주소지 보건소에 먼저 신청해 검사의뢰서를 받아야 해요. 검사부터 받으면 지원되지 않아요.</li>' +
     '<li>참여 의료기관에서만 지원되고, 지역에 따라 예산이 떨어지면 일찍 마감되기도 해요.</li></ul>',
     a('https://www.e-health.go.kr','e보건소'));
+  h += card('k6', '웨딩 계약 전에 볼 것',
+    '결혼 서비스 분쟁의 80% 이상이 해지·위약금 문제예요. 사인하기 전에 위약금 조항부터 보세요.',
+    '<ul><li>피해구제 신청은 2024년 905건에서 2025년 1,076건으로 늘었고, 최근 2년 1,981건 중 82%가 계약해지·위약금 문제였어요.</li>' +
+    '<li>실제 사례: 예식 300일 전 취소인데 프로모션 계약이라며 환불 거부, 계약 당일 취소했는데 스튜디오 계약금 환불 거부, 예식 70일 전 해지에 총액의 40%(440만원) 요구.</li>' +
+    '<li>가격표시제(2025년 11월 12일 시행): 예식장과 스드메 업체는 기본·선택 품목 가격과 위약금·환급 기준을 홈페이지, 참가격, 계약서 표지 중 한 곳에 표시해야 해요. 스드메 업체는 제휴 업체 가격도 계약서에 적어야 하고, 어기면 과태료가 최대 1억원이에요. 표시가 없으면 요구하세요.</li>' +
+    '<li>스드메는 공정위 결혼준비대행업 표준계약서를 쓰는 업체인지 확인하세요.</li>' +
+    '<li>박람회처럼 업체 매장이 아닌 곳에서 한 계약은 14일 안에 청약철회가 될 수 있어요. 업체 상설 매장에서 한 계약은 해당하지 않을 수 있어요.</li>' +
+    '<li>말로 들은 조건은 계약서에 적어 달라고 하고, 현금보다 카드로 결제하세요.</li>' +
+    '<li>1년 안에 수도권에서 식을 올려야 하는데 식장을 못 구했다면, 한국예식업중앙회가 남은 예식홀 정보를 알려 주는 시범 서비스가 있어요(02-3443-3788).</li></ul>' +
+    '<div class="calc"><p><b>예식장 취소 위약금 기준(소비자분쟁해결기준)</b></p>' +
+    '<p>90일 전까지: 계약금 전액 환급</p><p>89~60일 전: 총비용의 10%</p><p>59~30일 전: 총비용의 20%</p><p>29~10일 전: 40%</p><p>9~1일 전: 50%</p><p>당일: 70%</p>' +
+    '<p>계약서에 따로 정한 조항이 없을 때 쓰는 권고 기준이에요. 계약서 조항이 이보다 불리하면 사인 전에 고쳐 달라고 하세요. 총비용은 대관료·식대·장식처럼 계약서에 적힌 예식 당일 비용 전체예요.</p></div>',
+    a('https://www.price.go.kr','참가격') + a('https://www.1372.go.kr','1372 소비자상담센터'));
+  h += card('k11', '견적서 밖에서 나오는 돈',
+    '기본 견적에 없다가 계약 뒤에 붙는 항목이 많아요. 아래 항목이 포함인지 별도인지 계약 전에 물어보세요.',
+    '<ul><li>식장: 생화 꽃장식, 본식 촬영, 본식 도우미, 폐백, 주류·음료, 부가세 포함 여부, 외부 촬영 업체를 쓸 때 반입료.</li>' +
+    '<li>스드메: 원본 사진 구매, 앨범 페이지 추가, 드레스 도우미, 드레스 투어·피팅비, 메이크업 이른 시간 추가금이나 담당자 지정비.</li>' +
+    '<li>앨범 페이지 추가, 드레스 도우미, 본식 촬영은 10명 중 6~7명이 쓰는 사실상 필수 항목이에요.</li>' +
+    '<li>식대가 오르면 차액을 내야 하는지, 보증인원을 줄일 수 있는 마감일이 언제인지도 계약서에서 확인하세요.</li>' +
+    '<li>항목별 금액은 가격 비교 탭에서 확인할 수 있어요. <button class="link" type="button" data-act="goto-price">가격 비교 탭 열기</button></li></ul>');
+  h += card('k7', '부부재산약정',
+    '결혼 전 재산을 어떻게 나눌지 미리 정하는 계약이에요. 혼인신고 전에만 할 수 있어요.',
+    '<ul><li>혼인신고 전에 약정해야 하고, 제3자에게도 주장하려면 혼인신고 전에 등기까지 해 둬야 해요.</li>' +
+    '<li>결혼한 뒤에는 정당한 이유로 법원 허가를 받아야 바꿀 수 있어요.</li>' +
+    '<li>필요하다면 법무사나 변호사와 상담해 문구를 정하세요.</li></ul>');
+  h += card('k8', '신혼집·대출·청약',
+    '혼인 여부와 혼인 기간이 자격·한도에 들어가는 상품이 많아요. 계약 전에 자격부터 확인하세요.',
+    '<ul><li>정책 대출은 부부 합산 소득·자산 기준이 붙는 경우가 많고 기준이 해마다 바뀌어요. 주택도시기금에서 최신 기준을 보세요.</li>' +
+    '<li>청약에는 신혼부부 특별공급처럼 혼인 기간이 조건인 유형이 있어요. 청약홈에서 공고별 자격을 확인하세요.</li>' +
+    '<li>집 명의(단독·공동)는 세금과 대출에 영향을 줘요. 계약 전에 둘이 정해 두세요.</li></ul>',
+    a('https://nhuf.molit.go.kr','주택도시기금') + a('https://www.applyhome.co.kr','청약홈'));
+  return h + '</div>';
+}
+
+function priceHTML(){
+  var h = '<p class="basis">참고(한국소비자원 중간값): 1인 식대 전국 약 6만원, 최소 보증인원 200명, 대관료 성수기 350만원·비수기 250만원, 스드메 패키지 292만원. 항목별 가격표와 지역별 참고 시세를 모았어요.</p>' + regionBoxHTML() + '<div class="know">';
   h += card('k13', '항목별 가격 비교표',
     '공개된 결혼 가격을 항목별로 모았어요. 받은 견적이 어디쯤인지 같은 항목끼리 비교하세요.',
     '<div class="pt-nav" role="group" aria-label="가격표 항목">' +
@@ -1339,37 +1379,6 @@ function knowHTML(){
     '<li>2025년 11월부터 업체는 기본·선택 품목 가격과 위약금·환급 기준을 홈페이지나 참가격 중 한 곳과 계약서 표지에 표시해야 해요. 공정위가 2026년 8월 1일부터 집중 점검 중이고, 어기면 과태료가 최대 1억원이에요. 표시가 없으면 요구하세요.</li>' +
     '<li>공정위는 2024년 11월 사진 파일 구입비·드레스 피팅비·얼리스타트비를 기본 서비스에 포함하라고 했지만, 2025년 9월 조사에서도 20곳 중 19곳이 따로 받았어요. 따로라면 금액을 계약서에 적게 하세요.</li></ul>',
     a('https://www.price.go.kr','참가격 업체별 가격·예상 견적'));
-  h += card('k6', '웨딩 계약 전에 볼 것',
-    '결혼 서비스 분쟁의 80% 이상이 해지·위약금 문제예요. 사인하기 전에 위약금 조항부터 보세요.',
-    '<ul><li>피해구제 신청은 2024년 905건에서 2025년 1,076건으로 늘었고, 최근 2년 1,981건 중 82%가 계약해지·위약금 문제였어요.</li>' +
-    '<li>실제 사례: 예식 300일 전 취소인데 프로모션 계약이라며 환불 거부, 계약 당일 취소했는데 스튜디오 계약금 환불 거부, 예식 70일 전 해지에 총액의 40%(440만원) 요구.</li>' +
-    '<li>가격표시제(2025년 11월 12일 시행): 예식장과 스드메 업체는 기본·선택 품목 가격과 위약금·환급 기준을 홈페이지, 참가격, 계약서 표지 중 한 곳에 표시해야 해요. 스드메 업체는 제휴 업체 가격도 계약서에 적어야 하고, 어기면 과태료가 최대 1억원이에요. 표시가 없으면 요구하세요.</li>' +
-    '<li>스드메는 공정위 결혼준비대행업 표준계약서를 쓰는 업체인지 확인하세요.</li>' +
-    '<li>박람회처럼 업체 매장이 아닌 곳에서 한 계약은 14일 안에 청약철회가 될 수 있어요. 업체 상설 매장에서 한 계약은 해당하지 않을 수 있어요.</li>' +
-    '<li>말로 들은 조건은 계약서에 적어 달라고 하고, 현금보다 카드로 결제하세요.</li>' +
-    '<li>1년 안에 수도권에서 식을 올려야 하는데 식장을 못 구했다면, 한국예식업중앙회가 남은 예식홀 정보를 알려 주는 시범 서비스가 있어요(02-3443-3788).</li></ul>' +
-    '<div class="calc"><p><b>예식장 취소 위약금 기준(소비자분쟁해결기준)</b></p>' +
-    '<p>90일 전까지: 계약금 전액 환급</p><p>89~60일 전: 총비용의 10%</p><p>59~30일 전: 총비용의 20%</p><p>29~10일 전: 40%</p><p>9~1일 전: 50%</p><p>당일: 70%</p>' +
-    '<p>계약서에 따로 정한 조항이 없을 때 쓰는 권고 기준이에요. 계약서 조항이 이보다 불리하면 사인 전에 고쳐 달라고 하세요. 총비용은 대관료·식대·장식처럼 계약서에 적힌 예식 당일 비용 전체예요.</p></div>',
-    a('https://www.price.go.kr','참가격') + a('https://www.1372.go.kr','1372 소비자상담센터'));
-  h += card('k11', '견적서 밖에서 나오는 돈',
-    '기본 견적에 없다가 계약 뒤에 붙는 항목이 많아요. 아래 항목이 포함인지 별도인지 계약 전에 물어보세요.',
-    '<ul><li>식장: 생화 꽃장식, 본식 촬영, 본식 도우미, 폐백, 주류·음료, 부가세 포함 여부, 외부 촬영 업체를 쓸 때 반입료.</li>' +
-    '<li>스드메: 원본 사진 구매, 앨범 페이지 추가, 드레스 도우미, 드레스 투어·피팅비, 메이크업 이른 시간 추가금이나 담당자 지정비.</li>' +
-    '<li>앨범 페이지 추가, 드레스 도우미, 본식 촬영은 10명 중 6~7명이 쓰는 사실상 필수 항목이에요.</li>' +
-    '<li>식대가 오르면 차액을 내야 하는지, 보증인원을 줄일 수 있는 마감일이 언제인지도 계약서에서 확인하세요.</li>' +
-    '<li>항목별 금액은 위의 \'항목별 가격 비교표\'에 모아 두었어요.</li></ul>');
-  h += card('k7', '부부재산약정',
-    '결혼 전 재산을 어떻게 나눌지 미리 정하는 계약이에요. 혼인신고 전에만 할 수 있어요.',
-    '<ul><li>혼인신고 전에 약정해야 하고, 제3자에게도 주장하려면 혼인신고 전에 등기까지 해 둬야 해요.</li>' +
-    '<li>결혼한 뒤에는 정당한 이유로 법원 허가를 받아야 바꿀 수 있어요.</li>' +
-    '<li>필요하다면 법무사나 변호사와 상담해 문구를 정하세요.</li></ul>');
-  h += card('k8', '신혼집·대출·청약',
-    '혼인 여부와 혼인 기간이 자격·한도에 들어가는 상품이 많아요. 계약 전에 자격부터 확인하세요.',
-    '<ul><li>정책 대출은 부부 합산 소득·자산 기준이 붙는 경우가 많고 기준이 해마다 바뀌어요. 주택도시기금에서 최신 기준을 보세요.</li>' +
-    '<li>청약에는 신혼부부 특별공급처럼 혼인 기간이 조건인 유형이 있어요. 청약홈에서 공고별 자격을 확인하세요.</li>' +
-    '<li>집 명의(단독·공동)는 세금과 대출에 영향을 줘요. 계약 전에 둘이 정해 두세요.</li></ul>',
-    a('https://nhuf.molit.go.kr','주택도시기금') + a('https://www.applyhome.co.kr','청약홈'));
   return h + '</div>';
 }
 
@@ -1418,7 +1427,7 @@ function budgetHTML(){
   var left = total != null ? total - planSum : null;
   var h = '<div class="totalrow"><label for="bTotal">총예산</label>' +
     '<input type="text" inputmode="numeric" id="bTotal" value="'+(total != null ? total : '')+'" placeholder="예: 5000" data-btotal="1" data-fk="btotal"'+dis()+'><span class="unit">만원</span></div>';
-  h += '<p class="basis">참고(한국소비자원 중간값): 1인 식대 전국 약 6만원, 최소 보증인원 200명, 대관료 성수기 350만원·비수기 250만원, 스드메 패키지 292만원. 자세한 건 알아둘 것 탭에 있어요.</p>';
+  h += '<p class="basis">지역별 참고 시세와 항목별 가격은 가격 비교 탭에서 확인할 수 있어요. <button class="link" type="button" data-act="goto-price">가격 비교 탭 열기</button></p>';
   h += '<div class="sumgrid">' +
     '<div class="sum"><span class="k">항목별 예산 합계</span><span class="v">'+(anyPlan ? fmtMan(planSum) : '-')+'</span></div>' +
     '<div class="sum"><span class="k">총예산에서 남은 돈</span>'+(left == null ? '<span class="v dim">총예산을 넣으면 계산돼요</span>' : '<span class="v'+(left < 0 ? ' neg' : '')+'">'+fmtMan(left)+'</span>')+'</div>' +
@@ -1426,7 +1435,6 @@ function budgetHTML(){
     '<div class="sum"><span class="k">앞으로 낼 돈</span><span class="v">'+fmtMan(dueSum)+'</span></div>' +
   '</div>';
   h += '<p class="who"><span>공동 <b>'+fmtMan(who.both)+'</b></span><span>신랑 쪽 <b>'+fmtMan(who.groom)+'</b></span><span>신부 쪽 <b>'+fmtMan(who.bride)+'</b></span><span>미정 <b>'+fmtMan(who[''])+'</b></span><span>낸 돈 <b>'+fmtMan(paidSum)+'</b></span></p>';
-  h += regionBoxHTML();
   h += quoteHTML();
   var hiddenN = rows.length - vis.length;
   if (hiddenN) h += '<div class="tools"><button class="toggle" type="button" aria-pressed="'+(ui.showHiddenBudget?'true':'false')+'" data-act="b-show-hidden">숨긴 항목 보기 ('+hiddenN+')</button></div>';
@@ -1436,8 +1444,8 @@ function budgetHTML(){
     list.sort(function(x, y){ return x.order - y.order; });
     var sub = list.filter(function(r){ return !r.hidden; }).reduce(function(acc, r){ return acc + (r.expect || 0); }, 0);
     h += '<section class="bcat"><div class="bcat-head"><h3>'+esc(c.name)+'</h3><span class="meta">'+fmtMan(sub)+'</span></div>' +
-      (c.id === 'sdm' ? '<p class="refline"><button class="link" type="button" data-act="goto-know" data-k="k13" data-sec="pt-studio">스드메 항목별 가격 보기</button></p>' :
-       c.id === 'wed' ? '<p class="refline"><button class="link" type="button" data-act="goto-know" data-k="k13" data-sec="pt-hall">예식장 항목별 가격 보기</button></p>' : '') + '<ul class="blist">';
+      (c.id === 'sdm' ? '<p class="refline"><button class="link" type="button" data-act="goto-price" data-sec="pt-studio">스드메 항목별 가격 보기</button></p>' :
+       c.id === 'wed' ? '<p class="refline"><button class="link" type="button" data-act="goto-price" data-sec="pt-hall">예식장 항목별 가격 보기</button></p>' : '') + '<ul class="blist">';
     list.forEach(function(r){ h += budgetItemHTML(r); });
     h += '</ul></section>';
   });
@@ -1464,7 +1472,7 @@ function regionBoxHTML(){
     tr('총비용(식장+스드메)', row.t, false) + tr('1인당 식대', row.m, true) + tr('대관료', row.h, false) +
     '</tbody></table></div>' +
     '<p class="tip">한국소비자원 2025년 4월~2026년 2월 발표값 기준이에요. 저·고는 발표 시점별 최저·최고이고, 선택 품목은 빠진 금액이에요. ' +
-    '<button class="link" type="button" data-act="goto-know" data-k="k12">전체 지역 표 보기</button></p></div>';
+    '<button class="link" type="button" data-act="goto-price" data-sec="pt-total">전체 지역 표 보기</button></p></div>';
 }
 function quoteRows(){
   var q = (state.budget && state.budget.quotes) || {}, list = [];
@@ -1951,6 +1959,11 @@ document.addEventListener('click', function(e){
     ui.tab = 'know'; lsSet('wd-tab', 'know'); ui.openKnow[k] = true; render();
     var el = (sec && document.getElementById(sec)) || document.querySelector('details[data-k="'+k+'"]');
     if (el) { el.scrollIntoView({block:'start'}); if (sec) try { el.focus({preventScroll:true}); } catch(e5){} }
+  } else if (act === 'goto-price') {
+    var sec = b.getAttribute('data-sec');
+    ui.tab = 'price'; lsSet('wd-tab', 'price'); ui.openKnow.k13 = true; render();
+    var el = (sec && document.getElementById(sec)) || document.querySelector('#panel-price details[data-k="k13"]');
+    if (el) { el.scrollIntoView({block:'start'}); if (sec) try { el.focus({preventScroll:true}); } catch(e7){} }
   } else if (act === 'pt-jump') {
     var tgt = document.getElementById(b.getAttribute('data-sec'));
     if (tgt) { tgt.scrollIntoView({block:'start'}); try { tgt.focus({preventScroll:true}); } catch(e6){} }
