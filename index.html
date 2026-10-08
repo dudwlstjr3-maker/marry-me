@@ -230,8 +230,13 @@ select{width:auto;min-width:140px}
 /* region table */
 .rcap{margin:16px 0 4px;font-weight:600;font-size:15px}
 .rwrap{overflow-x:auto}
-.pt-nav{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
-.pt-sec{font-family:var(--serif);font-size:18px;font-weight:700;margin:26px 0 4px;padding-top:12px;border-top:2px solid var(--ink);scroll-margin-top:calc(env(safe-area-inset-top,0px) + 64px)}
+.know .pt-accordion{border:1px solid var(--line);border-radius:10px;margin:10px 0;padding:0 12px;background:var(--surface)}
+.pt-accordion summary{list-style:none;cursor:pointer;min-height:44px;display:flex;align-items:center}
+.pt-accordion summary::-webkit-details-marker{display:none}
+.pt-accordion summary h4{font-family:var(--serif);font-size:17px;font-weight:700;margin:0;display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;letter-spacing:-.01em;scroll-margin-top:calc(env(safe-area-inset-top,0px) + 64px)}
+.pt-accordion summary h4::after{content:"+";font-family:var(--sans);font-weight:400;color:var(--muted);flex:none}
+.pt-accordion[open] summary h4::after{content:"−"}
+.pt-content{padding:0 0 12px}
 .pt-sec:focus{outline:none}
 .refline{margin:4px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
 .rtable.ptable thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
@@ -248,10 +253,9 @@ select{width:auto;min-width:140px}
 .rtable td.avg{font-weight:700}
 .rtable tr.nat{background:var(--chung-soft)}
 
-.rbox{margin-top:16px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
-.rbox-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
-.rbox-head label{font-weight:600;font-size:15px}
-.rbox .tip{margin-top:8px}
+.region-select{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
+.region-select label{font-size:14px;font-weight:600}
+.region-select select{width:auto;min-width:160px;min-height:44px}
 
 .qsec{margin-top:24px;padding-top:4px}
 .qtitle{font-family:var(--serif);font-size:19px;margin:0 0 4px}
@@ -1166,7 +1170,8 @@ function regionTable(cap, key, unit, dec){
   });
   return h + '</tbody></table></div>';
 }
-function ptSec(id, title){ return '<h4 class="pt-sec" id="'+id+'" tabindex="-1">'+title+'</h4>'; }
+function ptSec(id, title){ return '<details class="pt-accordion" data-k="'+id+'"'+(ui.openKnow[id]?' open':'')+'><summary><h4 class="pt-sec" id="'+id+'" tabindex="-1">'+title+'</h4></summary><div class="pt-content">'; }
+function ptEnd(){ return '</div></details>'; }
 function priceTable(cap, rows, head){
   head = head || ['항목', '중간값', '조사 시점'];
   var h = '<p class="rcap">'+cap+'</p><div class="rwrap"><table class="rtable ptable"><thead><tr>' +
@@ -1247,13 +1252,6 @@ function knowHTML(){
     '<p>90일 전까지: 계약금 전액 환급</p><p>89~60일 전: 총비용의 10%</p><p>59~30일 전: 총비용의 20%</p><p>29~10일 전: 40%</p><p>9~1일 전: 50%</p><p>당일: 70%</p>' +
     '<p>계약서에 따로 정한 조항이 없을 때 쓰는 권고 기준이에요. 계약서 조항이 이보다 불리하면 사인 전에 고쳐 달라고 하세요. 총비용은 대관료·식대·장식처럼 계약서에 적힌 예식 당일 비용 전체예요.</p></div>',
     a('https://www.price.go.kr','참가격') + a('https://www.1372.go.kr','1372 소비자상담센터'));
-  h += card('k11', '견적서 밖에서 나오는 돈',
-    '기본 견적에 없다가 계약 뒤에 붙는 항목이 많아요. 아래 항목이 포함인지 별도인지 계약 전에 물어보세요.',
-    '<ul><li>식장: 생화 꽃장식, 본식 촬영, 본식 도우미, 폐백, 주류·음료, 부가세 포함 여부, 외부 촬영 업체를 쓸 때 반입료.</li>' +
-    '<li>스드메: 원본 사진 구매, 앨범 페이지 추가, 드레스 도우미, 드레스 투어·피팅비, 메이크업 이른 시간 추가금이나 담당자 지정비.</li>' +
-    '<li>앨범 페이지 추가, 드레스 도우미, 본식 촬영은 10명 중 6~7명이 쓰는 사실상 필수 항목이에요.</li>' +
-    '<li>식대가 오르면 차액을 내야 하는지, 보증인원을 줄일 수 있는 마감일이 언제인지도 계약서에서 확인하세요.</li>' +
-    '<li>항목별 금액은 가격 비교 탭에서 확인할 수 있어요. <button class="link" type="button" data-act="goto-price">가격 비교 탭 열기</button></li></ul>');
   h += card('k7', '부부재산약정',
     '결혼 전 재산을 어떻게 나눌지 미리 정하는 계약이에요. 혼인신고 전에만 할 수 있어요.',
     '<ul><li>혼인신고 전에 약정해야 하고, 제3자에게도 주장하려면 혼인신고 전에 등기까지 해 둬야 해요.</li>' +
@@ -1269,19 +1267,15 @@ function knowHTML(){
 }
 
 function priceHTML(){
-  var h = '<p class="basis">참고(한국소비자원 중간값): 1인 식대 전국 약 6만원, 최소 보증인원 200명, 대관료 성수기 350만원·비수기 250만원, 스드메 패키지 292만원. 항목별 가격표와 지역별 참고 시세를 모았어요.</p>' + regionBoxHTML() + '<div class="know">';
+  var h = '<p class="basis">필요한 항목을 눌러 가격과 해당 지역 시세를 확인하세요.</p><div class="know">';
+  if (ui.openKnow.k13 == null) ui.openKnow.k13 = true;
   h += card('k13', '항목별 가격 비교표',
     '공개된 결혼 가격을 항목별로 모았어요. 받은 견적이 어디쯤인지 같은 항목끼리 비교하세요.',
-    '<div class="pt-nav" role="group" aria-label="가격표 항목">' +
-      [['pt-read','읽는 법'],['pt-total','전체 비용'],['pt-hall','예식장'],['pt-studio','스튜디오'],['pt-dress','드레스'],['pt-makeup','메이크업'],['pt-package','스드메 묶음'],['pt-timing','시기·계약 시점'],['pt-check','업체별 가격 확인']]
-        .map(function(x){ return '<button class="mchip" type="button" data-act="pt-jump" data-sec="'+x[0]+'">'+x[1]+'</button>'; }).join('') +
-    '</div>' +
-
     ptSec('pt-read', '읽는 법') +
     '<ul><li><b>중간값</b>: 가격을 줄 세웠을 때 가운데 값이에요. 비싼 업체 몇 곳에 덜 흔들려서 이 표는 대부분 중간값이에요.</li>' +
     '<li><b>평균</b>: 비싼 업체가 섞이면 중간값보다 높게 나와요. 평균인 줄은 \'평균\'이라고 따로 적었어요.</li>' +
     '<li>모두 한국소비자원 조사값이고, 조사 시점이 항목마다 달라요. 같은 항목에 시점이 다른 값이 있으면 최신 값을 위에 두었어요.</li>' +
-    '<li>기본 가격에는 선택 품목(추가금)이 빠져 있어요. 추가금은 항목마다 따로 정리했어요.</li></ul>' +
+    '<li>기본 가격에는 선택 품목(추가금)이 빠져 있어요. 추가금은 항목마다 따로 정리했어요.</li></ul>' + ptEnd() +
 
     ptSec('pt-total', '전체 비용 (예식장+스드메)') +
     priceTable('전국', [
@@ -1290,19 +1284,23 @@ function priceHTML(){
       ['  그중 대관료 비중', '20.9%', '참가격 통계'],
       ['  그중 기본 장식비 비중', '3.5%', '참가격 통계']
     ], ['항목', '금액', '기준·시점']) +
-    regionTable('지역별 전체 비용', 't', '만원', false) +
+    regionTable('지역별 전체 비용', 't', '만원', false) + ptEnd() +
 
     ptSec('pt-hall', '예식장') +
     priceTable('기본(필수) 항목', [
       ['결혼식장 계약금(대관료+식대+기본 장식)', '1,550만원', '중간값, 2026년 2월'],
       ['  성수기 / 비수기', '1,610만원 / 1,250만원', '중간값, 2025년 4월~2026년 6월'],
-      ['최소 보증인원', '200명', '중간값, 성수기·비수기 같음'],
-      ['대관료 성수기 / 비수기', '350만원 / 250만원', '중간값, 2025년 4월~2026년 6월'],
+      ['최소 보증인원', '200명', '중간값, 성수기·비수기 같음']
+    ], ['항목', '금액', '기준·시점']) +
+    priceTable('대관료', [
+      ['성수기 / 비수기', '350만원 / 250만원', '중간값, 2025년 4월~2026년 6월']
+    ], ['항목', '금액', '기준·시점']) +
+    regionTable('지역별 대관료', 'h', '만원', false) +
+    priceTable('1인 식대', [
       ['1인 식대(전국)', '6만원', '중간값, 2025년 8월'],
       ['  서울 강남 1인 식대', '9만원', '중간값, 2025년 12월']
     ], ['항목', '금액', '기준·시점']) +
     regionTable('지역별 1인 식대', 'm', '만원', true) +
-    regionTable('지역별 대관료', 'h', '만원', false) +
     priceTable('추가금(선택 항목)', [
       ['생화 꽃장식', '280만원', '중간값, 2026년 2월'],
       ['  (이전 조사)', '262만원', '중간값, 2025년 12월'],
@@ -1315,7 +1313,7 @@ function priceHTML(){
       ['혼주 헤어·메이크업 여성 / 남성', '23만원 / 10만원', '중간값, 2025년 4월'],
       ['  (다른 구성 조사)', '15만원', '중간값, 2025년 12월']
     ], ['항목', '금액', '기준·시점']) +
-    '<p class="tip">식장이 많이 취급하는 추가 항목은 본식 촬영(67.8%), 혼주 헤어·메이크업(62.4%), 본식 사회자(46.7%) 순이에요. 성수기 주말엔 생화 장식이나 본식 도우미를 필수로 붙이는 식장이 32.8%였어요.</p>' +
+    '<p class="tip">식장이 많이 취급하는 추가 항목은 본식 촬영(67.8%), 혼주 헤어·메이크업(62.4%), 본식 사회자(46.7%) 순이에요. 성수기 주말엔 생화 장식이나 본식 도우미를 필수로 붙이는 식장이 32.8%였어요.</p>' + ptEnd() +
 
     ptSec('pt-studio', '스튜디오') +
     priceTable('기본(20P 앨범·20R 액자)', [
@@ -1331,7 +1329,7 @@ function priceHTML(){
       ['촬영 출장비', '20만원', '참가격 통계(전국)'],
       ['들러리 촬영', '8만원', '참가격 통계(전국)'],
       ['반려동물 촬영', '8만원', '참가격 통계(전국)']
-    ], ['항목', '금액', '기준·시점']) +
+    ], ['항목', '금액', '기준·시점']) + ptEnd() +
 
     ptSec('pt-dress', '드레스') +
     priceTable('기본(본식 1벌+촬영 3벌)', [
@@ -1343,7 +1341,7 @@ function priceHTML(){
       ['피팅(시착)', '6만원', '중간값, 2025년 4월'],
       ['기본 개수 넘는 추가 시착', '5만원', '중간값, 2025년 4월'],
       ['헬퍼(도우미) 촬영 / 본식', '각 25만원', '참가격 통계(전국)']
-    ], ['항목', '금액', '기준·시점']) +
+    ], ['항목', '금액', '기준·시점']) + ptEnd() +
 
     ptSec('pt-makeup', '메이크업') +
     priceTable('기본(본식+촬영, 원장급)', [
@@ -1355,7 +1353,7 @@ function priceHTML(){
       ['얼리스타트 오전 5시대 / 6시대', '11만원 / 5만원', '중간값, 2025년 4월'],
       ['촬영 출장비', '20만원', '참가격 통계(전국)']
     ], ['항목', '금액', '기준·시점']) +
-    '<p class="tip">얼리스타트는 조사 업체의 27%만 운영하고, 시간이 이를수록 비싸요.</p>' +
+    '<p class="tip">얼리스타트는 조사 업체의 27%만 운영하고, 시간이 이를수록 비싸요.</p>' + ptEnd() +
 
     ptSec('pt-package', '스드메 묶음(패키지)') +
     priceTable('스튜디오+드레스+메이크업', [
@@ -1363,7 +1361,7 @@ function priceHTML(){
       ['스드메 전국 / 서울', '약 319만원 / 399만원', '평균, 2026년 4월'],
       ['드메(스튜디오 제외)', '160만원', '중간값, 2025년 4월~2026년 6월']
     ], ['항목', '금액', '기준·시점']) +
-    '<p class="tip">드메는 같은 기간 140만원에서 180만원으로 올랐어요.</p>' +
+    '<p class="tip">드메는 같은 기간 140만원에서 180만원으로 올랐어요.</p>' + ptEnd() +
 
     ptSec('pt-timing', '시기·계약 시점') +
     priceTable('언제 하고 언제 계약하나', [
@@ -1371,14 +1369,20 @@ function priceHTML(){
       ['성수기(3~6월, 9~12월) 추가 비용', '평균 202만원 더', '2025년 4월~2026년 6월'],
       ['비수기 평일 대관료', '성수기 주말 점심의 69.1%', '2025년 4월~2026년 6월'],
       ['예식 10개월 전 계약 / 2개월 전 계약', '2,231만원 / 1,626만원', '평균, 2025년 10월 발표']
-    ], ['항목', '금액', '기준·시점']) +
+    ], ['항목', '금액', '기준·시점']) + ptEnd() +
 
     ptSec('pt-check', '업체별 가격 확인') +
     '<ul><li>참가격에서는 가격을 스스로 공개한 예식장의 홀별 대관료·장식비·식대·보증인원과, 결혼준비대행 업체의 제휴 스드메 기본·선택 가격을 검색할 수 있어요. 공개한 업체만 나와요.</li>' +
     '<li>참가격이 공개하는 선택 품목은 예식장 17개, 스튜디오 20개, 드레스 14개, 메이크업 16개예요.</li>' +
     '<li>2025년 11월부터 업체는 기본·선택 품목 가격과 위약금·환급 기준을 홈페이지나 참가격 중 한 곳과 계약서 표지에 표시해야 해요. 공정위가 2026년 8월 1일부터 집중 점검 중이고, 어기면 과태료가 최대 1억원이에요. 표시가 없으면 요구하세요.</li>' +
-    '<li>공정위는 2024년 11월 사진 파일 구입비·드레스 피팅비·얼리스타트비를 기본 서비스에 포함하라고 했지만, 2025년 9월 조사에서도 20곳 중 19곳이 따로 받았어요. 따로라면 금액을 계약서에 적게 하세요.</li></ul>',
+    '<li>공정위는 2024년 11월 사진 파일 구입비·드레스 피팅비·얼리스타트비를 기본 서비스에 포함하라고 했지만, 2025년 9월 조사에서도 20곳 중 19곳이 따로 받았어요. 따로라면 금액을 계약서에 적게 하세요.</li></ul>' + ptEnd(),
     a('https://www.price.go.kr','참가격 업체별 가격·예상 견적'));
+  h += card('k11', '견적서 밖에서 나오는 돈',
+    '기본 견적에 없다가 계약 뒤에 붙는 항목이 많아요. 아래 항목이 포함인지 별도인지 계약 전에 물어보세요.',
+    '<ul><li>식장: 생화 꽃장식, 본식 촬영, 본식 도우미, 폐백, 주류·음료, 부가세 포함 여부, 외부 촬영 업체를 쓸 때 반입료.</li>' +
+    '<li>스드메: 원본 사진 구매, 앨범 페이지 추가, 드레스 도우미, 드레스 투어·피팅비, 메이크업 이른 시간 추가금이나 담당자 지정비.</li>' +
+    '<li>앨범 페이지 추가, 드레스 도우미, 본식 촬영은 10명 중 6~7명이 쓰는 사실상 필수 항목이에요.</li>' +
+    '<li>식대가 오르면 차액을 내야 하는지, 보증인원을 줄일 수 있는 마감일이 언제인지도 계약서에서 확인하세요.</li></ul>');
   return h + '</div>';
 }
 
@@ -1427,6 +1431,7 @@ function budgetHTML(){
   var left = total != null ? total - planSum : null;
   var h = '<div class="totalrow"><label for="bTotal">총예산</label>' +
     '<input type="text" inputmode="numeric" id="bTotal" value="'+(total != null ? total : '')+'" placeholder="예: 5000" data-btotal="1" data-fk="btotal"'+dis()+'><span class="unit">만원</span></div>';
+  h += regionSelectHTML();
   h += '<p class="basis">지역별 참고 시세와 항목별 가격은 가격 비교 탭에서 확인할 수 있어요. <button class="link" type="button" data-act="goto-price">가격 비교 탭 열기</button></p>';
   h += '<div class="sumgrid">' +
     '<div class="sum"><span class="k">항목별 예산 합계</span><span class="v">'+(anyPlan ? fmtMan(planSum) : '-')+'</span></div>' +
@@ -1458,21 +1463,11 @@ function budgetHTML(){
   }
   return h;
 }
-function regionBoxHTML(){
+function regionSelectHTML(){
   var reg = (state.budget && state.budget.region) || '전국';
-  var row = REGION_COST.filter(function(r){ return r.n === reg; })[0] || REGION_COST[0];
-  function f(v, dec){ return v == null ? '–' : (dec ? v.toFixed(1) : v.toLocaleString('ko-KR')); }
-  function tr(label, v, dec){
-    return '<tr><th scope="row">'+label+'<small>자료 '+v[3]+'건</small></th><td>'+f(v[0],dec)+'</td><td class="avg">'+f(v[1],dec)+'</td><td>'+f(v[2],dec)+'</td></tr>';
-  }
-  var opts = REGION_COST.map(function(r){ return '<option value="'+esc(r.n)+'"'+(r.n === row.n ? ' selected' : '')+'>'+esc(r.n)+'</option>'; }).join('');
-  return '<div class="rbox"><div class="rbox-head"><label for="bRegion">지역별 참고 시세</label>' +
-    '<select id="bRegion" data-fk="bRegion" data-bregion="1"'+dis()+'>'+opts+'</select></div>' +
-    '<div class="rwrap"><table class="rtable"><thead><tr><th scope="col">항목(만원)</th><th scope="col">저</th><th scope="col">평균</th><th scope="col">고</th></tr></thead><tbody>' +
-    tr('총비용(식장+스드메)', row.t, false) + tr('1인당 식대', row.m, true) + tr('대관료', row.h, false) +
-    '</tbody></table></div>' +
-    '<p class="tip">한국소비자원 2025년 4월~2026년 2월 발표값 기준이에요. 저·고는 발표 시점별 최저·최고이고, 선택 품목은 빠진 금액이에요. ' +
-    '<button class="link" type="button" data-act="goto-price" data-sec="pt-total">전체 지역 표 보기</button></p></div>';
+  var opts = REGION_COST.map(function(r){ return '<option value="'+esc(r.n)+'"'+(r.n === reg ? ' selected' : '')+'>'+esc(r.n)+'</option>'; }).join('');
+  return '<div class="region-select"><label for="bRegion">예산 참고 지역</label>' +
+    '<select id="bRegion" data-fk="bRegion" data-bregion="1"'+dis()+'>'+opts+'</select></div>';
 }
 function quoteRows(){
   var q = (state.budget && state.budget.quotes) || {}, list = [];
@@ -1963,7 +1958,11 @@ document.addEventListener('click', function(e){
     var sec = b.getAttribute('data-sec');
     ui.tab = 'price'; lsSet('wd-tab', 'price'); ui.openKnow.k13 = true; render();
     var el = (sec && document.getElementById(sec)) || document.querySelector('#panel-price details[data-k="k13"]');
-    if (el) { el.scrollIntoView({block:'start'}); if (sec) try { el.focus({preventScroll:true}); } catch(e7){} }
+    if (el) {
+      var section = el.closest && el.closest('#panel-price details.pt-accordion');
+      if (section) section.open = true;
+      el.scrollIntoView({block:'start'}); if (sec) try { el.focus({preventScroll:true}); } catch(e7){}
+    }
   } else if (act === 'pt-jump') {
     var tgt = document.getElementById(b.getAttribute('data-sec'));
     if (tgt) { tgt.scrollIntoView({block:'start'}); try { tgt.focus({preventScroll:true}); } catch(e6){} }
