@@ -116,9 +116,8 @@ test('storage and fixed content remain byte-for-byte unchanged',async()=>{
  if (process.env.ALLOW_CONTENT_CHANGE === '1') return;
  const normalize=s=>s.replace(/regCalcHTML\('[^']+'\)/g,'regCalcHTML()').replace("var TABS = ['timeline','budget','price','guest','honey','know','talk'];","var TABS = ['timeline','budget','guest','honey','know','talk'];");
  expect(normalize(block(current,'var BASIS =','function esc('))).toBe(normalize(block(original,'var BASIS =','function esc(')));
- const stripMovedPrice=source=>{const start=source.indexOf("  h += card('k13', '항목별 가격 비교표',"),marker="a('https://www.price.go.kr','참가격 업체별 가격·예상 견적'));",end=source.indexOf(marker,start)+marker.length;if(start<0||end<marker.length)return source;return source.slice(0,start)+source.slice(end+1);};
  const updatePriceLink=source=>source.replace("'<li>항목별 금액은 위의 \\'항목별 가격 비교표\\'에 모아 두었어요.</li></ul>'", "'<li>항목별 금액은 가격 비교 탭에서 확인할 수 있어요. <button class=\"link\" type=\"button\" data-act=\"goto-price\">가격 비교 탭 열기</button></li></ul>'");
- expect(normalize(block(current,'function knowHTML(){','function priceHTML(){'))).toBe(normalize(updatePriceLink(stripMovedPrice(block(original,'function knowHTML(){','function num(')))));
+ expect(normalize(block(current,'function knowHTML(){','function priceHTML(){'))).toBe(normalize(updatePriceLink(block(original,'function knowHTML(){','function priceHTML(){'))));
 });
 
 test('price comparison tab contains regional prices and the itemized table',async({page})=>{
