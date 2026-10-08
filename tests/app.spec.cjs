@@ -151,7 +151,7 @@ test('price comparison keeps regional prices with their item and supports per-it
  const hallCaptions=await section('pt-hall').locator('.rcap').allTextContents();
  expect(hallCaptions).toEqual(['기본(필수) 항목','대관료','지역별 대관료 (만원)','1인 식대','지역별 1인 식대 (만원)','추가금(선택 항목)']);
  await expect(card.locator('details.pt-accordion[open]')).toHaveCount(1);
- await expect(card.locator('.ptable')).toHaveCount(11);
+ await expect(card.locator('.ptable')).toHaveCount(13);
  await section('pt-dress').locator('summary').click();
  await expect(section('pt-dress')).toHaveJSProperty('open',true);
  await expect(card.locator('details.pt-accordion[open]')).toHaveCount(2);
