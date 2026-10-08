@@ -121,7 +121,7 @@ test('storage and fixed content remain byte-for-byte unchanged',async()=>{
  expect(normalize(block(current,'function knowHTML(){','function priceHTML(){'))).toBe(normalize(updatePriceLink(stripMovedExtraCost(block(original,'function knowHTML(){','function priceHTML(){')))));
 });
 
-test('price comparison tab contains regional prices and the itemized table',async({page})=>{
+test('price comparison keeps regional prices with their item and supports per-item accordions',async({page})=>{
  const {app,errors}=await openApp(page);await app.locator('#tab-budget').click();
  await app.locator('#tab-know').click();
  await expect(app.locator('#panel-know details[data-k="k11"]')).toHaveCount(0);
@@ -129,24 +129,37 @@ test('price comparison tab contains regional prices and the itemized table',asyn
  await expect(app.locator('#panel-price details[data-k="k11"]')).toContainText('견적서 밖에서 나오는 돈');
  await app.locator('#tab-budget').click();
  await expect(app.locator('#panel-budget .rbox')).toHaveCount(0);
+ await expect(app.locator('#panel-budget select[data-bregion]')).toHaveCount(1);
  await app.locator('[data-act="goto-price"]').first().click();
  await expect(app.locator('#tab-price')).toHaveAttribute('aria-selected','true');
- await expect(app.locator('#panel-price .rbox')).toContainText('지역별 참고 시세');
- await expect(app.locator('#panel-price select[data-bregion]')).toHaveCount(1);
+ await expect(app.locator('#panel-price .rbox')).toHaveCount(0);
+ await expect(app.locator('#panel-price select[data-bregion]')).toHaveCount(0);
+ const card=app.locator('#panel-price details[data-k="k13"]');
+ const sections=card.locator('details.pt-accordion');
+ await expect(sections).toHaveCount(9);
+ await expect(card.locator('details.pt-accordion[open]')).toHaveCount(0);
  await app.locator('#tab-budget').click();
  const row=id=>app.locator(`[data-act="b-open"][data-id="${id}"]`).locator('xpath=ancestor::li[1]');
  await expect(row('b01').locator('.refline')).toHaveText('전국 대관료 평균 317만원, 내 금액이 33만원 높아요');
  await expect(row('b02').locator('.refline')).toHaveText('전국 1인 식대 평균 5.9만원, 내 금액이 0.3만원 높아요');
  await expect(row('b05').locator('.refline')).toContainText('스튜디오 전국 중간값 137만원(2026년 2월)');
  await app.locator('[data-act="goto-price"][data-sec="pt-hall"]').click();
- const card=app.locator('#panel-price details[data-k="k13"]');
  await expect(card).toHaveJSProperty('open',true);
- for (const id of ['pt-read','pt-total','pt-hall','pt-studio','pt-dress','pt-makeup','pt-package','pt-timing','pt-check']) await expect(card.locator('#'+id)).toHaveCount(1);
+ const section=id=>card.locator('details.pt-accordion').filter({has:app.locator('#'+id)});
+ for (const id of ['pt-read','pt-total','pt-hall','pt-studio','pt-dress','pt-makeup','pt-package','pt-timing','pt-check']) await expect(section(id)).toHaveCount(1);
+ await expect(section('pt-hall')).toHaveJSProperty('open',true);
+ const hallCaptions=await section('pt-hall').locator('.rcap').allTextContents();
+ expect(hallCaptions).toEqual(['기본(필수) 항목','대관료','지역별 대관료 (만원)','1인 식대','지역별 1인 식대 (만원)','추가금(선택 항목)']);
+ await expect(card.locator('details.pt-accordion[open]')).toHaveCount(1);
  await expect(card.locator('.ptable')).toHaveCount(11);
- await card.locator('[data-act="pt-jump"][data-sec="pt-dress"]').click();
- await expect(card.locator('#pt-dress')).toBeFocused();
- await app.locator('#tab-price').click();
- await app.locator('#panel-price select[data-bregion]').selectOption('서울 강남');
+ await section('pt-dress').locator('summary').click();
+ await expect(section('pt-dress')).toHaveJSProperty('open',true);
+ await expect(card.locator('details.pt-accordion[open]')).toHaveCount(2);
+ await section('pt-hall').locator('summary').click();
+ await expect(section('pt-hall')).toHaveJSProperty('open',false);
+ await expect(section('pt-dress')).toHaveJSProperty('open',true);
+ await app.locator('#tab-budget').click();
+ await app.locator('#panel-budget select[data-bregion]').selectOption('서울 강남');
  await expect.poll(async()=> (await stored(app))?.budget.region).toBe('서울 강남');
  await app.locator('#tab-budget').click();
  await expect(row('b02').locator('.refline')).toContainText('서울 강남 1인 식대 평균 8.7만원');
