@@ -117,11 +117,17 @@ test('storage and fixed content remain byte-for-byte unchanged',async()=>{
  const normalize=s=>s.replace(/regCalcHTML\('[^']+'\)/g,'regCalcHTML()').replace("var TABS = ['timeline','budget','price','guest','honey','know','talk'];","var TABS = ['timeline','budget','guest','honey','know','talk'];");
  expect(normalize(block(current,'var BASIS =','function esc('))).toBe(normalize(block(original,'var BASIS =','function esc(')));
  const updatePriceLink=source=>source.replace("'<li>항목별 금액은 위의 \\'항목별 가격 비교표\\'에 모아 두었어요.</li></ul>'", "'<li>항목별 금액은 가격 비교 탭에서 확인할 수 있어요. <button class=\"link\" type=\"button\" data-act=\"goto-price\">가격 비교 탭 열기</button></li></ul>'");
- expect(normalize(block(current,'function knowHTML(){','function priceHTML(){'))).toBe(normalize(updatePriceLink(block(original,'function knowHTML(){','function priceHTML(){'))));
+ const stripMovedExtraCost=source=>{const start=source.indexOf("  h += card('k11', '견적서 밖에서 나오는 돈',"),end=source.indexOf("  h += card('k7',",start);if(start<0||end<0)return source;return source.slice(0,start)+source.slice(end);};
+ expect(normalize(block(current,'function knowHTML(){','function priceHTML(){'))).toBe(normalize(updatePriceLink(stripMovedExtraCost(block(original,'function knowHTML(){','function priceHTML(){')))));
 });
 
 test('price comparison tab contains regional prices and the itemized table',async({page})=>{
  const {app,errors}=await openApp(page);await app.locator('#tab-budget').click();
+ await app.locator('#tab-know').click();
+ await expect(app.locator('#panel-know details[data-k="k11"]')).toHaveCount(0);
+ await app.locator('#tab-price').click();
+ await expect(app.locator('#panel-price details[data-k="k11"]')).toContainText('견적서 밖에서 나오는 돈');
+ await app.locator('#tab-budget').click();
  await expect(app.locator('#panel-budget .rbox')).toHaveCount(0);
  await app.locator('[data-act="goto-price"]').first().click();
  await expect(app.locator('#tab-price')).toHaveAttribute('aria-selected','true');
