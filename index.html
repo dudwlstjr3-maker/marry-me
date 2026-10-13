@@ -305,8 +305,8 @@ select{width:auto;min-width:140px}
 .price-pick.on .price-pick-in{background:var(--gold-soft);padding-bottom:8px}
 .price-pick .price-select-button{flex:1 1 auto;min-width:0;text-align:left;font-weight:500}
 .price-pick-amt{margin-left:auto;font-size:14px;text-align:right;font-variant-numeric:tabular-nums}
-.price-opt{flex:1 1 100%}
-.price-opt select,.pr-select select{width:100%;min-width:0}
+.price-opt,.price-mine{flex:1 1 100%}
+.price-opt select,.pr-select select,.price-mine input{width:100%;min-width:0}
 .price-pick-src{flex:1 1 100%;margin:0;color:var(--muted);font-size:13px;line-height:1.5}
 .price-note{margin:10px 0 0;padding:8px 12px;border:1px solid var(--line);border-left:2px solid var(--hong);border-radius:3px;background:var(--surface);color:var(--ink);font-size:13px;line-height:1.6}
 .price-confirm{margin:0 0 10px;padding:10px 12px;border:1px solid var(--hong);border-radius:6px;background:var(--hong-soft)}
@@ -1550,24 +1550,36 @@ function priceOptText(o, region){
   return o.label+' '+o.value+extra+(region !== '전국' && o.regions.indexOf(region) >= 0 ? ' · 지금 지역' : '');
 }
 function priceHeadBasis(){ var g = guaranteeHeads(); return g != null && g > 0 ? {n:g, fromBudget:true} : {n:PRICE_BASE_HEADS, fromBudget:false}; }
-function priceLine(item, optId, basis){
+/* 비교안 금액: 직접 넣은 금액이 있으면 그 값, 비워 두면 참고 시세. 식대는 1인 금액(원) × 인원. */
+function priceOwn(group, item){ return group ? (item.perHead ? group.units : group.amounts)[item.id] : null; }
+function priceLine(item, optId, basis, group){
   var o = priceOption(item, optId);
   if (!o) return null;
-  var line = {item:item, opt:o, amount:o.amount};
-  if (item.perHead) { line.unit = o.amount.low; line.heads = basis.n; line.amount = {low:o.amount.low * basis.n, high:o.amount.high * basis.n}; }
+  var own = priceOwn(group, item), line = {item:item, opt:o, ref:o.amount, amount:o.amount, mine:own != null};
+  if (item.perHead) {
+    line.heads = basis.n; line.refUnit = o.amount.low; line.ref = {low:o.amount.low * basis.n, high:o.amount.high * basis.n};
+    line.unit = own != null ? own / 10000 : o.amount.low;
+    line.amount = own != null ? {low:line.unit * basis.n, high:line.unit * basis.n} : line.ref;
+  } else if (own != null) line.amount = {low:own, high:own};
   return line;
 }
 function priceAmountText(line){
   return line.item.perHead ? fmtUnitMan(line.unit)+' × '+line.heads.toLocaleString('ko-KR')+'명 = '+fmtMan(line.amount.low) : fmtPriceRange(line.amount);
 }
+function priceRefText(line){
+  return line.item.perHead ? fmtUnitMan(line.refUnit)+' × '+line.heads.toLocaleString('ko-KR')+'명 = '+fmtMan(line.ref.low) : fmtPriceRange(line.ref);
+}
 function priceLinesTotal(lines){
   return lines.reduce(function(sum, line){ sum.low += line.amount.low; sum.high += line.amount.high; return sum; }, {low:0,high:0});
 }
-/* 저장된 비교안을 읽어요. PR #4의 행 단위 선택(items[행 ID])과 그 전의 pricePlan[행 ID].include도 같은 항목으로 옮겨 읽어요. */
+/* 저장된 비교안을 읽어요. PR #4의 행 단위 선택(items[행 ID])과 그 전의 pricePlan[행 ID].include·amount(내 금액)도 같은 항목으로 옮겨 읽어요. */
 function priceGroupFrom(id, raw){
   var items = isObj(raw.items) ? raw.items : {}, opts = isObj(raw.opts) ? raw.opts : {}, apply = isObj(raw.apply) ? raw.apply : {};
-  var g = {id:id, name:raw.name || '이름 없는 비교안', rawName:typeof raw.name === 'string' ? raw.name : '', items:{}, opts:{}, apply:{}, rawItems:items, rawApply:apply};
+  var amounts = isObj(raw.amounts) ? raw.amounts : {}, units = isObj(raw.units) ? raw.units : {};
+  var g = {id:id, name:raw.name || '이름 없는 비교안', rawName:typeof raw.name === 'string' ? raw.name : '', items:{}, opts:{}, apply:{}, amounts:{}, units:{}, rawItems:items, rawApply:apply, rawAmounts:amounts, rawUnits:units};
   PRICE_ITEMS.forEach(function(it){
+    var own = num((it.perHead ? units : amounts)[it.id]);
+    if (own != null && own >= 0) (it.perHead ? g.units : g.amounts)[it.id] = own;
     var opt = null;
     if (items[it.id] === true) opt = priceOption(it, opts[it.id]) ? opts[it.id] : it.id;
     else it.opts.forEach(function(o){ if (!opt && o.row !== it.id && items[o.row] === true && PRICE_ROW_REF[o.row].opt === o.id) opt = o.id; });
@@ -1583,10 +1595,19 @@ function priceGroupsSaved(){
 function priceGroups(){
   var plan = state.pricePlan || {}, stored = isObj(plan.groups) ? plan.groups : {};
   var ids = Object.keys(stored).filter(function(id){ return isObj(stored[id]) && !stored[id].deleted; });
-  if (ids.length) return ids.map(function(id){ return priceGroupFrom(id, stored[id]); });
-  var legacyItems = {};
-  Object.keys(plan).forEach(function(id){ if (isObj(plan[id]) && plan[id].include) legacyItems[id] = true; });
-  return [priceGroupFrom('default', {name:'기본안', items:legacyItems})];
+  var legacyItems = {}, legacyAmounts = {}, legacyUnits = {};
+  Object.keys(plan).forEach(function(id){
+    if (!isObj(plan[id]) || id === 'groups') return;
+    if (plan[id].include) legacyItems[id] = true;
+    var ref = PRICE_ROW_REF[id], v = num(plan[id].amount), it = ref && PRICE_ITEM_BY_ID[ref.item];
+    if (it && v != null && v >= 0) { var bag = it.perHead ? legacyUnits : legacyAmounts; if (bag[it.id] == null) bag[it.id] = it.perHead ? v * 10000 : v; }
+  });
+  if (ids.length) return ids.map(function(id){
+    var raw = stored[id];
+    if (id === 'default' && !isObj(raw.amounts) && !isObj(raw.units)) raw = mergeInto(clone(raw), {amounts:legacyAmounts, units:legacyUnits});
+    return priceGroupFrom(id, raw);
+  });
+  return [priceGroupFrom('default', {name:'기본안', items:legacyItems, amounts:legacyAmounts, units:legacyUnits})];
 }
 function priceGroupById(id, groups){ return (groups || priceGroups()).filter(function(g){ return g.id === id; })[0] || null; }
 function activePriceGroup(groups){ groups = groups || priceGroups(); return priceGroupById((state.pricePlan || {}).activeGroup, groups) || groups[0]; }
@@ -1596,6 +1617,10 @@ function priceGroupRecord(g){
   Object.keys(g.rawItems).forEach(function(k){ if (g.rawItems[k] === true && !g.items[k]) rec.items[k] = false; });
   Object.keys(g.rawApply).forEach(function(k){ if (g.rawApply[k] === true && !(g.items[k] && g.apply[k])) rec.apply[k] = false; });
   Object.keys(g.items).forEach(function(k){ if (!g.items[k]) return; rec.items[k] = true; rec.opts[k] = g.opts[k]; rec.apply[k] = !!g.apply[k]; });
+  [['amounts','rawAmounts'],['units','rawUnits']].forEach(function(p){
+    rec[p[0]] = {};
+    Object.keys(g[p[1]]).concat(Object.keys(g[p[0]])).forEach(function(k){ rec[p[0]][k] = g[p[0]][k] != null ? g[p[0]][k] : ''; });
+  });
   return rec;
 }
 function pricePlanPatch(groups, extra){
@@ -1607,7 +1632,7 @@ function pricePlanPatch(groups, extra){
 }
 function priceGroupLines(group){
   var basis = priceHeadBasis();
-  return PRICE_ITEMS.filter(function(it){ return group.items[it.id]; }).map(function(it){ return priceLine(it, group.opts[it.id], basis); }).filter(Boolean);
+  return PRICE_ITEMS.filter(function(it){ return group.items[it.id]; }).map(function(it){ return priceLine(it, group.opts[it.id], basis, group); }).filter(Boolean);
 }
 /* 묶음 가격(계약금·패키지·전체 비용)과 그 안에 든 개별 항목을 함께 담으면 합계가 겹쳐요. */
 function priceOverlaps(lines){
@@ -1621,7 +1646,7 @@ function priceOverlaps(lines){
 }
 function priceRegionMismatch(group, region){
   return PRICE_ITEMS.filter(function(it){
-    if (!group.items[it.id]) return false;
+    if (!group.items[it.id] || priceOwn(group, it) != null) return false;
     var cur = priceOption(it, group.opts[it.id]), def = priceOption(it, priceDefaultOpt(it, region));
     return !!(cur && def && cur.id !== def.id && cur.regions.indexOf(region) < 0 && def.regions.indexOf(region) >= 0);
   });
@@ -1633,20 +1658,23 @@ function priceNotesHTML(group, lines, region, where){
   if (overlap.length) h += '<p class="price-note">묶음 가격과 그 안에 든 항목이 함께 들어 있어 합계가 겹칠 수 있어요: '+esc(overlap.join(', '))+'.</p>';
   if (lines.some(function(l){ return l.item.perHead; })) {
     var basis = priceHeadBasis();
-    h += '<p class="price-builder-empty">식대는 1인 시세 × '+(basis.fromBudget ? '예산 탭 식대 보증인원 ' : '최소 보증인원 중간값 ')+basis.n.toLocaleString('ko-KR')+'명으로 계산했어요.'+(basis.fromBudget ? '' : ' 예산 탭 식대에 인원을 넣으면 그 인원으로 바뀌어요.')+'</p>';
+    h += '<p class="price-builder-empty">식대는 1인 금액 × '+(basis.fromBudget ? '예산 탭 식대 보증인원 ' : '최소 보증인원 중간값 ')+basis.n.toLocaleString('ko-KR')+'명으로 계산했어요.'+(basis.fromBudget ? '' : ' 예산 탭 식대에 인원을 넣으면 그 인원으로 바뀌어요.')+'</p>';
   }
   return h;
 }
 function pricePickRow(item, group, region, basis){
-  var on = !!group.items[item.id], line = on ? priceLine(item, group.opts[item.id], basis) : null;
+  var on = !!group.items[item.id], line = on ? priceLine(item, group.opts[item.id], basis, group) : null;
   var h = '<tr class="price-pick'+(on ? ' on' : '')+'"><td colspan="4"><div class="price-pick-in">' +
     '<button class="price-select-button" type="button" role="checkbox" aria-checked="'+(on?'true':'false')+'" aria-label="'+esc(group.name)+'에 '+esc(item.name)+' 담기" data-act="price-toggle" data-id="'+item.id+'" data-group="'+group.id+'" data-fk="price-select-'+item.id+'"'+dis()+'><span class="price-select-icon">'+CHECK+'</span><span>'+esc(item.name)+' 담기</span></button>';
   if (line) {
-    h += '<strong class="price-pick-amt">'+esc(priceAmountText(line))+'</strong>';
+    var own = priceOwn(group, item), hint = item.perHead ? Math.round(line.refUnit * 10000).toLocaleString('ko-KR')
+      : (Math.round(line.ref.low) === Math.round(line.ref.high) ? Math.round(line.ref.low) : Math.round(line.ref.low)+'~'+Math.round(line.ref.high));
+    h += '<strong class="price-pick-amt">'+(line.mine ? '내 금액 ' : '참고 ')+esc(priceAmountText(line))+'</strong>' +
+      '<label class="field price-mine">'+(item.perHead ? '이 비교안 1인 금액(원)' : '이 비교안 금액(만원)')+'<input type="text" inputmode="numeric" value="'+(own != null ? own : '')+'" placeholder="참고 '+hint+'" data-price-mine="'+item.id+'" data-group="'+group.id+'" data-fk="price-mine-'+item.id+'"'+dis()+'></label>';
     var ids = priceOptionIds(item, region, line.opt.id);
-    if (ids.length > 1) h += '<label class="field price-opt">가격 선택지<select data-price-opt="'+item.id+'" data-group="'+group.id+'" data-fk="price-opt-'+item.id+'"'+dis()+'>' +
+    if (ids.length > 1) h += '<label class="field price-opt">참고 시세<select data-price-opt="'+item.id+'" data-group="'+group.id+'" data-fk="price-opt-'+item.id+'"'+dis()+'>' +
       ids.map(function(id){ var o = priceOption(item, id); return o ? '<option value="'+esc(id)+'"'+(id === line.opt.id ? ' selected' : '')+'>'+esc(priceOptText(o, region))+'</option>' : ''; }).join('') + '</select></label>';
-    h += '<p class="price-pick-src">'+esc(line.opt.source)+'</p>';
+    h += '<p class="price-pick-src">'+(line.mine ? '참고 시세 '+esc(priceRefText(line))+' · ' : '참고 시세 · ')+esc(line.opt.source)+'</p>';
   }
   return h + '</div></td></tr>';
 }
@@ -1675,7 +1703,7 @@ function priceCompareHTML(groups, activeId){
   function block(title, cells){
     return '<div class="price-compare-sec"><h4>'+title+'</h4><ul>' + cells.map(function(c){ return '<li'+(c[2] ? ' class="now"' : '')+'><span>'+esc(c[0])+(c[2] ? ' <small>(보는 중)</small>' : '')+'</span><strong>'+c[1]+'</strong></li>'; }).join('') + '</ul></div>';
   }
-  var h = block('참고 시세 합계', data.map(function(d){ return [d.g.name, d.n ? fmtPriceRange(d.total)+' · '+d.n+'개' : '담긴 항목 없음', d.g.id === activeId]; }));
+  var h = block('비교안 합계', data.map(function(d){ return [d.g.name, d.n ? fmtPriceRange(d.total)+' · '+d.n+'개' : '담긴 항목 없음', d.g.id === activeId]; }));
   Object.keys(PRICE_SECS).forEach(function(s){
     if (!data.some(function(d){ return d.bySec[s]; })) return;
     h += block(PRICE_SECS[s], data.map(function(d){ var v = d.bySec[s]; return [d.g.name, v ? fmtPriceRange(v)+' · '+v.n+'개' : '없음', d.g.id === activeId]; }));
@@ -1684,17 +1712,17 @@ function priceCompareHTML(groups, activeId){
 }
 function pricePlanHTML(){
   var groups = priceGroups(), active = activePriceGroup(groups), region = curRegion();
-  var chosen = priceGroupLines(active), total = priceLinesTotal(chosen), ask = ui.priceDeleteAsk === active.id && groups.length > 1;
+  var chosen = priceGroupLines(active), total = priceLinesTotal(chosen), mineN = chosen.filter(function(l){ return l.mine; }).length, ask = ui.priceDeleteAsk === active.id && groups.length > 1;
   var tabs = groups.map(function(group){
     var lines = priceGroupLines(group), sum = fmtPriceRange(priceLinesTotal(lines));
-    return '<button class="price-group-tab" type="button" aria-pressed="'+(group.id === active.id?'true':'false')+'" aria-label="'+esc(group.name)+' 비교안, '+lines.length+'개 담김, 참고 시세 '+sum+'" data-act="price-group-select" data-id="'+group.id+'" data-fk="price-group-tab-'+group.id+'"><span class="price-group-tab-head"><b>'+esc(group.name)+'</b><small>'+lines.length+'개</small></span><strong>'+sum+'</strong></button>';
+    return '<button class="price-group-tab" type="button" aria-pressed="'+(group.id === active.id?'true':'false')+'" aria-label="'+esc(group.name)+' 비교안, '+lines.length+'개 담김, 합계 '+sum+'" data-act="price-group-select" data-id="'+group.id+'" data-fk="price-group-tab-'+group.id+'"><span class="price-group-tab-head"><b>'+esc(group.name)+'</b><small>'+lines.length+'개</small></span><strong>'+sum+'</strong></button>';
   }).join('');
   var rowsHTML = chosen.map(function(line){
-    return '<li><span><b>'+esc(PRICE_SECS[line.item.sec])+' · '+esc(line.item.name)+'</b><small>'+esc(priceOptText(line.opt, region))+'</small></span><strong>'+esc(priceAmountText(line))+'</strong><button class="price-picked-remove" type="button" aria-label="'+esc(active.name)+'에서 '+esc(line.item.name)+' 빼기" data-act="price-remove" data-id="'+line.item.id+'" data-group="'+active.id+'" data-fk="price-remove-'+line.item.id+'"'+dis()+'>빼기</button></li>';
+    return '<li><span><b>'+esc(PRICE_SECS[line.item.sec])+' · '+esc(line.item.name)+'</b><small>'+(line.mine ? '직접 넣은 금액 · 참고 '+esc(priceRefText(line)) : '참고 시세 · '+esc(priceOptText(line.opt, region)))+'</small></span><strong>'+esc(priceAmountText(line))+'</strong><button class="price-picked-remove" type="button" aria-label="'+esc(active.name)+'에서 '+esc(line.item.name)+' 빼기" data-act="price-remove" data-id="'+line.item.id+'" data-group="'+active.id+'" data-fk="price-remove-'+line.item.id+'"'+dis()+'>빼기</button></li>';
   }).join('');
   if (ui.openKnow['price-picked'] == null) ui.openKnow['price-picked'] = false;
   return '<section class="price-builder" aria-labelledby="price-builder-title"><div class="price-builder-head"><div><span class="price-eyebrow">MY PRICE PLAN</span><h3 id="price-builder-title">비교안 만들기</h3>' +
-    '<p class="price-builder-intro">아래 가격표에서 항목을 하나씩 담아 비교안을 만드세요. 여기에는 참고 시세만 보여요. 내 예산 금액은 예산 탭에서 입력해요.</p></div></div>' +
+    '<p class="price-builder-intro">아래 가격표에서 항목을 담고, 받은 견적이나 예상 금액을 직접 넣으세요. 비워 둔 항목은 참고 시세로 계산해요. 참고 시세는 한국소비자원 조사의 중간값·평균이라 실제 견적은 업체마다 달라요.</p></div></div>' +
     '<div class="price-group-tabs" role="group" aria-label="비교안 선택">'+tabs+'</div>' +
     '<div class="price-group-edit"><label class="field">비교안 이름<input type="text" value="'+esc(active.rawName)+'" maxlength="30" placeholder="'+esc(active.name)+'" data-price-group-name="'+active.id+'" data-fk="price-group-name-'+active.id+'"'+dis()+'></label>' +
     (ask ? '' : '<button class="link price-group-delete" type="button" data-act="price-group-delete-ask" data-id="'+active.id+'" data-fk="price-group-delete-'+active.id+'"'+(groups.length === 1?' disabled':'')+dis()+'>비교안 삭제</button>') + '</div>' +
@@ -1702,9 +1730,10 @@ function pricePlanHTML(){
       '<button class="btn" type="button" data-act="price-group-delete-cancel" data-fk="price-group-delete-cancel">취소</button>' +
       '<button class="btn primary" type="button" data-act="price-group-delete" data-id="'+active.id+'" data-fk="price-group-delete-yes"'+dis()+'>지우기</button></div></div>' : '') +
     '<div class="price-group-add" id="priceGroupAddForm"><label class="sr" for="priceGroupAddName">새 비교안 이름</label><input type="text" id="priceGroupAddName" maxlength="30" placeholder="예: 서울 예식안" data-fk="price-group-add-name"'+dis()+'><button class="btn" type="button" data-act="price-group-add" data-fk="price-group-add"'+dis()+'>비교안 추가</button></div>' +
-    '<div class="price-group-summary"><div><span>담긴 항목</span><strong>'+chosen.length+'개</strong></div><div><span>참고 시세 합계</span><strong>'+fmtPriceRange(total)+'</strong></div></div>' +
+    '<div class="price-group-summary"><div><span>담긴 항목</span><strong>'+chosen.length+'개</strong></div><div><span>비교안 합계</span><strong>'+fmtPriceRange(total)+'</strong></div>' +
+      (chosen.length ? '<div><span>직접 넣은 금액 / 참고 시세</span><strong>'+mineN+'개 / '+(chosen.length - mineN)+'개</strong></div>' : '') + '</div>' +
     priceNotesHTML(active, chosen, region, 'price') +
-    (chosen.length ? '<details class="price-picked-details" data-k="price-picked"'+(ui.openKnow['price-picked'] ? ' open' : '')+'><summary>담긴 항목 보기 ('+chosen.length+')</summary><ul class="price-picked">'+rowsHTML+'</ul></details>' : '<p class="price-builder-empty">아래 가격표의 항목마다 있는 ‘담기’를 누르면 이 비교안에 들어가요. 가격 선택지가 여럿이면 담은 뒤 하나를 고르세요.</p>') +
+    (chosen.length ? '<details class="price-picked-details" data-k="price-picked"'+(ui.openKnow['price-picked'] ? ' open' : '')+'><summary>담긴 항목 보기 ('+chosen.length+')</summary><ul class="price-picked">'+rowsHTML+'</ul></details>' : '<p class="price-builder-empty">아래 가격표의 항목마다 있는 ‘담기’를 누르면 이 비교안에 들어가요. 담은 뒤 받은 금액을 직접 넣으세요.</p>') +
     priceCompareHTML(groups, active.id) +
     '</section>';
 }
@@ -1963,6 +1992,7 @@ function planReviewData(group){
     t.key = t.budget.join('-');
     t.rows = t.budget.map(function(b){ return byId[b]; }).filter(Boolean);
     t.ref = priceLinesTotal(t.lines);
+    t.allRef = t.lines.every(function(l){ return !l.mine; });
     var entered = t.rows.filter(function(r){ return r.plan != null; });
     t.mine = entered.reduce(function(s, r){ return s + r.plan; }, 0);
     t.complete = t.rows.length > 0 && entered.length === t.rows.length;
@@ -1993,11 +2023,11 @@ function planImportHTML(t){
     else label = '1인 금액을 '+won.toLocaleString('ko-KR')+'원으로 '+(r.unit != null ? '바꾸기 (지금 '+r.unit.toLocaleString('ko-KR')+'원)' : '넣기');
     return '<div class="detail-actions"><button class="btn" type="button" data-act="b-plan-import" data-id="'+r.id+'" data-unit="'+won+'"'+(setHeads ? ' data-heads="'+meal.heads+'"' : '')+'>'+label+'</button></div>';
   }
-  var vals = Math.round(t.ref.low) === Math.round(t.ref.high) ? [['', t.ref.low]] : [['최저 ', t.ref.low], ['최고 ', t.ref.high]];
+  var vals = Math.round(t.ref.low) === Math.round(t.ref.high) ? [['', t.ref.low]] : [['최저 ', t.ref.low], ['최고 ', t.ref.high]], from = t.allRef ? '참고 시세 ' : '비교안 금액 ';
   var btns = vals.map(function(v){
     var n = Math.round(v[1]);
     if (r.plan != null && Math.round(r.plan) === n) return '';
-    return '<button class="btn" type="button" data-act="b-plan-import" data-id="'+r.id+'" data-plan="'+n+'">'+(r.plan == null ? '참고 시세 '+v[0]+fmtMan(n)+' 예산에 넣기' : '예산을 '+v[0]+fmtMan(n)+'으로 바꾸기 (지금 '+fmtMan(r.plan)+')')+'</button>';
+    return '<button class="btn" type="button" data-act="b-plan-import" data-id="'+r.id+'" data-plan="'+n+'">'+(r.plan == null ? from+v[0]+fmtMan(n)+' 예산에 넣기' : '예산을 '+v[0]+fmtMan(n)+'으로 바꾸기 (지금 '+fmtMan(r.plan)+')')+'</button>';
   }).join('');
   return btns ? '<div class="detail-actions">'+btns+'</div>' : '<p class="pr-keep">예산이 이미 참고 시세와 같아요.</p>';
 }
@@ -2006,8 +2036,8 @@ function planTargetHTML(t){
   var names = t.rows.map(function(r){ return r.name; }).join(' · ');
   var h = '<li><details class="pr-row" data-k="'+k+'"'+(open ? ' open' : '')+'><summary><span class="pr-row-name">'+esc(names)+(t.rows.some(function(r){ return r.hidden; }) ? ' <small>(예산에서 숨김)</small>' : '')+'</span>' +
     '<span class="pr-row-diff '+(d ? d.cls : 'none')+'">'+(d ? d.text : '예산 미입력')+'</span>' +
-    '<span class="pr-row-nums">참고 '+fmtPriceRange(t.ref)+' · 내 예산 '+(t.complete ? fmtMan(t.mine) : (t.mine ? fmtMan(t.mine)+'(일부)' : '-'))+'</span></summary><div class="pr-row-body">';
-  h += '<ul class="pr-lines">' + t.lines.map(function(l){ return '<li><span>'+esc(PRICE_SECS[l.item.sec])+' · '+esc(l.item.name)+'<small>'+esc(l.opt.label+' '+l.opt.value)+' · '+esc(l.opt.source)+'</small></span><strong>'+esc(priceAmountText(l))+'</strong></li>'; }).join('') + '</ul>';
+    '<span class="pr-row-nums">'+(t.allRef ? '참고 ' : '비교안 ')+fmtPriceRange(t.ref)+' · 내 예산 '+(t.complete ? fmtMan(t.mine) : (t.mine ? fmtMan(t.mine)+'(일부)' : '-'))+'</span></summary><div class="pr-row-body">';
+  h += '<ul class="pr-lines">' + t.lines.map(function(l){ return '<li><span>'+esc(PRICE_SECS[l.item.sec])+' · '+esc(l.item.name)+'<small>'+(l.mine ? '직접 넣은 금액 · 참고 시세 '+esc(priceRefText(l)) : '참고 시세 · '+esc(l.opt.label+' '+l.opt.value)+' · '+esc(l.opt.source))+'</small></span><strong>'+esc(priceAmountText(l))+'</strong></li>'; }).join('') + '</ul>';
   if (t.lines.length > 1 && priceOverlaps(t.lines).length) h += '<p class="price-note">묶음 가격과 그 안에 든 항목이 함께 반영돼 시세가 겹칠 수 있어요.</p>';
   t.rows.forEach(function(r){
     var many = t.rows.length > 1, nm = many ? r.name+' ' : '';
@@ -2030,7 +2060,7 @@ function planReviewHTML(){
   var lead = !group ? '가격 비교 탭에서 만든 비교안을 불러와 내 예산과 나란히 봐요.'
     : group.name+' · '+(data.lines.length ? '반영 '+data.applied.length+'/'+data.lines.length+'개'+(total ? ' · '+total.text : '') : '담긴 항목 없음');
   var h = '<details class="plan-review" data-k="pr-box"'+(ui.openKnow['pr-box'] ? ' open' : '')+'><summary><h3>비교안으로 예산 검토</h3><p class="lead">'+esc(lead)+'</p></summary><div class="pr-body">' +
-    '<p class="tip">비교안을 고른 뒤 예산에 반영할 항목만 고르세요. 예산·확정·낸 돈은 그대로 두고, 참고 시세는 ‘넣기’나 ‘바꾸기’를 눌러야 예산에 들어가요.</p>' +
+    '<p class="tip">비교안을 고른 뒤 예산에 반영할 항목만 고르세요. 예산·확정·낸 돈은 그대로 두고, 비교안 금액은 ‘넣기’나 ‘바꾸기’를 눌러야 예산에 들어가요.</p>' +
     '<label class="field pr-select">불러올 비교안<select id="bPlanGroup" data-fk="b-plan-group" data-bplan="1"'+dis()+'><option value="">고르지 않음</option>' +
     groups.map(function(g){ var gl = priceGroupLines(g); return '<option value="'+esc(g.id)+'"'+(group && g.id === group.id ? ' selected' : '')+'>'+esc(g.name+' · '+gl.length+'개 · '+fmtPriceRange(priceLinesTotal(gl)))+'</option>'; }).join('') + '</select></label>';
   if (!group) {
@@ -2040,21 +2070,21 @@ function planReviewHTML(){
   }
   if (!data.lines.length) return h + '<p class="tip">이 비교안에는 담긴 항목이 없어요. <button class="link" type="button" data-act="goto-price" data-group="'+group.id+'">가격 비교 탭에서 담기</button></p></div></details>';
   h += priceNotesHTML(group, data.applied, region, 'budget');
-  h += '<div class="price-group-summary pr-sum"><div><span>참고 시세 합계 (반영 '+data.applied.length+'개)</span><strong>'+(data.applied.length ? fmtPriceRange(s.ref) : '-')+'</strong></div>' +
+  h += '<div class="price-group-summary pr-sum"><div><span>비교안 금액 합계 (반영 '+data.applied.length+'개)</span><strong>'+(data.applied.length ? fmtPriceRange(s.ref) : '-')+'</strong></div>' +
     '<div><span>내 예산 합계</span><strong>'+(s.entered ? fmtMan(s.mine) : '-')+'</strong></div>' +
     '<div><span>차액</span><strong class="pr-diff '+(total ? total.cls : 'none')+'">'+(total ? total.text : '-')+'</strong></div></div>' +
-    '<p class="pr-legend">초과는 참고 시세가 내 예산보다 높다는 뜻, 여유는 내 예산이 더 넉넉하다는 뜻이에요.'+(s.missing ? ' 예산을 넣지 않은 '+s.missing+'곳은 차액에서 뺐어요.' : '')+'</p>';
+    '<p class="pr-legend">비교안 금액은 직접 넣은 금액이고, 비워 둔 항목은 참고 시세예요. 초과는 그 금액이 내 예산보다 높다는 뜻, 여유는 내 예산이 더 넉넉하다는 뜻이에요.'+(s.missing ? ' 예산을 넣지 않은 '+s.missing+'곳은 차액에서 뺐어요.' : '')+'</p>';
   var pk = 'pr-pick-' + group.id;
   if (ui.openKnow[pk] == null) ui.openKnow[pk] = !data.applied.length;
   h += '<details class="pr-pick" data-k="'+pk+'"'+(ui.openKnow[pk] ? ' open' : '')+'><summary>반영할 항목 고르기 <span>'+data.applied.length+'/'+data.lines.length+'개 반영</span></summary><ul class="pr-picklist">' +
     data.lines.map(function(l){
       var on = !!group.apply[l.item.id], to = l.item.budget.map(function(b){ return BUDGET_ITEMS.filter(function(x){ return x.id === b; })[0].name; }).join(' · ');
       return '<li><button class="price-select-button pr-apply" type="button" role="checkbox" aria-checked="'+(on ? 'true' : 'false')+'" data-act="b-plan-apply" data-group="'+group.id+'" data-id="'+l.item.id+'" data-fk="pr-apply-'+l.item.id+'"'+dis()+'><span class="price-select-icon">'+CHECK+'</span>' +
-        '<span><span class="sr">예산에 반영: </span><b>'+esc(PRICE_SECS[l.item.sec])+' · '+esc(l.item.name)+'</b><small>'+esc(priceAmountText(l))+' → '+esc(to)+'</small></span></button></li>';
+        '<span><span class="sr">예산에 반영: </span><b>'+esc(PRICE_SECS[l.item.sec])+' · '+esc(l.item.name)+'</b><small>'+esc(priceAmountText(l))+(l.mine ? ' (직접)' : ' (참고)')+' → '+esc(to)+'</small></span></button></li>';
     }).join('') + '</ul>' +
     (Store.readOnly ? '' : '<div class="detail-actions"><button class="btn" type="button" data-act="b-plan-apply-all" data-group="'+group.id+'" data-v="1">모두 반영</button><button class="btn" type="button" data-act="b-plan-apply-all" data-group="'+group.id+'" data-v="0">모두 빼기</button>' +
       '<button class="link" type="button" data-act="goto-price" data-group="'+group.id+'">가격 비교에서 고치기</button></div>') + '</details>';
-  if (data.targets.length) h += '<ul class="pr-list" aria-label="반영한 항목의 참고 시세와 내 예산">' + data.targets.map(planTargetHTML).join('') + '</ul>';
+  if (data.targets.length) h += '<ul class="pr-list" aria-label="반영한 항목의 비교안 금액과 내 예산">' + data.targets.map(planTargetHTML).join('') + '</ul>';
   else h += '<p class="tip">반영한 항목이 없어요. 위에서 예산에 반영할 항목을 고르세요.</p>';
   return h + '</div></details>';
 }
@@ -2638,6 +2668,15 @@ document.addEventListener('input', function(e){
     var dg = t.value.replace(/[^0-9]/g, '');
     if (dg !== t.value) t.value = dg;
     commit({budget:{total: dg === '' ? '' : Number(dg)}}, {delay:600});
+  } else if (t.matches('input[data-price-mine]')) {
+    var mineDigits = t.value.replace(/[^0-9]/g, '');
+    if (mineDigits !== t.value) t.value = mineDigits;
+    var mineGroup = priceGroupById(t.getAttribute('data-group')), mineItem = PRICE_ITEM_BY_ID[t.getAttribute('data-price-mine')];
+    if (mineGroup && mineItem) {
+      var mineBag = mineItem.perHead ? mineGroup.units : mineGroup.amounts;
+      if (mineDigits === '') delete mineBag[mineItem.id]; else mineBag[mineItem.id] = Number(mineDigits);
+      commit(pricePlanPatch([mineGroup]), {delay:600});
+    }
   } else if (t.matches('input[data-price-group-name]')) {
     var renameGroup = priceGroupById(t.getAttribute('data-price-group-name'));
     if (renameGroup) { renameGroup.rawName = t.value; commit(pricePlanPatch([renameGroup]), {render:false, delay:600}); }

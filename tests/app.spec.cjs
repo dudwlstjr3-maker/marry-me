@@ -108,7 +108,7 @@ const planTotal=app=>app.locator('.price-builder .price-group-summary strong').n
 const PLAN_SEED=()=>{const seed=structuredClone(SEED);seed.budget.region='서울 강남';seed.budget.items.b05={plan:140,actual:145,paid:50};
  seed.pricePlan={activeGroup:'pa',groups:{pa:{name:'서울 예식안',items:{'hall-rent-1':true,'studio-basic-1':true,'hall-extra-1':true,'hall-extra-6':true},opts:{'hall-rent-1':'reg:서울 강남','studio-basic-1':'studio-basic-4','hall-extra-1':'hall-extra-1','hall-extra-6':'hall-extra-6'}},pb:{name:'가성비안',items:{'package-1':true},opts:{'package-1':'package-1'}}}};return seed;};
 
-test('price items are picked one by one, each with one regional price option',async({page})=>{
+test('price items are picked one by one, each with one regional reference option',async({page})=>{
  const {app,errors}=await openApp(page);await app.locator('#tab-price').click();
  await openSection(app,'pt-hall');await openSection(app,'pt-studio');
  const rent=app.locator('[data-act="price-toggle"][data-id="hall-rent-1"]'),studio=app.locator('[data-act="price-toggle"][data-id="studio-basic-1"]'),meal=app.locator('[data-act="price-toggle"][data-id="hall-meal-1"]');
@@ -116,7 +116,7 @@ test('price items are picked one by one, each with one regional price option',as
  await expect(rent).toHaveAttribute('aria-checked','true');await expect(studio).toHaveAttribute('aria-checked','false');
  // Region is 전국, so the first choice is the national regional average.
  await expect(app.locator('[data-price-opt="hall-rent-1"]')).toHaveValue('reg:전국');
- await expect(pickRow(app,'hall-rent-1').locator('.price-pick-amt')).toHaveText('317만원');
+ await expect(pickRow(app,'hall-rent-1').locator('.price-pick-amt')).toHaveText('참고 317만원');
  await studio.click();await expect(planTotal(app)).toHaveText('454만원');
  // Several survey values of one item are alternatives: only the chosen one counts.
  await expect(app.locator('[data-price-opt="studio-basic-1"] option')).toHaveCount(5);
@@ -125,11 +125,14 @@ test('price items are picked one by one, each with one regional price option',as
  // A value given only as a pair (peak / off-peak) is summed as a range.
  await app.locator('[data-price-opt="hall-rent-1"]').selectOption('hall-rent-1');await expect(planTotal(app)).toHaveText('387만원 ~ 487만원');
  // Meal price is per person, multiplied by the budget's guaranteed guests.
- await meal.click();await expect(pickRow(app,'hall-meal-1').locator('.price-pick-amt')).toHaveText('5.9만원 × 187명 = 1,103만원');
+ await meal.click();await expect(pickRow(app,'hall-meal-1').locator('.price-pick-amt')).toHaveText('참고 5.9만원 × 187명 = 1,103만원');
  await expect(planTotal(app)).toHaveText('1,490만원 ~ 1,590만원');
  await studio.click();await expect(studio).toHaveAttribute('aria-checked','false');await expect(rent).toHaveAttribute('aria-checked','true');
  await expect(planTotal(app)).toHaveText('1,353만원 ~ 1,453만원');
- await expect(app.locator('#panel-price input[inputmode="numeric"], #panel-price input[data-price-amount]')).toHaveCount(0);
+ // Only picked items get an amount field; empty fields show the reference as a hint.
+ await expect(app.locator('#panel-price input[data-price-mine]')).toHaveCount(2);
+ await expect(app.locator('[data-price-mine="hall-rent-1"]')).toHaveAttribute('placeholder','참고 250~350');
+ await expect(app.locator('[data-price-mine="hall-meal-1"]')).toHaveAttribute('placeholder','참고 59,000');
  await expect.poll(async()=>{const g=(await stored(app))?.pricePlan?.groups?.default;return g&&g.items['hall-rent-1']===true&&g.opts['hall-rent-1']==='hall-rent-1'&&g.items['studio-basic-1']===false&&g.opts['hall-meal-1']==='reg:전국';}).toBe(true);
  const saved=await stored(app);expect(saved.pricePlan.groups.default.name).toBe('기본안');expect(noArrays(saved)).toBe(true);
  await app.locator('#tab-budget').click();await app.locator('[data-act="b-open"][data-id="b01"]').click();
@@ -226,6 +229,42 @@ test('budget loads a plan, reflects chosen items and compares reference prices w
  saved=await stored(app);expect(saved.budget.total).toBe(5000);expect(noArrays(saved)).toBe(true);expect(errors).toEqual([]);
 });
 
+test('my own amounts replace the reference price in plans and in the budget review',async({page})=>{
+ const {app,errors}=await openApp(page,PLAN_SEED());await app.locator('#tab-price').click();
+ await openSection(app,'pt-hall');
+ await expect(app.locator('.price-group-tab[data-id="pa"]')).toContainText('1,170만원');
+ const rent=app.locator('[data-price-mine="hall-rent-1"]');
+ await expect(rent).toHaveValue('');await expect(rent).toHaveAttribute('placeholder','참고 710');
+ await rent.fill('520');await expect(rent).toBeFocused();
+ await expect(pickRow(app,'hall-rent-1').locator('.price-pick-amt')).toHaveText('내 금액 520만원');
+ await expect(pickRow(app,'hall-rent-1').locator('.price-pick-src')).toContainText('참고 시세 710만원');
+ await expect(planTotal(app)).toHaveText('980만원');
+ await expect(app.locator('.price-builder .price-group-summary div').nth(2).locator('strong')).toHaveText('1개 / 3개');
+ // Typed amounts are not region-dependent, so changing the region raises no notice for them.
+ await app.locator('#priceRegion').selectOption('부산');await expect(app.locator('#panel-price .price-note')).toHaveCount(0);
+ await expect(planTotal(app)).toHaveText('980만원');
+ await app.locator('[data-act="price-toggle"][data-id="hall-meal-1"]').click();
+ await app.locator('[data-price-mine="hall-meal-1"]').fill('65000');
+ await expect(pickRow(app,'hall-meal-1').locator('.price-pick-amt')).toHaveText('내 금액 6.5만원 × 187명 = 1,216만원');
+ await expect.poll(async()=>{const g=(await stored(app))?.pricePlan?.groups?.pa;return g?.amounts?.['hall-rent-1']===520&&g?.units?.['hall-meal-1']===65000;}).toBe(true);
+ await app.locator('#tab-budget').click();await app.locator('details[data-k="pr-box"] > summary').click();
+ await app.locator('#bPlanGroup').selectOption('pa');
+ await app.locator('[data-act="b-plan-apply"][data-id="hall-rent-1"]').click();
+ const row=app.locator('details[data-k="pr-row-b01"]');
+ await expect(row.locator('.pr-row-nums')).toHaveText('비교안 520만원 · 내 예산 350만원');
+ await expect(row.locator('.pr-row-diff')).toHaveText('170만원 초과');
+ await row.locator('summary').click();
+ await expect(row.locator('.pr-lines small')).toHaveText('직접 넣은 금액 · 참고 시세 710만원');
+ expect((await stored(app)).budget.items.b01).toEqual({plan:350,paid:100});
+ await row.locator('[data-act="b-plan-import"]').click();
+ await expect.poll(async()=> (await stored(app))?.budget?.items?.b01).toEqual({plan:520,paid:100});
+ // Clearing my amount falls back to the reference price.
+ await app.locator('#tab-price').click();await rent.fill('');
+ await expect(pickRow(app,'hall-rent-1').locator('.price-pick-amt')).toHaveText('참고 710만원');
+ await expect.poll(async()=> (await stored(app))?.pricePlan?.groups?.pa?.amounts?.['hall-rent-1']).toBe('');
+ expect(noArrays(await stored(app))).toBe(true);expect(errors).toEqual([]);
+});
+
 test('legacy price data is read into the new plans and everything survives a reload',async({page})=>{
  await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({status:200,contentType:'text/css',body:''}));
  await page.goto('/tests/sandbox.html');const app=page.frameLocator('#app');
@@ -234,7 +273,8 @@ test('legacy price data is read into the new plans and everything survives a rel
  // First PR #4 shape: one implicit plan, rows marked include, an old per-row amount that is no longer shown.
  const first=structuredClone(SEED);first.pricePlan={'hall-rent-1':{include:true,amount:400}};await put(first);
  await app.locator('#tab-price').click();await expect(app.locator('.price-group-tab')).toHaveCount(1);
- await expect(app.locator('.price-group-tab[data-id="default"]')).toContainText('250만원 ~ 350만원');
+ // The old per-row "내 금액" comes back as this plan's own amount.
+ await expect(app.locator('.price-group-tab[data-id="default"]')).toContainText('400만원');
  // Later PR #4 shape: plans keyed by table rows, including a superseded survey row and a regional row.
  const later=structuredClone(SEED);later.pricePlan={activeGroup:'default',groups:{default:{name:'기본안',items:{'hall-rent-1':true,'studio-basic-1':false,'studio-basic-2':true,'hall-meal-2':true}},pg1:{name:'옛 조합',items:{'package-2':true}}}};
  await put(later);await app.locator('#tab-price').click();
