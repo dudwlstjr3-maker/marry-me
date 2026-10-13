@@ -266,8 +266,6 @@ select{width:auto;min-width:140px}
 .price-select-icon svg{width:14px;height:14px;opacity:0;color:var(--paper)}
 .price-select-button[aria-checked="true"] .price-select-icon{background:var(--gold);border-color:var(--gold)}
 .price-select-button[aria-checked="true"] .price-select-icon svg{opacity:1}
-.price-amount-wrap{display:flex;align-items:center;gap:6px;min-height:44px;color:var(--muted);font-size:13px}
-.price-amount{width:104px!important;min-width:0!important;min-height:44px!important;padding:8px!important;text-align:right}
 .price-builder{margin:18px 0 22px;padding:14px;border:1px solid var(--gold-line);border-top:3px solid var(--gold);border-radius:6px;background:var(--surface)}
 .price-builder-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .price-builder h3{font-family:var(--serif);font-size:18px;margin:0}
@@ -284,7 +282,6 @@ select{width:auto;min-width:140px}
 .price-picked li strong{flex:none;text-align:right;font-variant-numeric:tabular-nums}
 .price-picked details{margin-top:8px}
 .price-picked summary{min-height:44px;display:flex;align-items:center;color:var(--chung);font-size:14px;text-decoration:underline;text-underline-offset:3px}
-.price-no-amount{color:var(--hong);font-weight:600}
 .price-builder-empty{margin:8px 0 0;color:var(--muted);font-size:13px}
 .rtable{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
 .rtable th,.rtable td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
@@ -1292,18 +1289,36 @@ var PRICE_GROUP_LABELS = {
   'studio-basic':'스튜디오 기본', 'studio-extra':'스튜디오 추가 항목', 'dress-basic':'드레스 기본', 'dress-extra':'드레스 추가 항목',
   'make-basic':'메이크업 기본', 'make-extra':'메이크업 추가 항목', 'package':'스드메 묶음'
 };
+function priceReferenceBounds(label, value){
+  var matches = value.match(/[\d,]+(?:\.\d+)?(?=만원)/g) || [];
+  var amounts = matches.map(function(x){ return Number(x.replace(/,/g,'')); }).filter(function(x){ return isFinite(x); });
+  if (!amounts.length) return null;
+  if (label.indexOf('혼주 헤어·메이크업 여성 / 남성') >= 0) {
+    var combined = amounts.reduce(function(sum, x){ return sum + x; }, 0);
+    return {low:combined, high:combined};
+  }
+  if (value.indexOf('각 ') >= 0 && label.indexOf('/') >= 0) {
+    var eachTotal = amounts.reduce(function(sum, x){ return sum + x; }, 0) * 2;
+    return {low:eachTotal, high:eachTotal};
+  }
+  return {low:Math.min.apply(Math, amounts), high:Math.max.apply(Math, amounts)};
+}
+function fmtPriceRange(amount){
+  if (!amount) return '기준값 없음';
+  return amount.low === amount.high ? fmtMan(amount.low) : fmtMan(amount.low)+' ~ '+fmtMan(amount.high);
+}
 function priceTable(cap, rows, head, group){
   head = head || ['항목', '중간값', '조사 시점'];
   group = group || 'reference';
   var h = '<p class="rcap">'+cap+'</p><div class="rwrap"><table class="rtable ptable"><thead><tr>' +
-    head.concat(['내 견적']).map(function(x){ return '<th scope="col">'+x+'</th>'; }).join('') + '</tr></thead><tbody>';
+    head.concat(['진행']).map(function(x){ return '<th scope="col">'+x+'</th>'; }).join('') + '</tr></thead><tbody>';
   rows.forEach(function(r, index){
     var id = group + '-' + (index + 1), selectable = group !== 'overall' && group !== 'timing' && r[1].indexOf('만원') >= 0 && r[1].indexOf('%') < 0;
-    if (selectable) PRICE_ROW_DEFS.push({id:id, label:r[0].trim(), section:cap, group:PRICE_GROUP_LABELS[group] || cap});
-    var saved = (state.pricePlan || {})[id] || {}, amount = saved.amount == null ? '' : String(saved.amount);
+    var label = r[0].trim(), reference = selectable ? priceReferenceBounds(label, r[1]) : null;
+    if (selectable) PRICE_ROW_DEFS.push({id:id, label:label, section:cap, group:PRICE_GROUP_LABELS[group] || cap, reference:reference});
+    var saved = (state.pricePlan || {})[id] || {};
     var config = selectable
-      ? '<td class="price-config"><button class="price-select-button" type="button" role="checkbox" aria-checked="'+(saved.include?'true':'false')+'" aria-label="내 견적에 '+esc(r[0].trim())+' '+(saved.include?'담김':'담기')+'" data-act="price-toggle" data-id="'+id+'" data-fk="price-select-'+id+'"'+dis()+'><span class="price-select-icon">'+CHECK+'</span><span>포함</span></button>' +
-        '<label class="price-amount-wrap">내 금액<input class="price-amount" type="text" inputmode="numeric" value="'+esc(amount)+'" placeholder="예: 150" aria-label="'+esc(r[0].trim())+' 내 금액(만원)" data-price-amount="'+id+'" data-fk="price-amount-'+id+'"'+dis()+'><span>만원</span></label></td>'
+      ? '<td class="price-config"><button class="price-select-button" type="button" role="checkbox" aria-checked="'+(saved.include?'true':'false')+'" aria-label="가격 비교 진행: '+esc(label)+' '+(saved.include?'진행 중':'진행 전')+'" data-act="price-toggle" data-id="'+id+'" data-fk="price-select-'+id+'"'+dis()+'><span class="price-select-icon">'+CHECK+'</span><span>진행</span></button></td>'
       : '<td class="price-config"><span class="tip">참고값 · 합계에서 제외</span></td>';
     h += '<tr><th scope="row">'+r[0]+'</th><td class="avg">'+r[1]+'</td><td class="price-source">'+r[2]+'</td>'+config+'</tr>';
   });
@@ -1311,24 +1326,24 @@ function priceTable(cap, rows, head, group){
 }
 function pricePlanHTML(){
   var plan = state.pricePlan || {}, chosen = PRICE_ROW_DEFS.filter(function(row){ return plan[row.id] && plan[row.id].include; });
-  var total = 0, priced = 0, missing = 0, groupOrder = [], groups = {};
+  var totalLow = 0, totalHigh = 0, groupOrder = [], groups = {};
   chosen.forEach(function(row){
-    var saved = plan[row.id] || {}, amount = num(saved.amount);
+    var amount = row.reference;
     if (!groups[row.group]) { groups[row.group] = []; groupOrder.push(row.group); }
     groups[row.group].push({row:row, amount:amount});
-    if (amount == null) missing++; else { total += amount; priced++; }
+    if (amount) { totalLow += amount.low; totalHigh += amount.high; }
   });
-  var sum = priced ? fmtMan(total) : '-';
+  var sum = chosen.length ? fmtPriceRange({low:totalLow, high:totalHigh}) : '-';
   var list = groupOrder.map(function(group){
     return '<section class="price-picked-group"><h4>'+esc(group)+'</h4><ul class="price-picked">'+groups[group].map(function(item){
-      return '<li><span>'+esc(item.row.label)+'</span><strong class="'+(item.amount == null?'price-no-amount':'')+'">'+(item.amount == null?'금액 입력 필요':fmtMan(item.amount))+'</strong></li>';
+      return '<li><span>'+esc(item.row.label)+'</span><strong>'+fmtPriceRange(item.amount)+'</strong></li>';
     }).join('')+'</ul></section>';
   }).join('');
-  return '<section class="price-builder" aria-labelledby="price-builder-title"><div class="price-builder-head"><div><h3 id="price-builder-title">내가 묶은 견적</h3>' +
-    '<p class="price-builder-intro">담을 항목을 고르고 내 금액을 만원 단위로 입력하면 합계를 계산해요. 겹치는 패키지·개별 항목은 필요한 쪽만 골라 주세요.</p></div>' +
-    '<div class="price-builder-total"><span>입력한 금액 합계</span><strong>'+sum+'</strong></div></div>' +
-    '<p class="price-builder-meta">'+chosen.length+'개 선택 · '+missing+'개 금액 입력 필요</p>' +
-    (chosen.length ? '<details><summary>내가 담은 항목 보기</summary>'+list+'</details>' : '<p class="price-builder-empty">아래 가격 항목에서 필요한 줄을 선택하면 여기에 보여요.</p>') +
+  return '<section class="price-builder" aria-labelledby="price-builder-title"><div class="price-builder-head"><div><h3 id="price-builder-title">내가 고른 가격</h3>' +
+    '<p class="price-builder-intro">항목을 골라 기준값을 묶어 볼 수 있어요. 실제 예산 금액은 예산 탭에서 입력하고 관리하세요. 겹치는 패키지·개별 항목은 필요한 쪽만 골라 주세요.</p></div>' +
+    '<div class="price-builder-total"><span>선택한 기준값 합계</span><strong>'+sum+'</strong></div></div>' +
+    '<p class="price-builder-meta">'+chosen.length+'개 선택</p>' +
+    (chosen.length ? '<details><summary>선택한 항목 보기</summary>'+list+'</details>' : '<p class="price-builder-empty">아래 표에서 필요한 항목의 진행 버튼을 눌러 선택하세요.</p>') +
     '</section>';
 }
 function cmpRow(t, pre, post){
@@ -2101,7 +2116,7 @@ document.addEventListener('click', function(e){
     }
   } else if (act === 'price-toggle') {
     var pricePatch = {pricePlan:{}};
-    pricePatch.pricePlan[id] = {include:b.getAttribute('aria-checked') !== 'true'};
+    pricePatch.pricePlan[id] = {include:b.getAttribute('aria-checked') !== 'true', amount:null};
     commit(pricePatch);
   } else if (act === 'g-open') {
     ui.openGuest[id] = !ui.openGuest[id]; render();
@@ -2185,12 +2200,6 @@ document.addEventListener('input', function(e){
   } else if (t.matches('textarea[data-talk-memo]')) {
     var p = {talks:{}}; p.talks[t.getAttribute('data-talk-memo')] = {memo: t.value};
     commit(p, {render:false, delay:700});
-  } else if (t.matches('input[data-price-amount]')) {
-    var amountDigits = t.value.replace(/[^0-9]/g, '');
-    if (amountDigits !== t.value) t.value = amountDigits;
-    var priceAmountPatch = {pricePlan:{}};
-    priceAmountPatch.pricePlan[t.getAttribute('data-price-amount')] = {amount:amountDigits === '' ? '' : Number(amountDigits)};
-    commit(priceAmountPatch, {delay:600});
   }
 });
 

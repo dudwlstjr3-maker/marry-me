@@ -102,20 +102,24 @@ test('timeline tasks expose individually saved detail checks and group completio
  expect(noArrays(saved)).toBe(true);expect(errors).toEqual([]);
 });
 
-test('custom price bundle sums individually selected items and keeps edits',async({page})=>{
- const {app,errors}=await openApp(page);await app.locator('#tab-price').click();
+test('price bundle uses selected reference prices and keeps budget inputs',async({page})=>{
+ const seed=structuredClone(SEED);seed.pricePlan={'hall-rent-1':{amount:400},'studio-basic-1':{amount:150}};
+ const {app,errors}=await openApp(page,seed);await app.locator('#tab-price').click();
  const hall=app.locator('#panel-price details[data-k="pt-hall"]');await hall.locator('summary').click();
- await app.locator('[data-act="price-toggle"][data-id="hall-rent-1"]').click();
- await app.locator('[data-price-amount="hall-rent-1"]').fill('400');
+ const hallToggle=app.locator('[data-act="price-toggle"][data-id="hall-rent-1"]');
+ await expect(hallToggle).toHaveText('진행');await hallToggle.click();
  const studio=app.locator('#panel-price details[data-k="pt-studio"]');await studio.locator('summary').click();
- await app.locator('[data-act="price-toggle"][data-id="studio-basic-1"]').click();
- await app.locator('[data-price-amount="studio-basic-1"]').fill('150');
- await expect(app.locator('.price-builder-total strong')).toHaveText('550만원');
- await expect(app.locator('.price-builder-meta')).toHaveText('2개 선택 · 0개 금액 입력 필요');
+ const studioToggle=app.locator('[data-act="price-toggle"][data-id="studio-basic-1"]');await studioToggle.click();
+ await expect(app.locator('#panel-price input[data-price-amount]')).toHaveCount(0);
+ await expect(app.locator('.price-builder-total strong')).toHaveText('387만원 ~ 487만원');
+ await expect(app.locator('.price-builder-meta')).toHaveText('2개 선택');
  await expect.poll(async()=>{
-  const saved=await stored(app);return saved?.pricePlan?.['hall-rent-1']?.amount===400&&saved?.pricePlan?.['studio-basic-1']?.amount===150;
+  const saved=await stored(app);return saved?.pricePlan?.['hall-rent-1']?.include===true&&saved?.pricePlan?.['studio-basic-1']?.include===true&&saved?.pricePlan?.['hall-rent-1']?.amount===null;
  }).toBe(true);
- const saved=await stored(app);expect(saved.pricePlan['hall-rent-1']).toMatchObject({include:true,amount:400});expect(saved.pricePlan['studio-basic-1']).toMatchObject({include:true,amount:150});
+ const saved=await stored(app);expect(saved.pricePlan['hall-rent-1']).toMatchObject({include:true,amount:null});expect(saved.pricePlan['studio-basic-1']).toMatchObject({include:true,amount:null});
+ await app.locator('#tab-budget').click();await app.locator('[data-act="b-open"][data-id="b01"]').click();
+ await app.locator('[data-bnum="plan"][data-id="b01"]').fill('425');
+ await expect.poll(async()=> (await stored(app))?.budget?.items?.b01?.plan).toBe(425);
  expect(noArrays(saved)).toBe(true);expect(errors).toEqual([]);
 });
 
