@@ -123,12 +123,26 @@ button,input,textarea,select{font:inherit;color:inherit}
 .task.wedding .t-title{font-family:var(--serif);font-weight:700;font-size:18px}
 .task.done .t-title{text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:var(--muted)}
 .mine{font-size:13px;color:var(--chung);margin-left:6px;white-space:nowrap}
+.sub-progress{display:inline-block;margin-left:8px;color:var(--muted);font-size:12px;font-weight:500;white-space:nowrap;text-decoration:none}
 .due{text-align:right;font-size:13px;color:var(--muted);white-space:nowrap;line-height:1.4;padding-top:3px}
 .due .rel{display:block;font-weight:600;color:var(--ink)}
 .task.overdue .due .rel{color:var(--hong)}
 .task.done .due .rel{color:var(--chung);font-weight:600}
 .preview{margin:4px 0 0;font-size:14px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .detail{margin-top:10px;display:grid;gap:10px}
+.subtasks{padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.subtasks h4{display:flex;justify-content:space-between;gap:8px;margin:0;color:var(--ink);font-size:14px;font-weight:600}
+.subtasks h4 span{color:var(--muted);font-size:13px;font-weight:500}
+.subtask-list{list-style:none;margin:6px 0 0;padding:0}
+.subtask{display:flex;align-items:center;gap:4px;min-height:44px;border-top:1px solid var(--line);font-size:14px;line-height:1.45}
+.subtask:first-child{border-top:0}
+.subtask.done>span{text-decoration:line-through;text-decoration-color:var(--muted);color:var(--muted)}
+.subtask-check{position:relative;appearance:none;flex:none;width:44px;height:44px;border:0;border-radius:50%;background:none;display:grid;place-items:center;padding:0;cursor:pointer}
+.subtask-check::before{content:"";width:20px;height:20px;border:1.5px solid var(--muted);border-radius:50%;background:var(--surface)}
+.subtask-check[aria-checked="true"]::before{background:var(--gold);border-color:var(--gold)}
+.subtask-check svg{position:absolute;width:14px;height:14px;opacity:0;color:var(--on-knot)}
+.subtask-check[aria-checked="true"] svg{opacity:1}
+.subtask-check:disabled{cursor:default}
 .tip{margin:0;font-size:14px;color:var(--muted);line-height:1.6}
 .field{display:grid;gap:4px;font-size:13px;color:var(--muted)}
 .field-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -244,7 +258,34 @@ select{width:auto;min-width:140px}
 .rtable.ptable th[scope=row],.rtable.ptable td{border:0;padding:0;white-space:normal;max-width:none}
 .rtable.ptable th[scope=row]{grid-column:1;grid-row:1;text-align:left}
 .rtable.ptable td.avg{grid-column:2;grid-row:1;text-align:right;max-width:11em}
-.rtable.ptable td:last-child{grid-column:1/-1;grid-row:2;text-align:left;font-size:13px;color:var(--muted)}
+.rtable.ptable td.price-source{grid-column:1/-1;grid-row:2;text-align:left;font-size:13px;color:var(--muted)}
+.rtable.ptable td.price-config{grid-column:1/-1;grid-row:3;text-align:left}
+.price-config{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.price-select-button{appearance:none;display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 4px;border:0;background:none;color:var(--ink);font-size:14px;cursor:pointer}
+.price-select-icon{width:20px;height:20px;border:1.5px solid var(--muted);border-radius:4px;display:grid;place-items:center;flex:none}
+.price-select-icon svg{width:14px;height:14px;opacity:0;color:var(--paper)}
+.price-select-button[aria-checked="true"] .price-select-icon{background:var(--gold);border-color:var(--gold)}
+.price-select-button[aria-checked="true"] .price-select-icon svg{opacity:1}
+.price-amount-wrap{display:flex;align-items:center;gap:6px;min-height:44px;color:var(--muted);font-size:13px}
+.price-amount{width:104px!important;min-width:0!important;min-height:44px!important;padding:8px!important;text-align:right}
+.price-builder{margin:18px 0 22px;padding:14px;border:1px solid var(--gold-line);border-top:3px solid var(--gold);border-radius:6px;background:var(--surface)}
+.price-builder-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.price-builder h3{font-family:var(--serif);font-size:18px;margin:0}
+.price-builder-intro{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
+.price-builder-total{text-align:right;flex:none}
+.price-builder-total span{display:block;color:var(--muted);font-size:12px}
+.price-builder-total strong{display:block;color:var(--gold);font-size:20px;font-variant-numeric:tabular-nums}
+.price-builder-meta{margin:10px 0 0;color:var(--muted);font-size:13px}
+.price-picked{margin:8px 0 0;padding:0;list-style:none}
+.price-picked-group{margin-top:8px}
+.price-picked-group h4{margin:0 0 2px;font-size:13px;color:var(--ink)}
+.price-picked li{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:13px}
+.price-picked li span:first-child{min-width:0}
+.price-picked li strong{flex:none;text-align:right;font-variant-numeric:tabular-nums}
+.price-picked details{margin-top:8px}
+.price-picked summary{min-height:44px;display:flex;align-items:center;color:var(--chung);font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.price-no-amount{color:var(--hong);font-weight:600}
+.price-builder-empty{margin:8px 0 0;color:var(--muted);font-size:13px}
 .rtable{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
 .rtable th,.rtable td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
 .rtable thead th{font-size:13px;color:var(--muted);font-weight:600}
@@ -353,6 +394,7 @@ html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + var(--tabs-height) +
 @media (max-width:380px){.tab{font-size:13px}.tabs .wrap{padding-inline:4px}}
 @media (max-width:359px){.phase-head{padding-left:44px}.sum .v{font-size:22px}}
 @media (max-width:430px){.tabs .wrap{grid-template-columns:repeat(7,minmax(44px,1fr));padding-inline:4px}.tab{padding:6px 0 5px;font-size:clamp(10px,2.8vw,13px)}}
+@media (max-width:380px){.price-builder{padding:12px}.price-builder-head{display:block}.price-builder-total{text-align:left;margin-top:8px}.price-builder-total span,.price-builder-total strong{display:inline-block;margin-right:6px}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.strand i{transition:none}}
 
 /* 좌우로 밀리지 않게: 화면 폭 밖으로 나가는 것은 잘라내고, 진행 순서는 세로로만 움직이게 */
@@ -573,6 +615,53 @@ var TASKS = [
   {id:'t43',off:30,title:'부모님 지원금 받았다면 증여세 신고',tip:'신고기한은 증여받은 날이 속한 달의 말일부터 3개월이에요.'},
   {id:'t44',off:120,rule:'taxyear',title:'연말정산에서 결혼세액공제 챙기기',tip:'혼인신고한 해의 연말정산(다음 해 1~2월) 때 반영돼요. 현행법은 2026년 12월 31일까지 혼인신고분이 대상이에요.'}
 ];
+
+var TASK_DETAILS = {
+  t01:[{id:'ts01a',title:'양가에 각각 알릴 시점과 방법 정하기'},{id:'ts01b',title:'결혼을 생각하게 된 계기와 기본 계획 나누기'},{id:'ts01c',title:'부모님이 궁금해할 점과 다음 대화 일정 적어 두기'}],
+  t02:[{id:'ts02a',title:'두 사람이 쓸 수 있는 총액 상한 정하기'},{id:'ts02b',title:'예식·스드메·여행·집 항목으로 예산 나누기'},{id:'ts02c',title:'양가 지원과 각자 부담, 예비비 기록하기'}],
+  t03:[{id:'ts03a',title:'신랑·신부·양가 하객 수를 따로 어림잡기'},{id:'ts03b',title:'하객이 오기 편한 지역과 교통 기준 정하기'},{id:'ts03c',title:'예식 형태와 필요한 홀 규모 정하기'}],
+  t04:[{id:'ts04a',title:'예산·지역에 맞는 후보 홀 추리기'},{id:'ts04b',title:'가능한 날짜와 투어 시간 문의하기'},{id:'ts04c',title:'대관료·식대·보증인원·주차를 같은 기준으로 비교하기'}],
+  t05:[{id:'ts05a',title:'양가가 편한 날짜와 장소 정하기'},{id:'ts05b',title:'예산·예식 규모·예물·예단 대화 범위 맞추기'},{id:'ts05c',title:'합의한 내용과 남은 질문을 둘이 정리하기'}],
+  t06:[{id:'ts06a',title:'견적서에 대관료·식대·기본 장식 포함 여부 확인하기'},{id:'ts06b',title:'최소 보증인원과 인원 변경 조건 확인하기'},{id:'ts06c',title:'추가요금·취소·환급 조건을 계약서에서 확인하기'}],
+  t07:[{id:'ts07a',title:'플래너를 쓸지, 직접 준비할지 결정하기'},{id:'ts07b',title:'담당 업무와 계약 기간·해지 조건 비교하기'},{id:'ts07c',title:'기본·선택 품목과 각 서비스 가격표 받기'}],
+  t08:[{id:'ts08a',title:'결혼식과 혼인신고 날짜를 따로 놓고 비교하기'},{id:'ts08b',title:'세금·대출·청약에 미칠 영향을 공식 자료로 확인하기'},{id:'ts08c',title:'두 사람이 합의한 예정일을 기록하기'}],
+  t09:[{id:'ts09a',title:'두 사람의 출퇴근 지역과 시간을 나란히 보기'},{id:'ts09b',title:'전세·매매·월세의 예산과 장단점 비교하기'},{id:'ts09c',title:'집 명의와 희망 입주 시기 정하기'}],
+  t10:[{id:'ts10a',title:'패키지에 포함된 촬영·의상·메이크업 확인하기'},{id:'ts10b',title:'피팅·헬퍼·원본 파일 등 추가 비용표 받기'},{id:'ts10c',title:'수정·취소 조건과 결과물 일정을 계약서에 남기기'}],
+  t11:[{id:'ts11a',title:'사진·영상 업체의 샘플과 촬영 범위 비교하기'},{id:'ts11b',title:'원본·보정본·납품 시기 확인하기'},{id:'ts11c',title:'촬영 시간·장소·비용을 계약서에 기록하기'}],
+  t12:[{id:'ts12a',title:'여행지와 출발·귀국 날짜 정하기'},{id:'ts12b',title:'여권·입국 서류와 현지 이동 방법 확인하기'},{id:'ts12c',title:'항공권·숙소 예약 내용을 한곳에 모으기'}],
+  t13:[{id:'ts13a',title:'예물·예단을 할지 양가와 이야기하기'},{id:'ts13b',title:'준비할 품목과 금액 상한 정하기'},{id:'ts13c',title:'생략하거나 정한 내용을 양가에 같은 말로 전하기'}],
+  t14:[{id:'ts14a',title:'두 사람이 검사를 받을지 결정하기'},{id:'ts14b',title:'e보건소·주소지 보건소에서 현재 지원 조건 확인하기'},{id:'ts14c',title:'필요한 신청·의뢰서 절차를 먼저 밟고 예약하기'}],
+  t15:[{id:'ts15a',title:'관심 있는 대출·청약 상품 이름과 기준 모으기'},{id:'ts15b',title:'혼인신고 전후 소득·자산 조건을 공식 사이트에서 비교하기'},{id:'ts15c',title:'필요 서류와 상담할 기관을 적어 두기'}],
+  t16:[{id:'ts16a',title:'계약금·잔금·대출 일정을 예산에 반영하기'},{id:'ts16b',title:'계약서의 보증금·수리·해지 조건 확인하기'},{id:'ts16c',title:'입주일과 이사·청소·주소 변경 일정을 맞추기'}],
+  t17:[{id:'ts17a',title:'촬영 콘셉트와 꼭 찍고 싶은 장면 정하기'},{id:'ts17b',title:'의상·소품·이동 동선을 업체와 확인하기'},{id:'ts17c',title:'촬영 후 선택·수정·앨범 일정을 기록하기'}],
+  t18:[{id:'ts18a',title:'드레스 투어와 피팅 날짜 예약하기'},{id:'ts18b',title:'기본 포함 벌수와 추가 피팅 비용 확인하기'},{id:'ts18c',title:'본식 드레스와 액세서리·수령 일자 확정하기'}],
+  t19:[{id:'ts19a',title:'맞춤·대여 중 원하는 방식을 정하기'},{id:'ts19b',title:'신랑 예복과 양가 혼주 의상 치수 확인하기'},{id:'ts19c',title:'가봉·수령·반납 날짜를 일정표에 적기'}],
+  t20:[{id:'ts20a',title:'신혼집에 둘 가전·가구와 치수 목록 만들기'},{id:'ts20b',title:'먼저 살 것과 입주 후 살 것 나누기'},{id:'ts20c',title:'구매 예산·배송·설치 날짜 확인하기'}],
+  t21:[{id:'ts21a',title:'종이·모바일 청첩장 방식과 디자인 고르기'},{id:'ts21b',title:'이름·날짜·장소·교통 안내 문구 확인하기'},{id:'ts21c',title:'인쇄 수량과 모바일 공개 시점 정하기'}],
+  t22:[{id:'ts22a',title:'신랑·신부·양가 명단을 나눠 적기'},{id:'ts22b',title:'이름·연락처·전달 방법 확인하기'},{id:'ts22c',title:'초대 여부와 답변을 하객 탭에 기록하기'}],
+  t23:[{id:'ts23a',title:'사회자·축가·축사 부탁할 사람 정하기'},{id:'ts23b',title:'참여 가능 여부와 필요한 준비 확인하기'},{id:'ts23c',title:'식순·시간·리허설 정보를 공유하기'}],
+  t24:[{id:'ts24a',title:'두 사람의 여권 만료일 확인하기'},{id:'ts24b',title:'여행지의 입국 서류·비자 조건을 공식 사이트에서 확인하기'},{id:'ts24c',title:'필요한 갱신이나 신청 일정을 잡기'}],
+  t25:[{id:'ts25a',title:'구매 품목별 주문·배송 상태 확인하기'},{id:'ts25b',title:'입주 청소와 배송 순서 맞추기'},{id:'ts25c',title:'설치 장소와 현장 수령 담당자 정하기'}],
+  t26:[{id:'ts26a',title:'직접 만나 전할 사람과 모바일로 보낼 사람 나누기'},{id:'ts26b',title:'초대할 날짜와 연락 방법 정하기'},{id:'ts26c',title:'보낸 날짜와 참석 답변 기록하기'}],
+  t27:[{id:'ts27a',title:'입장·인사·축가·폐백 순서 초안 만들기'},{id:'ts27b',title:'예식장 담당자와 진행 시간·장비 확인하기'},{id:'ts27c',title:'사회자와 참여자에게 최종 식순 보내기'}],
+  t28:[{id:'ts28a',title:'사진·문구·음악을 모아 영상 구성 정하기'},{id:'ts28b',title:'예식장 파일 형식·재생 시간·제출일 확인하기'},{id:'ts28c',title:'최종본을 미리 재생해 보고 백업하기'}],
+  t29:[{id:'ts29a',title:'양가 혼주별 헤어·메이크업 예약 확인하기'},{id:'ts29b',title:'도착 시간과 이동 방법 맞추기'},{id:'ts29c',title:'예약 담당자와 당일 연락처 공유하기'}],
+  t30:[{id:'ts30a',title:'답례품 품목과 단가 정하기'},{id:'ts30b',title:'하객 수에 맞춰 수량과 여유분 계산하기'},{id:'ts30c',title:'배송 날짜·보관 장소·배부 담당 정하기'}],
+  t31:[{id:'ts31a',title:'패키지나 예식장에 꽃 장식이 포함되는지 확인하기'},{id:'ts31b',title:'부케·부토니에 색과 꽃 종류 정하기'},{id:'ts31c',title:'수령 시각·장소·전달 담당자 확인하기'}],
+  t32:[{id:'ts32a',title:'초대 답변과 동행 인원 정리하기'},{id:'ts32b',title:'예식장 계약서에서 최종 인원 통보일 확인하기'},{id:'ts32c',title:'확정 인원과 식사 요청을 담당자에게 전달하기'}],
+  t33:[{id:'ts33a',title:'최종 피팅 날짜와 준비물을 확인하기'},{id:'ts33b',title:'본식 때 신을 신발·속옷을 가져가 맞춰 보기'},{id:'ts33c',title:'수선·수령 시각과 반납 방법 확인하기'}],
+  t34:[{id:'ts34a',title:'축의대와 가방을 맡을 사람 정하기'},{id:'ts34b',title:'기록할 명단과 정산 방법 정하기'},{id:'ts34c',title:'담당자에게 위치·연락처·유의사항 설명하기'}],
+  t35:[{id:'ts35a',title:'메이크업부터 예식까지 시간표 한 장에 정리하기'},{id:'ts35b',title:'업체별 담당자·주소·연락처 적기'},{id:'ts35c',title:'양가·사회자·도우미에게 같은 최종본 공유하기'}],
+  t36:[{id:'ts36a',title:'여권·예약 확인서·결제 수단 챙기기'},{id:'ts36b',title:'옷·상비약·충전기 등 짐 목록 확인하기'},{id:'ts36c',title:'여행자보험과 출발 당일 이동편 확인하기'}],
+  t37:[{id:'ts37a',title:'업체별 잔금과 당일 추가 비용 목록 만들기'},{id:'ts37b',title:'결제 수단이나 봉투를 업체별로 준비하기'},{id:'ts37c',title:'지급 담당자·시점·금액을 서로 확인하기'}],
+  t38:[{id:'ts38a',title:'반지·신분증·의상 등 당일 물품 모으기'},{id:'ts38b',title:'업체 도착 시간과 이동 동선 다시 확인하기'},{id:'ts38c',title:'연락 담당자에게 최종 시간표 전달하고 쉬기'}],
+  t39:[{id:'ts39a',title:'당일 담당자와 시작 전 준비 상태 확인하기'},{id:'ts39b',title:'반지·부케·식순 등 맡긴 물품 확인하기'},{id:'ts39c',title:'함께 온 사람들과 오늘을 즐기기'}],
+  t40:[{id:'ts40a',title:'혼인신고서와 두 사람 신분증 준비하기'},{id:'ts40b',title:'증인 서명과 추가로 필요한 서류 확인하기'},{id:'ts40c',title:'접수 후 혼인관계증명서 발급 여부 확인하기'}],
+  t41:[{id:'ts41a',title:'축의금과 전달받은 물품 기록 정리하기'},{id:'ts41b',title:'감사 인사를 전할 사람과 연락처 추리기'},{id:'ts41c',title:'양가와 인사 담당을 나누고 보낸 날짜 기록하기'}],
+  t42:[{id:'ts42a',title:'새 주소와 전입 날짜 확인하기'},{id:'ts42b',title:'정부24 또는 주민센터에서 신고 방법 확인하기'},{id:'ts42c',title:'공과금·우편물 주소도 함께 바꾸기'}],
+  t43:[{id:'ts43a',title:'받은 지원금의 날짜·금액·증빙 정리하기'},{id:'ts43b',title:'현재 신고 기준을 국세청 자료에서 확인하기'},{id:'ts43c',title:'필요하면 세무 상담 후 신고 일정 기록하기'}],
+  t44:[{id:'ts44a',title:'혼인신고 접수 날짜를 확인할 자료 보관하기'},{id:'ts44b',title:'신고한 해의 연말정산 안내에서 공제 대상 확인하기'},{id:'ts44c',title:'회사 제출 자료와 신고 기한 확인하기'}]
+};
 
 var PHASES = [
   {name:'1년~8개월 전', range:'D-365~D-240'},
@@ -885,7 +974,13 @@ function buildTasks(st){
   var start = parseYMD(st.startDate) || today();
   var list = [];
   TASKS.forEach(function(t, idx){
-    var s = (st.tasks && st.tasks[t.id]) || {};
+    var taskStore = st.tasks || {}, s = taskStore[t.id] || {}, subDefs = TASK_DETAILS[t.id] || [];
+    var hasSubtaskState = subDefs.some(function(sub){ return Object.prototype.hasOwnProperty.call(taskStore, sub.id); });
+    var subtasks = subDefs.map(function(sub){
+      var saved = taskStore[sub.id] || {};
+      return {id:sub.id, title:sub.title, done:hasSubtaskState ? !!saved.done : !!s.done};
+    });
+    var done = subDefs.length ? (hasSubtaskState ? subtasks.every(function(sub){ return sub.done; }) : !!s.done) : !!s.done;
     var base = null;
     if (wd) {
       if (t.rule === 'reg') base = reg || addDays(wd, t.off);
@@ -895,7 +990,7 @@ function buildTasks(st){
     var override = parseYMD(s.date);
     var due = override || base;
     list.push({kind:'t', id:t.id, title:t.title, tip:t.tip, wedding:!!t.wedding, due:due, off: (wd && due) ? diffDays(due, wd) : t.off,
-      done:!!s.done, memo:s.memo || '', hidden:!!s.hidden, overridden:!!override, order:idx, book: parseYMD(s.book),
+      done:done, subtasks:subtasks, memo:s.memo || '', hidden:!!s.hidden, overridden:!!override, order:idx, book: parseYMD(s.book),
       catchup: !!(wd && due && !override && diffDays(due, start) < 0)});
   });
   var cu = st.custom || {};
@@ -912,14 +1007,17 @@ function counts(list){
   var t0 = today(), c = {total:0, done:0, left:0, week:0, late:0, catchup:0};
   list.forEach(function(it){
     if (it.hidden) return;
-    c.total++;
-    if (it.done) { c.done++; return; }
-    c.left++;
-    if (it.catchup) { c.catchup++; return; }
-    if (it.due) {
-      var d = diffDays(it.due, t0);
-      if (d < 0) c.late++; else if (d <= 7) c.week++;
-    }
+    var units = it.subtasks && it.subtasks.length ? it.subtasks : [{done:it.done}];
+    units.forEach(function(unit){
+      c.total++;
+      if (unit.done) { c.done++; return; }
+      c.left++;
+      if (it.catchup) { c.catchup++; return; }
+      if (it.due) {
+        var d = diffDays(it.due, t0);
+        if (d < 0) c.late++; else if (d <= 7) c.week++;
+      }
+    });
   });
   return c;
 }
@@ -1063,19 +1161,29 @@ function dueHTML(it, wd, t0){
   return '<span class="due"><span class="rel">'+rel+'</span>'+(it.book ? '진행 ' : '')+esc(fmtShort(it.due, t0.getFullYear()))+(it.wedding && state.weddingTime ? ' '+esc(fmtTime(state.weddingTime)) : '')+'</span>';
 }
 
+function taskProgress(it){
+  var total = it.subtasks && it.subtasks.length ? it.subtasks.length : 1;
+  var done = it.subtasks && it.subtasks.length ? it.subtasks.filter(function(sub){ return sub.done; }).length : (it.done ? 1 : 0);
+  return {total:total, done:done};
+}
+
 function taskHTML(it, wd, t0){
   var late = !it.done && !it.catchup && it.due && diffDays(it.due, t0) < 0;
   var open = !!ui.open[it.id];
+  var progress = taskProgress(it);
   var cls = 'task' + (it.done ? ' done' : '') + (late ? ' overdue' : '') + (it.catchup && !it.done ? ' catchup' : '') + (it.wedding ? ' wedding' : '');
   var h = '<li class="'+cls+'">' +
     '<button class="knot" type="button" role="checkbox" aria-checked="'+(it.done?'true':'false')+'" aria-label="완료 표시: '+esc(it.title)+'" data-act="toggle" data-fk="task-check-'+it.id+'" data-kind="'+it.kind+'" data-id="'+it.id+'"'+dis()+'>'+CHECK+'</button>' +
-    '<div class="row"><button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="open" data-fk="task-open-'+it.id+'" data-id="'+it.id+'">'+esc(it.title)+(it.kind==='c' ? '<span class="mine">직접 추가</span>' : '')+'</button>' + dueHTML(it, wd, t0) + '</div>';
+    '<div class="row"><button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="open" data-fk="task-open-'+it.id+'" data-id="'+it.id+'">'+esc(it.title)+(it.kind==='c' ? '<span class="mine">직접 추가</span>' : '')+(progress.total > 1 ? '<span class="sub-progress">'+progress.done+'/'+progress.total+' 세부</span>' : '')+'</button>' + dueHTML(it, wd, t0) + '</div>';
   var dl = [];
   if (it.book) dl.push('<span><b>예약</b> '+esc(fmtShort(it.book, t0.getFullYear()))+'</span>');
   if (dl.length) h += '<p class="tdates">'+dl.join('')+'</p>';
   if (!open && it.memo) h += '<p class="preview">'+esc(it.memo)+'</p>';
   if (open) {
     h += '<div class="detail">' + (it.tip ? '<p class="tip">'+esc(it.tip)+'</p>' : '') +
+      (it.subtasks && it.subtasks.length ? '<section class="subtasks" aria-label="'+esc(it.title)+' 세부 체크"><h4>세부 체크 <span>'+progress.done+'/'+progress.total+' 완료</span></h4><ul class="subtask-list">' + it.subtasks.map(function(sub){
+        return '<li class="subtask'+(sub.done?' done':'')+'"><button class="subtask-check" type="button" role="checkbox" aria-checked="'+(sub.done?'true':'false')+'" aria-label="완료 표시: '+esc(sub.title)+'" data-act="subtask-toggle" data-parent="'+it.id+'" data-id="'+sub.id+'" data-fk="subtask-check-'+sub.id+'"'+dis()+'>'+CHECK+'</button><span>'+esc(sub.title)+'</span></li>';
+      }).join('')+'</ul></section>' : '') +
       '<div class="field-row"><label class="field">예약일' +
         '<input type="date" value="'+(it.book ? ymd(it.book) : '')+'" data-act-change="book" data-fk="task-book-'+it.kind+'-'+it.id+'" data-kind="'+it.kind+'" data-id="'+it.id+'"'+dis()+'></label>' +
         '<label class="field">진행일' +
@@ -1108,7 +1216,11 @@ function timelineHTML(list){
   });
   groups.forEach(function(g){ g.items.sort(function(a,b){ return (a.off - b.off) || (a.order - b.order); }); });
 
-  var catchN = list.filter(function(i){ return i.catchup && !i.done && !i.hidden; }).length;
+  var catchN = list.reduce(function(total, i){
+    if (!i.catchup || i.done || i.hidden) return total;
+    var progress = taskProgress(i);
+    return total + progress.total - progress.done;
+  }, 0);
   var h = (catchN ? '<p class="lead-note">결혼식까지 남은 기간보다 앞선 일 '+catchN+'개는 ‘지금 챙기기’로 표시했어요. 이미 끝낸 일은 체크하고, 필요 없는 일은 열어서 숨기세요.</p>' : '') +
     '<div class="tools">' +
     '<button class="toggle" type="button" aria-pressed="'+(ui.hideDone?'true':'false')+'" data-act="hide-done" data-fk="hide-done">완료한 일 숨기기</button>' +
@@ -1121,8 +1233,8 @@ function timelineHTML(list){
   groups.forEach(function(g, gi){
     var shown = g.items.filter(function(it){ return !(ui.hideDone && it.done); });
     if (!g.items.length) return;
-    var doneN = g.items.filter(function(i){ return i.done && !i.hidden; }).length;
-    var totalN = g.items.filter(function(i){ return !i.hidden; }).length;
+    var doneN = 0, totalN = 0;
+    g.items.filter(function(i){ return !i.hidden; }).forEach(function(i){ var progress = taskProgress(i); doneN += progress.done; totalN += progress.total; });
     h += '<section class="phase'+(g.p.after?' after':'')+'"><div class="phase-head"><h3>'+esc(g.p.name)+'</h3><span class="meta">'+esc(g.p.range)+'</span><span class="meta count">'+doneN+'/'+totalN+'</span></div><ul class="rail">';
     if (!shown.length) h += '<li class="empty">이 구간은 모두 끝냈어요.</li>';
     shown.forEach(function(it){
@@ -1164,7 +1276,9 @@ function regCalcHTML(key){
 function regionTable(cap, key, unit, dec){
   function f(v){ return v == null ? '–' : (dec ? v.toFixed(1) : v.toLocaleString('ko-KR')); }
   var h = '<p class="rcap">'+cap+' <span class="unit">('+unit+')</span></p><div class="rwrap"><table class="rtable"><thead><tr><th scope="col">지역</th><th scope="col">저</th><th scope="col">평균</th><th scope="col">고</th></tr></thead><tbody>';
-  REGION_COST.forEach(function(r){
+  var reg = (state.budget && state.budget.region) || '전국';
+  var selected = REGION_COST.filter(function(r){ return r.n === reg; })[0] || REGION_COST[0];
+  [selected].forEach(function(r){
     var v = r[key];
     h += '<tr'+(r.n === '전국' ? ' class="nat"' : '')+'><th scope="row">'+r.n+'<small>자료 '+v[3]+'건</small></th><td>'+f(v[0])+'</td><td class="avg">'+f(v[1])+'</td><td>'+f(v[2])+'</td></tr>';
   });
@@ -1172,12 +1286,50 @@ function regionTable(cap, key, unit, dec){
 }
 function ptSec(id, title){ return '<details class="pt-accordion" data-k="'+id+'"'+(ui.openKnow[id]?' open':'')+'><summary><h4 class="pt-sec" id="'+id+'" tabindex="-1">'+title+'</h4></summary><div class="pt-content">'; }
 function ptEnd(){ return '</div></details>'; }
-function priceTable(cap, rows, head){
+var PRICE_ROW_DEFS = [];
+var PRICE_GROUP_LABELS = {
+  'hall-basic':'예식장 기본', 'hall-rent':'예식장 대관료', 'hall-meal':'예식장 식대', 'hall-extra':'예식장 추가 항목',
+  'studio-basic':'스튜디오 기본', 'studio-extra':'스튜디오 추가 항목', 'dress-basic':'드레스 기본', 'dress-extra':'드레스 추가 항목',
+  'make-basic':'메이크업 기본', 'make-extra':'메이크업 추가 항목', 'package':'스드메 묶음'
+};
+function priceTable(cap, rows, head, group){
   head = head || ['항목', '중간값', '조사 시점'];
+  group = group || 'reference';
   var h = '<p class="rcap">'+cap+'</p><div class="rwrap"><table class="rtable ptable"><thead><tr>' +
-    head.map(function(x, i){ return '<th scope="col">'+x+'</th>'; }).join('') + '</tr></thead><tbody>';
-  rows.forEach(function(r){ h += '<tr><th scope="row">'+r[0]+'</th><td class="avg">'+r[1]+'</td><td>'+r[2]+'</td></tr>'; });
+    head.concat(['내 견적']).map(function(x){ return '<th scope="col">'+x+'</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(r, index){
+    var id = group + '-' + (index + 1), selectable = group !== 'overall' && group !== 'timing' && r[1].indexOf('만원') >= 0 && r[1].indexOf('%') < 0;
+    if (selectable) PRICE_ROW_DEFS.push({id:id, label:r[0].trim(), section:cap, group:PRICE_GROUP_LABELS[group] || cap});
+    var saved = (state.pricePlan || {})[id] || {}, amount = saved.amount == null ? '' : String(saved.amount);
+    var config = selectable
+      ? '<td class="price-config"><button class="price-select-button" type="button" role="checkbox" aria-checked="'+(saved.include?'true':'false')+'" aria-label="내 견적에 '+esc(r[0].trim())+' '+(saved.include?'담김':'담기')+'" data-act="price-toggle" data-id="'+id+'" data-fk="price-select-'+id+'"'+dis()+'><span class="price-select-icon">'+CHECK+'</span><span>포함</span></button>' +
+        '<label class="price-amount-wrap">내 금액<input class="price-amount" type="text" inputmode="numeric" value="'+esc(amount)+'" placeholder="예: 150" aria-label="'+esc(r[0].trim())+' 내 금액(만원)" data-price-amount="'+id+'" data-fk="price-amount-'+id+'"'+dis()+'><span>만원</span></label></td>'
+      : '<td class="price-config"><span class="tip">참고값 · 합계에서 제외</span></td>';
+    h += '<tr><th scope="row">'+r[0]+'</th><td class="avg">'+r[1]+'</td><td class="price-source">'+r[2]+'</td>'+config+'</tr>';
+  });
   return h + '</tbody></table></div>';
+}
+function pricePlanHTML(){
+  var plan = state.pricePlan || {}, chosen = PRICE_ROW_DEFS.filter(function(row){ return plan[row.id] && plan[row.id].include; });
+  var total = 0, priced = 0, missing = 0, groupOrder = [], groups = {};
+  chosen.forEach(function(row){
+    var saved = plan[row.id] || {}, amount = num(saved.amount);
+    if (!groups[row.group]) { groups[row.group] = []; groupOrder.push(row.group); }
+    groups[row.group].push({row:row, amount:amount});
+    if (amount == null) missing++; else { total += amount; priced++; }
+  });
+  var sum = priced ? fmtMan(total) : '-';
+  var list = groupOrder.map(function(group){
+    return '<section class="price-picked-group"><h4>'+esc(group)+'</h4><ul class="price-picked">'+groups[group].map(function(item){
+      return '<li><span>'+esc(item.row.label)+'</span><strong class="'+(item.amount == null?'price-no-amount':'')+'">'+(item.amount == null?'금액 입력 필요':fmtMan(item.amount))+'</strong></li>';
+    }).join('')+'</ul></section>';
+  }).join('');
+  return '<section class="price-builder" aria-labelledby="price-builder-title"><div class="price-builder-head"><div><h3 id="price-builder-title">내가 묶은 견적</h3>' +
+    '<p class="price-builder-intro">담을 항목을 고르고 내 금액을 만원 단위로 입력하면 합계를 계산해요. 겹치는 패키지·개별 항목은 필요한 쪽만 골라 주세요.</p></div>' +
+    '<div class="price-builder-total"><span>입력한 금액 합계</span><strong>'+sum+'</strong></div></div>' +
+    '<p class="price-builder-meta">'+chosen.length+'개 선택 · '+missing+'개 금액 입력 필요</p>' +
+    (chosen.length ? '<details><summary>내가 담은 항목 보기</summary>'+list+'</details>' : '<p class="price-builder-empty">아래 가격 항목에서 필요한 줄을 선택하면 여기에 보여요.</p>') +
+    '</section>';
 }
 function cmpRow(t, pre, post){
   return '<div class="cmp-row"><h4>'+t+'</h4><p class="pre"><span class="tag">신고 전</span> '+pre+'</p><p class="post"><span class="tag">신고 후</span> '+post+'</p></div>';
@@ -1267,11 +1419,10 @@ function knowHTML(){
 }
 
 function priceHTML(){
-  var h = '<p class="basis">필요한 항목을 눌러 가격과 해당 지역 시세를 확인하세요.</p><div class="know">';
+  PRICE_ROW_DEFS = [];
+  var h = '<p class="basis">필요한 항목을 눌러 가격과 해당 지역 시세를 확인하세요.</p>' + regionSelectHTML('priceRegion', '가격 비교 지역') + '<div class="know">';
   if (ui.openKnow.k13 == null) ui.openKnow.k13 = true;
-  h += card('k13', '항목별 가격 비교표',
-    '공개된 결혼 가격을 항목별로 모았어요. 받은 견적이 어디쯤인지 같은 항목끼리 비교하세요.',
-    ptSec('pt-read', '읽는 법') +
+  var priceBody = ptSec('pt-read', '읽는 법') +
     '<ul><li><b>중간값</b>: 가격을 줄 세웠을 때 가운데 값이에요. 비싼 업체 몇 곳에 덜 흔들려서 이 표는 대부분 중간값이에요.</li>' +
     '<li><b>평균</b>: 비싼 업체가 섞이면 중간값보다 높게 나와요. 평균인 줄은 \'평균\'이라고 따로 적었어요.</li>' +
     '<li>모두 한국소비자원 조사값이고, 조사 시점이 항목마다 달라요. 같은 항목에 시점이 다른 값이 있으면 최신 값을 위에 두었어요.</li>' +
@@ -1283,7 +1434,7 @@ function priceHTML(){
       ['  그중 식대 비중', '61.4%', '참가격 통계'],
       ['  그중 대관료 비중', '20.9%', '참가격 통계'],
       ['  그중 기본 장식비 비중', '3.5%', '참가격 통계']
-    ], ['항목', '금액', '기준·시점']) +
+    ], ['항목', '금액', '기준·시점'], 'overall') +
     regionTable('지역별 전체 비용', 't', '만원', false) + ptEnd() +
 
     ptSec('pt-hall', '예식장') +
@@ -1291,15 +1442,15 @@ function priceHTML(){
       ['결혼식장 계약금(대관료+식대+기본 장식)', '1,550만원', '중간값, 2026년 2월'],
       ['  성수기 / 비수기', '1,610만원 / 1,250만원', '중간값, 2025년 4월~2026년 6월'],
       ['최소 보증인원', '200명', '중간값, 성수기·비수기 같음']
-    ], ['항목', '금액', '기준·시점']) +
+    ], ['항목', '금액', '기준·시점'], 'hall-basic') +
     priceTable('대관료', [
       ['성수기 / 비수기', '350만원 / 250만원', '중간값, 2025년 4월~2026년 6월']
-    ], ['항목', '금액', '기준·시점']) +
+    ], ['항목', '금액', '기준·시점'], 'hall-rent') +
     regionTable('지역별 대관료', 'h', '만원', false) +
     priceTable('1인 식대', [
       ['1인 식대(전국)', '6만원', '중간값, 2025년 8월'],
       ['  서울 강남 1인 식대', '9만원', '중간값, 2025년 12월']
-    ], ['항목', '금액', '기준·시점']) +
+    ], ['항목', '금액', '기준·시점'], 'hall-meal') +
     regionTable('지역별 1인 식대', 'm', '만원', true) +
     priceTable('추가금(선택 항목)', [
       ['생화 꽃장식', '280만원', '중간값, 2026년 2월'],
@@ -1312,7 +1463,7 @@ function priceHTML(){
       ['폐백 수모비', '10만원', '참가격 통계(전국)'],
       ['혼주 헤어·메이크업 여성 / 남성', '23만원 / 10만원', '중간값, 2025년 4월'],
       ['  (다른 구성 조사)', '15만원', '중간값, 2025년 12월']
-    ], ['항목', '금액', '기준·시점']) +
+    ], ['항목', '금액', '기준·시점'], 'hall-extra') +
     '<p class="tip">식장이 많이 취급하는 추가 항목은 본식 촬영(67.8%), 혼주 헤어·메이크업(62.4%), 본식 사회자(46.7%) 순이에요. 성수기 주말엔 생화 장식이나 본식 도우미를 필수로 붙이는 식장이 32.8%였어요.</p>' + ptEnd() +
 
     ptSec('pt-studio', '스튜디오') +
@@ -1321,7 +1472,7 @@ function priceHTML(){
       ['  (이전 조사)', '132만원', '중간값, 2025년 8월'],
       ['가장 비싼 지역 / 싼 지역', '강원 159만원 / 경기·충청 100만원', '중간값, 2025년 4월'],
       ['서울 강남', '150만원', '중간값, 2025년 4월']
-    ], ['항목', '금액', '기준·시점']) +
+    ], ['항목', '금액', '기준·시점'], 'studio-basic') +
     priceTable('추가금(선택 항목)', [
       ['원본 파일 전체 구매', '22만원', '중간값, 2025년 4월'],
       ['앨범 페이지 추가', '장당 3만원', '중간값, 2025년 4월'],
@@ -1329,30 +1480,30 @@ function priceHTML(){
       ['촬영 출장비', '20만원', '참가격 통계(전국)'],
       ['들러리 촬영', '8만원', '참가격 통계(전국)'],
       ['반려동물 촬영', '8만원', '참가격 통계(전국)']
-    ], ['항목', '금액', '기준·시점']) + ptEnd() +
+    ], ['항목', '금액', '기준·시점'], 'studio-extra') + ptEnd() +
 
     ptSec('pt-dress', '드레스') +
     priceTable('기본(본식 1벌+촬영 3벌)', [
       ['드레스 기본', '160만원', '중간값, 2026년 2월'],
       ['가장 비싼 지역 / 싼 지역', '대전 220만원 / 서울(강남 외) 118만원', '중간값, 2025년 12월'],
       ['서울 강남', '198만원', '중간값, 2025년 12월']
-    ], ['항목', '금액', '기준·시점']) +
+    ], ['항목', '금액', '기준·시점'], 'dress-basic') +
     priceTable('추가금(선택 항목)', [
       ['피팅(시착)', '6만원', '중간값, 2025년 4월'],
       ['기본 개수 넘는 추가 시착', '5만원', '중간값, 2025년 4월'],
       ['헬퍼(도우미) 촬영 / 본식', '각 25만원', '참가격 통계(전국)']
-    ], ['항목', '금액', '기준·시점']) + ptEnd() +
+    ], ['항목', '금액', '기준·시점'], 'dress-extra') + ptEnd() +
 
     ptSec('pt-makeup', '메이크업') +
     priceTable('기본(본식+촬영, 원장급)', [
       ['메이크업 기본', '79만원', '중간값, 2026년 2월'],
       ['가장 비싼 지역 / 싼 지역', '서울 강남 101만원 / 광주 33만원', '중간값, 2025년 12월']
-    ], ['항목', '금액', '기준·시점']) +
+    ], ['항목', '금액', '기준·시점'], 'make-basic') +
     priceTable('추가금(선택 항목)', [
       ['얼리스타트 오전 4시대', '20만원', '중간값, 2025년 4월'],
       ['얼리스타트 오전 5시대 / 6시대', '11만원 / 5만원', '중간값, 2025년 4월'],
       ['촬영 출장비', '20만원', '참가격 통계(전국)']
-    ], ['항목', '금액', '기준·시점']) +
+    ], ['항목', '금액', '기준·시점'], 'make-extra') +
     '<p class="tip">얼리스타트는 조사 업체의 27%만 운영하고, 시간이 이를수록 비싸요.</p>' + ptEnd() +
 
     ptSec('pt-package', '스드메 묶음(패키지)') +
@@ -1360,7 +1511,7 @@ function priceHTML(){
       ['스드메 패키지', '292만원', '중간값, 2025년 6월'],
       ['스드메 전국 / 서울', '약 319만원 / 399만원', '평균, 2026년 4월'],
       ['드메(스튜디오 제외)', '160만원', '중간값, 2025년 4월~2026년 6월']
-    ], ['항목', '금액', '기준·시점']) +
+    ], ['항목', '금액', '기준·시점'], 'package') +
     '<p class="tip">드메는 같은 기간 140만원에서 180만원으로 올랐어요.</p>' + ptEnd() +
 
     ptSec('pt-timing', '시기·계약 시점') +
@@ -1369,14 +1520,16 @@ function priceHTML(){
       ['성수기(3~6월, 9~12월) 추가 비용', '평균 202만원 더', '2025년 4월~2026년 6월'],
       ['비수기 평일 대관료', '성수기 주말 점심의 69.1%', '2025년 4월~2026년 6월'],
       ['예식 10개월 전 계약 / 2개월 전 계약', '2,231만원 / 1,626만원', '평균, 2025년 10월 발표']
-    ], ['항목', '금액', '기준·시점']) + ptEnd() +
+    ], ['항목', '금액', '기준·시점'], 'timing') + ptEnd() +
 
     ptSec('pt-check', '업체별 가격 확인') +
     '<ul><li>참가격에서는 가격을 스스로 공개한 예식장의 홀별 대관료·장식비·식대·보증인원과, 결혼준비대행 업체의 제휴 스드메 기본·선택 가격을 검색할 수 있어요. 공개한 업체만 나와요.</li>' +
     '<li>참가격이 공개하는 선택 품목은 예식장 17개, 스튜디오 20개, 드레스 14개, 메이크업 16개예요.</li>' +
     '<li>2025년 11월부터 업체는 기본·선택 품목 가격과 위약금·환급 기준을 홈페이지나 참가격 중 한 곳과 계약서 표지에 표시해야 해요. 공정위가 2026년 8월 1일부터 집중 점검 중이고, 어기면 과태료가 최대 1억원이에요. 표시가 없으면 요구하세요.</li>' +
-    '<li>공정위는 2024년 11월 사진 파일 구입비·드레스 피팅비·얼리스타트비를 기본 서비스에 포함하라고 했지만, 2025년 9월 조사에서도 20곳 중 19곳이 따로 받았어요. 따로라면 금액을 계약서에 적게 하세요.</li></ul>' + ptEnd(),
-    a('https://www.price.go.kr','참가격 업체별 가격·예상 견적'));
+    '<li>공정위는 2024년 11월 사진 파일 구입비·드레스 피팅비·얼리스타트비를 기본 서비스에 포함하라고 했지만, 2025년 9월 조사에서도 20곳 중 19곳이 따로 받았어요. 따로라면 금액을 계약서에 적게 하세요.</li></ul>' + ptEnd();
+  h += pricePlanHTML() + card('k13', '항목별 가격 비교표',
+    '공개된 결혼 가격을 항목별로 모았어요. 받은 견적이 어디쯤인지 같은 항목끼리 비교하세요.',
+    priceBody, a('https://www.price.go.kr','참가격 업체별 가격·예상 견적'));
   h += card('k11', '견적서 밖에서 나오는 돈',
     '기본 견적에 없다가 계약 뒤에 붙는 항목이 많아요. 아래 항목이 포함인지 별도인지 계약 전에 물어보세요.',
     '<ul><li>식장: 생화 꽃장식, 본식 촬영, 본식 도우미, 폐백, 주류·음료, 부가세 포함 여부, 외부 촬영 업체를 쓸 때 반입료.</li>' +
@@ -1431,7 +1584,7 @@ function budgetHTML(){
   var left = total != null ? total - planSum : null;
   var h = '<div class="totalrow"><label for="bTotal">총예산</label>' +
     '<input type="text" inputmode="numeric" id="bTotal" value="'+(total != null ? total : '')+'" placeholder="예: 5000" data-btotal="1" data-fk="btotal"'+dis()+'><span class="unit">만원</span></div>';
-  h += regionSelectHTML();
+  h += regionSelectHTML('bRegion', '예산 참고 지역');
   h += '<p class="basis">지역별 참고 시세와 항목별 가격은 가격 비교 탭에서 확인할 수 있어요. <button class="link" type="button" data-act="goto-price">가격 비교 탭 열기</button></p>';
   h += '<div class="sumgrid">' +
     '<div class="sum"><span class="k">항목별 예산 합계</span><span class="v">'+(anyPlan ? fmtMan(planSum) : '-')+'</span></div>' +
@@ -1463,11 +1616,13 @@ function budgetHTML(){
   }
   return h;
 }
-function regionSelectHTML(){
+function regionSelectHTML(id, label){
+  id = id || 'bRegion';
+  label = label || '예산 참고 지역';
   var reg = (state.budget && state.budget.region) || '전국';
   var opts = REGION_COST.map(function(r){ return '<option value="'+esc(r.n)+'"'+(r.n === reg ? ' selected' : '')+'>'+esc(r.n)+'</option>'; }).join('');
-  return '<div class="region-select"><label for="bRegion">예산 참고 지역</label>' +
-    '<select id="bRegion" data-fk="bRegion" data-bregion="1"'+dis()+'>'+opts+'</select></div>';
+  return '<div class="region-select"><label for="'+id+'">'+label+'</label>' +
+    '<select id="'+id+'" data-fk="'+id+'" data-bregion="1"'+dis()+'>'+opts+'</select></div>';
 }
 function quoteRows(){
   var q = (state.budget && state.budget.quotes) || {}, list = [];
@@ -1877,8 +2032,23 @@ document.addEventListener('click', function(e){
   if (!b || b.disabled) return;
   var act = b.getAttribute('data-act'), id = b.getAttribute('data-id'), kind = b.getAttribute('data-kind');
   if (act === 'toggle') {
-    var cur = taskState(kind, id);
-    commit(patchItem(kind, id, {done: !cur.done}));
+    var cur = taskState(kind, id), taskDetails = kind === 't' ? (TASK_DETAILS[id] || []) : [];
+    if (taskDetails.length) {
+      var nextDone = b.getAttribute('aria-checked') !== 'true', groupPatch = {tasks:{}};
+      groupPatch.tasks[id] = {done:nextDone};
+      taskDetails.forEach(function(sub){ groupPatch.tasks[sub.id] = {done:nextDone}; });
+      commit(groupPatch);
+    } else commit(patchItem(kind, id, {done: !cur.done}));
+  } else if (act === 'subtask-toggle') {
+    var parentId = b.getAttribute('data-parent'), parent = buildTasks(state).filter(function(it){ return it.id === parentId; })[0];
+    var nextSubDone = b.getAttribute('aria-checked') !== 'true', subPatch = {tasks:{}}, allSubDone = true;
+    (parent ? parent.subtasks : []).forEach(function(sub){
+      var checked = sub.id === id ? nextSubDone : sub.done;
+      subPatch.tasks[sub.id] = {done:checked};
+      if (!checked) allSubDone = false;
+    });
+    if (parentId) subPatch.tasks[parentId] = {done:allSubDone};
+    commit(subPatch);
   } else if (act === 'open') {
     ui.open[id] = !ui.open[id]; render();
   } else if (act === 'clear-book') {
@@ -1929,6 +2099,10 @@ document.addEventListener('click', function(e){
         b27:{plan: qq.extra != null ? qq.extra : ''}
       }}});
     }
+  } else if (act === 'price-toggle') {
+    var pricePatch = {pricePlan:{}};
+    pricePatch.pricePlan[id] = {include:b.getAttribute('aria-checked') !== 'true'};
+    commit(pricePatch);
   } else if (act === 'g-open') {
     ui.openGuest[id] = !ui.openGuest[id]; render();
   } else if (act === 'g-view') {
@@ -2011,6 +2185,12 @@ document.addEventListener('input', function(e){
   } else if (t.matches('textarea[data-talk-memo]')) {
     var p = {talks:{}}; p.talks[t.getAttribute('data-talk-memo')] = {memo: t.value};
     commit(p, {render:false, delay:700});
+  } else if (t.matches('input[data-price-amount]')) {
+    var amountDigits = t.value.replace(/[^0-9]/g, '');
+    if (amountDigits !== t.value) t.value = amountDigits;
+    var priceAmountPatch = {pricePlan:{}};
+    priceAmountPatch.pricePlan[t.getAttribute('data-price-amount')] = {amount:amountDigits === '' ? '' : Number(amountDigits)};
+    commit(priceAmountPatch, {delay:600});
   }
 });
 
