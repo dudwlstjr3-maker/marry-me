@@ -44,6 +44,7 @@
 - 외부 리소스는 스크립트 cdnjs.cloudflare.com, cdn.jsdelivr.net/npm, code.jquery.com과 스타일 fonts.googleapis.com만 쓸 수 있어요. 외부 이미지와 다른 사이트로의 요청은 막혀요.
 - 저장 로직은 `Store`, `commit`, `flush`, `init`에 있어요. claude.ai에서는 `window.claude.use('db')`의 `plan/main` 문서를, 그 밖에서는 localStorage `wedding-plan-v1`을 써요. 데이터는 객체로만 저장하고(배열 금지), 삭제는 키를 지우지 않고 `deleted: true`로 표시해요.
 - 고정 ID는 바꾸거나 지우지 마세요: `TASKS` t01~t44, `BUDGET_ITEMS` b01~b27, `TALKS` m1~m17. 저장된 체크·메모·금액이 ID에 묶여 있어요. 새 항목은 새 ID로 추가하세요.
+- 가격 비교의 비교안은 `PRICE_ITEMS`의 항목·선택지 id와 `PRICE_TABLES`의 행 ID(그룹-순번)로 저장돼요(`pricePlan.groups`). 이 id를 바꾸거나 표의 행 순서를 바꾸지 말고, 새 행은 표 끝에 추가하세요. 예산 탭에서 고른 비교안은 `budget.planGroup`에, 항목별 반영 여부는 각 비교안의 `apply`에 들어가요.
 - 입력칸(input, textarea, select)에는 고유한 `data-fk`를 붙이세요. 화면을 다시 그릴 때 입력 중인 칸의 커서를 지키는 데 써요.
 - 색은 `:root`의 CSS 변수로만 쓰고, 다크 모드와 휴대폰 안전 영역 처리를 유지하세요.
 - 알아둘 것 탭의 제도 내용은 2026년 10월 6일 기준이에요(`BASIS`). 지역별 비용 표는 한국소비자원 2025년 4월~2026년 2월 발표값이에요(`REGION_COST`). 내용을 고치면 기준 날짜도 같이 고치세요.

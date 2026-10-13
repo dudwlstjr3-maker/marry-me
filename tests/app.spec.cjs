@@ -102,36 +102,190 @@ test('timeline tasks expose individually saved detail checks and group completio
  expect(noArrays(saved)).toBe(true);expect(errors).toEqual([]);
 });
 
-test('price bundle uses selected reference prices and keeps budget inputs',async({page})=>{
- const seed=structuredClone(SEED);seed.pricePlan={'hall-rent-1':{amount:400},'studio-basic-1':{amount:150}};
- const {app,errors}=await openApp(page,seed);await app.locator('#tab-price').click();
- const hall=app.locator('#panel-price details[data-k="pt-hall"]');await hall.locator('summary').click();
- const hallToggle=app.locator('[data-act="price-toggle"][data-id="hall-rent-1"]');
- await expect(hallToggle).toHaveText('진행');await hallToggle.click();
- const studio=app.locator('#panel-price details[data-k="pt-studio"]');await studio.locator('summary').click();
- const studioToggle=app.locator('[data-act="price-toggle"][data-id="studio-basic-1"]');await studioToggle.click();
- await expect(app.locator('#panel-price input[data-price-amount]')).toHaveCount(0);
- await expect(app.locator('.price-group-summary strong').nth(1)).toHaveText('387만원 ~ 487만원');
- await expect(app.locator('.price-group-tab[data-id="default"]')).toContainText('387만원 ~ 487만원');
- await app.locator('#priceGroupAddName').fill('서울 예식안');await app.locator('[data-act="price-group-add"]').click();
- const secondGroup=await app.locator('.price-group-tab[aria-pressed="true"]').getAttribute('data-id');
- await expect(app.locator('[data-price-group-name]')).toHaveValue('서울 예식안');
- await app.locator('[data-act="price-toggle"][data-id="studio-basic-1"]').click();
- await expect(app.locator('.price-group-summary strong').nth(1)).toHaveText('137만원');
- await expect(app.locator('.price-group-tab[data-id="'+secondGroup+'"]')).toContainText('137만원');
- await app.locator('.price-group-tab[data-id="default"]').click();
- await expect(app.locator('.price-group-summary strong').nth(1)).toHaveText('387만원 ~ 487만원');
- await expect.poll(async()=>{
-  const saved=await stored(app);return saved?.pricePlan?.groups?.default?.items?.['hall-rent-1']===true&&saved?.pricePlan?.groups?.default?.items?.['studio-basic-1']===true&&saved?.pricePlan?.groups?.[secondGroup]?.items?.['studio-basic-1']===true;
- }).toBe(true);
- const saved=await stored(app);expect(saved.pricePlan.groups.default.name).toBe('기본안');expect(saved.pricePlan.groups[secondGroup].name).toBe('서울 예식안');
- await app.locator('[data-act="price-group-select"][data-id="'+secondGroup+'"]').click();
- await app.locator('[data-act="price-group-delete"][data-id="'+secondGroup+'"]').click();
- await expect(app.locator('.price-group-tab[aria-pressed="true"]')).toHaveAttribute('data-id','default');
+const pickRow=(app,id)=>app.locator('tr.price-pick').filter({has:app.locator(`[data-act="price-toggle"][data-id="${id}"]`)});
+const openSection=async(app,id)=>{const d=app.locator(`#panel-price details[data-k="${id}"]`);if(!(await d.evaluate(e=>e.open)))await d.locator('summary').click();};
+const planTotal=app=>app.locator('.price-builder .price-group-summary strong').nth(1);
+const PLAN_SEED=()=>{const seed=structuredClone(SEED);seed.budget.region='서울 강남';seed.budget.items.b05={plan:140,actual:145,paid:50};
+ seed.pricePlan={activeGroup:'pa',groups:{pa:{name:'서울 예식안',items:{'hall-rent-1':true,'studio-basic-1':true,'hall-extra-1':true,'hall-extra-6':true},opts:{'hall-rent-1':'reg:서울 강남','studio-basic-1':'studio-basic-4','hall-extra-1':'hall-extra-1','hall-extra-6':'hall-extra-6'}},pb:{name:'가성비안',items:{'package-1':true},opts:{'package-1':'package-1'}}}};return seed;};
+
+test('price items are picked one by one, each with one regional price option',async({page})=>{
+ const {app,errors}=await openApp(page);await app.locator('#tab-price').click();
+ await openSection(app,'pt-hall');await openSection(app,'pt-studio');
+ const rent=app.locator('[data-act="price-toggle"][data-id="hall-rent-1"]'),studio=app.locator('[data-act="price-toggle"][data-id="studio-basic-1"]'),meal=app.locator('[data-act="price-toggle"][data-id="hall-meal-1"]');
+ await expect(rent).toHaveAttribute('aria-checked','false');await rent.click();
+ await expect(rent).toHaveAttribute('aria-checked','true');await expect(studio).toHaveAttribute('aria-checked','false');
+ // Region is 전국, so the first choice is the national regional average.
+ await expect(app.locator('[data-price-opt="hall-rent-1"]')).toHaveValue('reg:전국');
+ await expect(pickRow(app,'hall-rent-1').locator('.price-pick-amt')).toHaveText('317만원');
+ await studio.click();await expect(planTotal(app)).toHaveText('454만원');
+ // Several survey values of one item are alternatives: only the chosen one counts.
+ await expect(app.locator('[data-price-opt="studio-basic-1"] option')).toHaveCount(5);
+ await app.locator('[data-price-opt="studio-basic-1"]').selectOption('studio-basic-2');await expect(planTotal(app)).toHaveText('449만원');
+ await app.locator('[data-price-opt="studio-basic-1"]').selectOption('studio-basic-1');
+ // A value given only as a pair (peak / off-peak) is summed as a range.
+ await app.locator('[data-price-opt="hall-rent-1"]').selectOption('hall-rent-1');await expect(planTotal(app)).toHaveText('387만원 ~ 487만원');
+ // Meal price is per person, multiplied by the budget's guaranteed guests.
+ await meal.click();await expect(pickRow(app,'hall-meal-1').locator('.price-pick-amt')).toHaveText('5.9만원 × 187명 = 1,103만원');
+ await expect(planTotal(app)).toHaveText('1,490만원 ~ 1,590만원');
+ await studio.click();await expect(studio).toHaveAttribute('aria-checked','false');await expect(rent).toHaveAttribute('aria-checked','true');
+ await expect(planTotal(app)).toHaveText('1,353만원 ~ 1,453만원');
+ await expect(app.locator('#panel-price input[inputmode="numeric"], #panel-price input[data-price-amount]')).toHaveCount(0);
+ await expect.poll(async()=>{const g=(await stored(app))?.pricePlan?.groups?.default;return g&&g.items['hall-rent-1']===true&&g.opts['hall-rent-1']==='hall-rent-1'&&g.items['studio-basic-1']===false&&g.opts['hall-meal-1']==='reg:전국';}).toBe(true);
+ const saved=await stored(app);expect(saved.pricePlan.groups.default.name).toBe('기본안');expect(noArrays(saved)).toBe(true);
  await app.locator('#tab-budget').click();await app.locator('[data-act="b-open"][data-id="b01"]').click();
- await app.locator('[data-bnum="plan"][data-id="b01"]').fill('425');
+ await app.locator('[data-bnum="plan"][data-id="b01"]').first().fill('425');
  await expect.poll(async()=> (await stored(app))?.budget?.items?.b01?.plan).toBe(425);
+ expect(errors).toEqual([]);
+});
+
+test('named plans are created, compared, switched, aligned to the region and deleted',async({page})=>{
+ const {app,errors}=await openApp(page);await app.locator('#tab-price').click();
+ await app.locator('#priceRegion').selectOption('서울 강남');
+ await app.locator('#priceGroupAddName').fill('서울 예식안');await app.locator('#priceGroupAddName').press('Enter');
+ await expect(app.locator('[data-price-group-name]')).toHaveValue('서울 예식안');
+ const seoul=await app.locator('.price-group-tab[aria-pressed="true"]').getAttribute('data-id');
+ await openSection(app,'pt-studio');await openSection(app,'pt-makeup');await openSection(app,'pt-package');
+ await app.locator('[data-act="price-toggle"][data-id="studio-basic-1"]').click();
+ await expect(app.locator('[data-price-opt="studio-basic-1"]')).toHaveValue('studio-basic-4');
+ await app.locator('[data-act="price-toggle"][data-id="make-basic-1"]').click();
+ await expect(app.locator(`.price-group-tab[data-id="${seoul}"]`)).toContainText('251만원');
+ await app.locator('#priceGroupAddName').fill('가성비안');await app.locator('[data-act="price-group-add"]').click();
+ const cheap=await app.locator('.price-group-tab[aria-pressed="true"]').getAttribute('data-id');expect(cheap).not.toBe(seoul);
+ await expect(app.locator('[data-act="price-toggle"][data-id="studio-basic-1"]')).toHaveAttribute('aria-checked','false');
+ await app.locator('[data-act="price-toggle"][data-id="package-1"]').click();
+ await expect(app.locator('[data-price-opt="package-1"]')).toHaveValue('package-2b');
+ await app.locator('[data-price-opt="package-1"]').selectOption('package-1');
+ await expect(app.locator(`.price-group-tab[data-id="${cheap}"]`)).toContainText('292만원');
+ await expect(app.locator('.price-group-tab')).toHaveCount(3);
+ await app.locator('.price-compare > summary').click();
+ const total=app.locator('.price-compare-sec').first();
+ await expect(total.locator('li').filter({hasText:'서울 예식안'})).toContainText('251만원 · 2개');
+ await expect(total.locator('li').filter({hasText:'가성비안'})).toContainText('292만원 · 1개');
+ await expect(app.locator('.price-compare-sec').filter({hasText:'스드메 묶음'}).locator('li').filter({hasText:'서울 예식안'})).toContainText('없음');
+ // Switching plans keeps each plan's own picks.
+ await app.locator(`.price-group-tab[data-id="${seoul}"]`).click();
+ await expect(app.locator('[data-act="price-toggle"][data-id="studio-basic-1"]')).toHaveAttribute('aria-checked','true');
+ await expect(app.locator('[data-act="price-toggle"][data-id="package-1"]')).toHaveAttribute('aria-checked','false');
+ // One region drives both tabs; a plan keeps its prices until the couple chooses to align them.
+ await app.locator('#tab-budget').click();await app.locator('#bRegion').selectOption('경기');await app.locator('#tab-price').click();
+ await expect(app.locator('#priceRegion')).toHaveValue('경기');await expect(planTotal(app)).toHaveText('251만원');
+ await expect(app.locator('#panel-price .price-note')).toContainText('스튜디오 기본');
+ await app.locator('[data-act="price-align-region"]').first().click();
+ await expect(app.locator('[data-price-opt="studio-basic-1"]')).toHaveValue('studio-basic-3b');
+ await expect(planTotal(app)).toHaveText('201만원');await expect(app.locator('#panel-price .price-note')).toHaveCount(0);
+ await app.locator(`.price-group-tab[data-id="${cheap}"]`).click();
+ await app.locator('[data-act="price-group-delete-ask"]').click();
+ await expect(app.locator('[data-act="price-group-delete-cancel"]')).toBeFocused();
+ await app.locator('[data-act="price-group-delete-cancel"]').click();await expect(app.locator('.price-group-tab')).toHaveCount(3);
+ await app.locator('[data-act="price-group-delete-ask"]').click();await app.locator('[data-act="price-group-delete"]').click();
+ await expect(app.locator('.price-group-tab')).toHaveCount(2);await expect(app.locator(`.price-group-tab[data-id="${cheap}"]`)).toHaveCount(0);
+ await expect.poll(async()=> (await stored(app))?.pricePlan?.groups?.[cheap]?.deleted).toBe(true);
+ const saved=await stored(app);expect(saved.pricePlan.groups[seoul].name).toBe('서울 예식안');expect(saved.pricePlan.groups[seoul].opts['studio-basic-1']).toBe('studio-basic-3b');
  expect(noArrays(saved)).toBe(true);expect(errors).toEqual([]);
+});
+
+test('budget loads a plan, reflects chosen items and compares reference prices with my budget',async({page})=>{
+ const {app,errors}=await openApp(page,PLAN_SEED());await app.locator('#tab-budget').click();
+ await app.locator('details[data-k="pr-box"] > summary').click();
+ await app.locator('#bPlanGroup').selectOption('pa');
+ const toggle=id=>app.locator(`[data-act="b-plan-apply"][data-id="${id}"]`);
+ await expect(app.locator('.pr-picklist li')).toHaveCount(4);
+ for(const id of ['hall-rent-1','studio-basic-1','hall-extra-1','hall-extra-6'])await expect(toggle(id)).toHaveAttribute('aria-checked','false');
+ await expect(app.locator('.pr-row')).toHaveCount(0);
+ await toggle('hall-rent-1').click();await toggle('studio-basic-1').click();
+ const sum=app.locator('.pr-sum');
+ await expect(sum.locator('div').nth(0).locator('strong')).toHaveText('860만원');
+ await expect(sum.locator('div').nth(1).locator('strong')).toHaveText('490만원');
+ await expect(sum.locator('.pr-diff')).toHaveText('370만원 초과');
+ const row=key=>app.locator(`details[data-k="pr-row-${key}"]`);
+ await expect(row('b01').locator('.pr-row-diff')).toHaveText('360만원 초과');
+ await expect(row('b05').locator('.pr-row-nums')).toHaveText('참고 150만원 · 내 예산 140만원');
+ await row('b05').locator('summary').click();
+ await expect(row('b05').locator('.pr-keep')).toContainText('확정 145만원 · 낸 돈 50만원은 그대로 둬요.');
+ await row('b05').locator('[data-fk="pr-plan-b05"]').fill('160');
+ await expect(row('b05').locator('.pr-row-diff')).toHaveText('10만원 여유');
+ await expect(app.locator('[data-fk="pr-plan-b05"]')).toBeFocused();
+ await expect.poll(async()=> (await stored(app))?.budget?.items?.b05).toEqual({plan:160,actual:145,paid:50});
+ // Two plan items for the same budget line are compared together; an empty budget is excluded from the difference.
+ await toggle('hall-extra-1').click();await toggle('hall-extra-6').click();
+ await expect(row('b27').locator('.pr-row-diff')).toHaveText('예산 미입력');
+ await expect(row('b27').locator('.pr-row-nums')).toHaveText('참고 310만원 · 내 예산 -');
+ await expect(app.locator('.pr-legend')).toContainText('예산을 넣지 않은 1곳은 차액에서 뺐어요.');
+ await expect(sum.locator('.pr-diff')).toHaveText('350만원 초과');
+ await row('b27').locator('summary').click();
+ await row('b27').locator('[data-act="b-plan-import"]').click();
+ await expect.poll(async()=> (await stored(app))?.budget?.items?.b27?.plan).toBe(310);
+ await expect(row('b27').locator('.pr-row-diff')).toHaveText('시세와 같아요');
+ // Applying a plan never rewrites amounts on its own; replacing one is an explicit, labelled choice.
+ await row('b01').locator('summary').click();
+ await expect(row('b01').locator('[data-act="b-plan-import"]')).toHaveText('예산을 710만원으로 바꾸기 (지금 350만원)');
+ let saved=await stored(app);expect(saved.budget.items.b01).toEqual({plan:350,paid:100});expect(saved.budget.items.b02).toEqual({heads:187,unit:62000});
+ await app.locator('#bPlanGroup').selectOption('pb');await expect(app.locator('[data-act="b-plan-apply"][aria-checked="true"]')).toHaveCount(0);
+ await app.locator('#bPlanGroup').selectOption('pa');await expect(app.locator('[data-act="b-plan-apply"][aria-checked="true"]')).toHaveCount(4);
+ await expect.poll(async()=>{const s=await stored(app);return s.budget.planGroup==='pa'&&s.pricePlan.groups.pa.apply['hall-extra-6']===true&&s.pricePlan.groups.pb.apply?.['package-1']!==true;}).toBe(true);
+ saved=await stored(app);expect(saved.budget.total).toBe(5000);expect(noArrays(saved)).toBe(true);expect(errors).toEqual([]);
+});
+
+test('legacy price data is read into the new plans and everything survives a reload',async({page})=>{
+ await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({status:200,contentType:'text/css',body:''}));
+ await page.goto('/tests/sandbox.html');const app=page.frameLocator('#app');
+ await expect(app.locator('#status')).toHaveText('이 기기에만 저장돼요');
+ const put=async data=>{await app.locator('body').evaluate((_,d)=>localStorage.setItem('wedding-plan-v1',JSON.stringify(d)),data);await page.reload();await expect(app.locator('#status')).toHaveText('이 기기에만 저장돼요');};
+ // First PR #4 shape: one implicit plan, rows marked include, an old per-row amount that is no longer shown.
+ const first=structuredClone(SEED);first.pricePlan={'hall-rent-1':{include:true,amount:400}};await put(first);
+ await app.locator('#tab-price').click();await expect(app.locator('.price-group-tab')).toHaveCount(1);
+ await expect(app.locator('.price-group-tab[data-id="default"]')).toContainText('250만원 ~ 350만원');
+ // Later PR #4 shape: plans keyed by table rows, including a superseded survey row and a regional row.
+ const later=structuredClone(SEED);later.pricePlan={activeGroup:'default',groups:{default:{name:'기본안',items:{'hall-rent-1':true,'studio-basic-1':false,'studio-basic-2':true,'hall-meal-2':true}},pg1:{name:'옛 조합',items:{'package-2':true}}}};
+ await put(later);await app.locator('#tab-price').click();
+ await expect(app.locator('.price-group-tab[data-id="default"]')).toContainText('2,065만원 ~ 2,165만원');
+ await expect(app.locator('.price-group-tab[data-id="pg1"]')).toContainText('319만원');
+ await openSection(app,'pt-studio');await expect(app.locator('[data-price-opt="studio-basic-1"]')).toHaveValue('studio-basic-2');
+ await app.locator('[data-act="price-toggle"][data-id="studio-extra-1"]').click();
+ await expect.poll(async()=>{const g=(await stored(app))?.pricePlan?.groups?.default;return g&&g.items['studio-basic-2']===false&&g.items['studio-basic-1']===true&&g.opts['studio-basic-1']==='studio-basic-2'&&g.items['hall-meal-2']===false&&g.opts['hall-meal-1']==='hall-meal-2';}).toBe(true);
+ await app.locator('#tab-budget').click();await app.locator('details[data-k="pr-box"] > summary').click();
+ await app.locator('#bPlanGroup').selectOption('default');await app.locator('[data-act="b-plan-apply"][data-id="studio-basic-1"]').click();
+ await app.locator('details[data-k="pr-row-b05"] > summary').click();await app.locator('[data-fk="pr-plan-b05"]').fill('128');
+ await expect.poll(async()=> (await stored(app))?.budget?.items?.b05?.plan).toBe(128);
+ await page.reload();await expect(app.locator('#status')).toHaveText('이 기기에만 저장돼요');
+ await expect(app.locator('#tab-budget')).toHaveAttribute('aria-selected','true');
+ await expect(app.locator('#bPlanGroup')).toHaveValue('default');
+ await expect(app.locator('details[data-k="pr-box"]')).toHaveJSProperty('open',true);
+ await expect(app.locator('details[data-k="pr-row-b05"] .pr-row-nums')).toHaveText('참고 132만원 · 내 예산 128만원');
+ await expect(app.locator('details[data-k="pr-row-b05"] .pr-row-diff')).toHaveText('4만원 초과');
+ const saved=await stored(app);
+ expect(saved.budget.items.b01).toEqual({plan:350,paid:100});expect(saved.budget.items.b02).toEqual({heads:187,unit:62000});expect(saved.budget.total).toBe(5000);
+ expect(saved.guests.g1.gift).toBe(20);expect(saved.tasks.t01.done).toBe(true);expect(saved.pricePlan.groups.pg1.name).toBe('옛 조합');
+ expect(noArrays(saved)).toBe(true);
+});
+
+test('plan review and item picks fit 320–430px with labels, 44px targets and AA contrast',async({page})=>{
+ const seed=PLAN_SEED();Object.keys(seed.pricePlan.groups.pa.items).forEach(k=>{seed.pricePlan.groups.pa.apply=seed.pricePlan.groups.pa.apply||{};seed.pricePlan.groups.pa.apply[k]=true;});
+ seed.pricePlan.groups.pa.items['hall-meal-1']=true;seed.pricePlan.groups.pa.opts['hall-meal-1']='hall-meal-2';seed.pricePlan.groups.pa.apply['hall-meal-1']=true;
+ seed.pricePlan.groups.pa.items['package-1']=true;seed.pricePlan.groups.pa.opts['package-1']='package-2b';seed.pricePlan.groups.pa.apply['package-1']=true;
+ seed.budget.planGroup='pa';
+ const {app,errors}=await openApp(page,seed);
+ for(const tab of ['price','budget']){
+  await app.locator('#tab-'+tab).click();
+  await app.locator('#panel-'+tab+' details').evaluateAll(els=>els.forEach(e=>e.open=true));
+  const audit=await app.locator('body').evaluate(()=>{
+   const visible=e=>!!e.getClientRects().length&&!e.closest('[hidden]')&&getComputedStyle(e).visibility!=='hidden';
+   const controls=[...document.querySelectorAll('input,textarea,select')].filter(visible);const keys=controls.map(e=>e.dataset.fk);
+   const wide=[...document.querySelectorAll('body *')].filter(visible).filter(e=>{const r=e.getBoundingClientRect();return r.width&&(r.right>innerWidth+0.5||r.left<-0.5);}).map(e=>e.className||e.tagName);
+   const small=[...document.querySelectorAll('button:not(.knot),input,select,summary,a')].filter(visible).map(e=>({t:e.textContent.slice(0,30),r:e.getBoundingClientRect()})).filter(x=>x.r.width<43.9||x.r.height<43.9).map(x=>x.t);
+   function rgba(s){return s.match(/[\d.]+/g).map(Number)}
+   function blend(a,b){const alpha=a[3]??1;return a.slice(0,3).map((x,i)=>x*alpha+b[i]*(1-alpha))}
+   function bg(e){let c=[255,255,255];const chain=[];for(let n=e;n;n=n.parentElement)chain.unshift(n);for(const n of chain)c=blend(rgba(getComputedStyle(n).backgroundColor),c);return c}
+   function lum(c){return c.map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4}).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0)}
+   const low=[];for(const e of document.querySelectorAll('body *')){if(!visible(e)||e.matches(':disabled')||['SCRIPT','STYLE','OPTION','SVG','PATH'].includes(e.tagName))continue;const text=[...e.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent.trim()).join('');if(!text)continue;const st=getComputedStyle(e),b=bg(e),f=blend(rgba(st.color),b),l=[lum(b),lum(f)].sort((x,y)=>y-x),ratio=(l[0]+.05)/(l[1]+.05);if(ratio<4.5)low.push(text.slice(0,30)+' '+ratio.toFixed(2));}
+   return {wide,small,low,missing:controls.filter(e=>!e.dataset.fk||(!e.labels?.length&&!e.getAttribute('aria-label'))).map(e=>e.outerHTML.slice(0,80)),duplicates:keys.filter((k,i)=>keys.indexOf(k)!==i),scroll:document.documentElement.scrollWidth-innerWidth};
+  });
+  expect(audit.wide,tab).toEqual([]);expect(audit.small,tab).toEqual([]);expect(audit.low,tab).toEqual([]);
+  expect(audit.missing,tab).toEqual([]);expect(audit.duplicates,tab).toEqual([]);expect(audit.scroll,tab).toBeLessThanOrEqual(0);
+ }
+ await expect(app.locator('.pr-row')).toHaveCount(4);
+ await expect(app.locator('#panel-budget .price-note').filter({hasText:'겹칠 수 있어요'}).first()).toBeVisible();
+ expect(errors).toEqual([]);
 });
 
 test('text contrast AA in all tabs including tinted surfaces',async({page})=>{
