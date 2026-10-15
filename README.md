@@ -26,6 +26,7 @@
 ## 파일
 
 - `index.html` — 앱 전체(HTML·CSS·JS). 밖에서 불러오는 건 Google Fonts뿐이에요.
+- `launcher/` — Windows용 실행 폴더. `start.bat`을 두 번 누르면 GitHub에서 최종본(PR #5가 열려 있으면 그 작업본, 반영 뒤에는 main)을 받아 `launcher/app/index.html`로 저장하고 브라우저로 열어요. 자세한 내용은 `launcher/사용법.txt`.
 
 ## 탭
 
