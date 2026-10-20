@@ -307,8 +307,20 @@ select{width:auto;min-width:140px}
 .price-pick.on .price-pick-in{background:var(--gold-soft);padding-bottom:8px}
 .price-pick .price-select-button{flex:1 1 auto;min-width:0;text-align:left;font-weight:500}
 .price-pick-amt{margin-left:auto;font-size:14px;text-align:right;font-variant-numeric:tabular-nums}
-.price-opt,.price-mine{flex:1 1 100%}
-.price-opt select,.pr-select select,.price-mine input{width:100%;min-width:0}
+.price-mine{flex:1 1 100%}
+.pr-select select,.price-mine input{width:100%;min-width:0}
+.price-refs{flex:1 1 100%;margin-top:4px}
+.price-refs-title{margin:0 0 4px;color:var(--ink);font-size:13px;font-weight:600}
+.price-refs-title small{color:var(--muted);font-size:13px;font-weight:400}
+.know .price-ref-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.know .price-ref-list li{display:grid;grid-template-columns:minmax(7em,1fr) minmax(0,auto);gap:0 10px;margin:0;padding:6px 8px 6px 10px;border-bottom:1px solid var(--line);font-size:14px;line-height:1.5}
+.know .price-ref-list li.used{padding-left:7px;border-left:3px solid var(--gold);background:var(--surface)}
+.price-ref-list strong{text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:normal}
+.price-ref-list small{grid-column:1/-1;color:var(--muted);font-size:13px}
+.price-ref-name{min-width:0}
+.price-ref-name em{display:inline-block;margin-left:2px;padding:0 6px;border:1px solid var(--chung);border-radius:999px;color:var(--chung);font-size:13px;font-style:normal;font-weight:600;line-height:1.5}
+.price-ref-name em.price-ref-base{border-color:var(--gold);color:var(--gold)}
+.price-refs-note{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
 .price-pick-src{flex:1 1 100%;margin:0;color:var(--muted);font-size:13px;line-height:1.5}
 .price-note{margin:10px 0 0;padding:8px 12px;border:1px solid var(--line);border-left:2px solid var(--hong);border-radius:3px;background:var(--surface);color:var(--ink);font-size:13px;line-height:1.6}
 .price-confirm{margin:0 0 10px;padding:10px 12px;border:1px solid var(--hong);border-radius:6px;background:var(--hong-soft)}
@@ -1817,10 +1829,19 @@ function pricePickRow(item, group, region, basis){
       : (Math.round(line.ref.low) === Math.round(line.ref.high) ? Math.round(line.ref.low) : Math.round(line.ref.low)+'~'+Math.round(line.ref.high));
     h += '<strong class="price-pick-amt">'+(line.mine ? '내 금액 ' : '참고 ')+esc(priceAmountText(line))+'</strong>' +
       '<label class="field price-mine">'+(item.perHead ? '이 비교안 1인 금액(원)' : '이 비교안 금액(만원)')+'<input type="text" inputmode="numeric" value="'+(own != null ? own : '')+'" placeholder="참고 '+hint+'" data-price-mine="'+item.id+'" data-group="'+group.id+'" data-fk="price-mine-'+item.id+'"'+dis()+'></label>';
+    // 참고 시세는 고르는 칸이 아니라 펼쳐 보여 줘요. 금액을 비우면 지역에 맞춰 정해진 '기준' 값으로 계산해요.
     var ids = priceOptionIds(item, region, line.opt.id);
-    if (ids.length > 1) h += '<label class="field price-opt">참고 시세<select data-price-opt="'+item.id+'" data-group="'+group.id+'" data-fk="price-opt-'+item.id+'"'+dis()+'>' +
-      ids.map(function(id){ var o = priceOption(item, id); return o ? '<option value="'+esc(id)+'"'+(id === line.opt.id ? ' selected' : '')+'>'+esc(priceOptText(o, region))+'</option>' : ''; }).join('') + '</select></label>';
-    h += '<p class="price-pick-src">'+(line.mine ? '참고 시세 '+esc(priceRefText(line))+' · ' : '참고 시세 · ')+esc(line.opt.source)+'</p>';
+    if (ids.length > 1) {
+      h += '<div class="price-refs"><p class="price-refs-title">참고 시세 <small>조사값이라 실제 견적과 달라요</small></p><ul class="price-ref-list">' +
+        ids.map(function(id){
+          var o = priceOption(item, id);
+          if (!o) return '';
+          var used = id === line.opt.id, here = region !== '전국' && o.regions.indexOf(region) >= 0;
+          // 범위(성수기/비수기 등)는 값 자체가 두 금액이라 다시 적지 않고, 합으로 계산되는 값(각 15만원 등)만 합계를 덧붙여요.
+          var val = o.value + (o.amount.low === o.amount.high && /\/|각 /.test(o.value) ? ' ('+fmtPriceRange(o.amount)+')' : '');
+          return '<li'+(used ? ' class="used"' : '')+'><span class="price-ref-name">'+esc(o.label)+(here ? ' <em>지금 지역</em>' : '')+(used ? ' <em class="price-ref-base">기준</em>' : '')+'</span><strong>'+esc(val)+'</strong><small>'+esc(o.source)+'</small></li>';
+        }).join('') + '</ul><p class="price-refs-note">'+(line.mine ? '합계에는 직접 넣은 금액을 써요.' : '금액을 비우면 ‘기준’ 값으로 계산해요.')+'</p></div>';
+    } else h += '<p class="price-pick-src">'+(line.mine ? '참고 시세 '+esc(priceRefText(line))+' · ' : '참고 시세 · ')+esc(line.opt.source)+'</p>';
   }
   return h + '</div></td></tr>';
 }
@@ -2895,11 +2916,6 @@ document.addEventListener('change', function(e){
   }
   if (t.matches && t.matches('select[data-gaddside]')) { ui.addSide = t.value; return; }
   if (t.matches && t.matches('select[data-gaddgroup]')) { ui.addGroup = t.value; return; }
-  if (t.matches && t.matches('select[data-price-opt]')) {
-    var optGroup = priceGroupById(t.getAttribute('data-group')), optItem = PRICE_ITEM_BY_ID[t.getAttribute('data-price-opt')];
-    if (optGroup && optItem && optGroup.items[optItem.id] && priceOption(optItem, t.value)) { optGroup.opts[optItem.id] = t.value; commit(pricePlanPatch([optGroup])); }
-    return;
-  }
   if (t.matches && t.matches('select[data-price-custom-budget]')) {
     var budgetGroup = priceGroupById(t.getAttribute('data-group')), budgetItem = budgetGroup && budgetGroup.custom.filter(function(c){ return c.id === t.getAttribute('data-price-custom-budget'); })[0];
     if (budgetItem) { budgetItem.budget = t.value; commit(pricePlanPatch([budgetGroup])); }
