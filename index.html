@@ -123,12 +123,26 @@ button,input,textarea,select{font:inherit;color:inherit}
 .task.wedding .t-title{font-family:var(--serif);font-weight:700;font-size:18px}
 .task.done .t-title{text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:var(--muted)}
 .mine{font-size:13px;color:var(--chung);margin-left:6px;white-space:nowrap}
+.sub-progress{display:inline-block;margin-left:8px;color:var(--muted);font-size:12px;font-weight:500;white-space:nowrap;text-decoration:none}
 .due{text-align:right;font-size:13px;color:var(--muted);white-space:nowrap;line-height:1.4;padding-top:3px}
 .due .rel{display:block;font-weight:600;color:var(--ink)}
 .task.overdue .due .rel{color:var(--hong)}
 .task.done .due .rel{color:var(--chung);font-weight:600}
 .preview{margin:4px 0 0;font-size:14px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .detail{margin-top:10px;display:grid;gap:10px}
+.subtasks{padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.subtasks h4{display:flex;justify-content:space-between;gap:8px;margin:0;color:var(--ink);font-size:14px;font-weight:600}
+.subtasks h4 span{color:var(--muted);font-size:13px;font-weight:500}
+.subtask-list{list-style:none;margin:6px 0 0;padding:0}
+.subtask{display:flex;align-items:center;gap:4px;min-height:44px;border-top:1px solid var(--line);font-size:14px;line-height:1.45}
+.subtask:first-child{border-top:0}
+.subtask.done>span{text-decoration:line-through;text-decoration-color:var(--muted);color:var(--muted)}
+.subtask-check{position:relative;appearance:none;flex:none;width:44px;height:44px;border:0;border-radius:50%;background:none;display:grid;place-items:center;padding:0;cursor:pointer}
+.subtask-check::before{content:"";width:20px;height:20px;border:1.5px solid var(--muted);border-radius:50%;background:var(--surface)}
+.subtask-check[aria-checked="true"]::before{background:var(--gold);border-color:var(--gold)}
+.subtask-check svg{position:absolute;width:14px;height:14px;opacity:0;color:var(--on-knot)}
+.subtask-check[aria-checked="true"] svg{opacity:1}
+.subtask-check:disabled{cursor:default}
 .tip{margin:0;font-size:14px;color:var(--muted);line-height:1.6}
 .field{display:grid;gap:4px;font-size:13px;color:var(--muted)}
 .field-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -230,8 +244,13 @@ select{width:auto;min-width:140px}
 /* region table */
 .rcap{margin:16px 0 4px;font-weight:600;font-size:15px}
 .rwrap{overflow-x:auto}
-.pt-nav{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
-.pt-sec{font-family:var(--serif);font-size:18px;font-weight:700;margin:26px 0 4px;padding-top:12px;border-top:2px solid var(--ink);scroll-margin-top:calc(env(safe-area-inset-top,0px) + 64px)}
+.know .pt-accordion{border:1px solid var(--line);border-radius:10px;margin:10px 0;padding:0 12px;background:var(--surface)}
+.pt-accordion summary{list-style:none;cursor:pointer;min-height:44px;display:flex;align-items:center}
+.pt-accordion summary::-webkit-details-marker{display:none}
+.pt-accordion summary h4{font-family:var(--serif);font-size:17px;font-weight:700;margin:0;display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;letter-spacing:-.01em;scroll-margin-top:calc(env(safe-area-inset-top,0px) + 64px)}
+.pt-accordion summary h4::after{content:"+";font-family:var(--sans);font-weight:400;color:var(--muted);flex:none}
+.pt-accordion[open] summary h4::after{content:"−"}
+.pt-content{padding:0 0 12px}
 .pt-sec:focus{outline:none}
 .refline{margin:4px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
 .rtable.ptable thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
@@ -239,7 +258,142 @@ select{width:auto;min-width:140px}
 .rtable.ptable th[scope=row],.rtable.ptable td{border:0;padding:0;white-space:normal;max-width:none}
 .rtable.ptable th[scope=row]{grid-column:1;grid-row:1;text-align:left}
 .rtable.ptable td.avg{grid-column:2;grid-row:1;text-align:right;max-width:11em}
-.rtable.ptable td:last-child{grid-column:1/-1;grid-row:2;text-align:left;font-size:13px;color:var(--muted)}
+.rtable.ptable td.price-source{grid-column:1/-1;grid-row:2;text-align:left;font-size:13px;color:var(--muted)}
+.rtable.ptable td.price-config{grid-column:1/-1;grid-row:3;text-align:left}
+.price-config{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.price-select-button{appearance:none;display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 4px;border:0;background:none;color:var(--ink);font-size:14px;cursor:pointer}
+.price-select-icon{width:20px;height:20px;border:1.5px solid var(--muted);border-radius:4px;display:grid;place-items:center;flex:none}
+.price-select-icon svg{width:14px;height:14px;opacity:0;color:var(--paper)}
+.price-select-button[aria-checked="true"] .price-select-icon{background:var(--gold);border-color:var(--gold)}
+.price-select-button[aria-checked="true"] .price-select-icon svg{opacity:1}
+.price-select-icon::after{content:"";width:5px;height:10px;margin-top:-2px;border:solid var(--paper);border-width:0 2.2px 2.2px 0;transform:rotate(45deg);opacity:0}
+.price-select-button[aria-checked="true"] .price-select-icon::after{opacity:1}
+.price-builder{margin:18px 0 22px;padding:14px;border:1px solid var(--gold-line);border-top:3px solid var(--gold);border-radius:6px;background:var(--surface)}
+.price-builder-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.price-builder h3{font-family:var(--serif);font-size:18px;margin:0}
+.price-eyebrow{display:block;margin-bottom:3px;color:var(--gold);font-size:11px;font-weight:700;letter-spacing:.12em}
+.price-builder-intro{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
+.price-group-tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:14px 0 8px}
+.price-group-tab{appearance:none;display:grid;align-content:center;gap:3px;min-width:0;min-height:68px;padding:8px 11px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);text-align:left;cursor:pointer}
+.price-group-tab[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-soft)}
+.price-group-tab-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.price-group-tab-head b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.price-group-tab-head small{flex:none;color:var(--muted);font-size:12px}
+.price-group-tab strong{font-size:14px;font-variant-numeric:tabular-nums;line-height:1.35}
+.price-group-edit{display:flex;align-items:end;gap:8px;padding:10px 0;border-top:1px solid var(--line)}
+.price-group-edit .field{flex:1;min-width:0}
+.price-group-edit input,.price-group-add input{min-height:44px}
+.price-group-delete{min-height:44px;flex:none}
+.price-group-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.price-group-summary{display:grid;gap:8px;margin-top:14px;padding:10px 12px;border-radius:8px;background:var(--gold-soft)}
+.price-group-summary div{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.price-group-summary span{color:var(--muted);font-size:13px}
+.price-group-summary strong{color:var(--ink);font-size:15px;font-variant-numeric:tabular-nums;text-align:right}
+.price-picked{margin:8px 0 0;padding:0;list-style:none}
+.price-picked li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--line);font-size:13px}
+.price-picked li span{min-width:0}
+.price-picked li strong{max-width:9.5em;text-align:right;font-variant-numeric:tabular-nums}
+.price-picked-remove{appearance:none;min-width:44px;min-height:44px;padding:0 6px;border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.price-picked-details{margin-top:8px}
+.price-picked summary{min-height:44px;display:flex;align-items:center;color:var(--chung);font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.price-builder-empty{margin:8px 0 0;color:var(--muted);font-size:13px}
+.price-builder .price-picked{padding:0}
+.price-builder .price-picked li{margin:0}
+.price-picked li span b{display:block;font-weight:600}
+.price-picked li span small{display:block;color:var(--muted);font-size:13px;line-height:1.5}
+.rtable.ptable tr.price-pick{display:block;padding:6px 0 10px;border-bottom:1px solid var(--line)}
+.rtable.ptable tr.price-pick td{display:block;padding:0;border:0;text-align:left;white-space:normal;max-width:none}
+.price-pick-in{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;padding:0 10px;border-radius:6px;background:var(--chung-soft)}
+.price-pick.on .price-pick-in{background:var(--gold-soft);padding-bottom:8px}
+.price-pick .price-select-button{flex:1 1 auto;min-width:0;text-align:left;font-weight:500}
+.price-pick-amt{margin-left:auto;font-size:14px;text-align:right;font-variant-numeric:tabular-nums}
+.price-mine{flex:1 1 100%}
+.pr-select select,.price-mine input{width:100%;min-width:0}
+.price-refs{flex:1 1 100%;margin-top:4px}
+.price-refs-title{margin:0 0 4px;color:var(--ink);font-size:13px;font-weight:600}
+.price-refs-title small{color:var(--muted);font-size:13px;font-weight:400}
+.know .price-ref-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.know .price-ref-list li{display:grid;grid-template-columns:minmax(7em,1fr) minmax(0,auto);gap:0 10px;margin:0;padding:6px 8px 6px 10px;border-bottom:1px solid var(--line);font-size:14px;line-height:1.5}
+.know .price-ref-list li.used{padding-left:7px;border-left:3px solid var(--gold);background:var(--surface)}
+.price-ref-list strong{text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:normal}
+.price-ref-list small{grid-column:1/-1;color:var(--muted);font-size:13px}
+.price-ref-name{min-width:0}
+.price-ref-name em{display:inline-block;margin-left:2px;padding:0 6px;border:1px solid var(--chung);border-radius:999px;color:var(--chung);font-size:13px;font-style:normal;font-weight:600;line-height:1.5}
+.price-ref-name em.price-ref-base{border-color:var(--gold);color:var(--gold)}
+.price-refs-note{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
+.price-pick-src{flex:1 1 100%;margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.price-note{margin:10px 0 0;padding:8px 12px;border:1px solid var(--line);border-left:2px solid var(--hong);border-radius:3px;background:var(--surface);color:var(--ink);font-size:13px;line-height:1.6}
+.price-confirm{margin:0 0 10px;padding:10px 12px;border:1px solid var(--hong);border-radius:6px;background:var(--hong-soft)}
+.price-confirm p{margin:0 0 6px;font-size:14px}
+.price-compare>summary{min-height:44px;display:flex;align-items:center;color:var(--chung);font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.price-compare-sec{margin-top:10px}
+.price-compare-sec h4{margin:0 0 2px;color:var(--ink);font-size:14px;font-weight:600}
+.price-builder .price-compare-sec ul{list-style:none;margin:0;padding:0}
+.price-builder .price-compare-sec li{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}
+.price-compare-sec li span{min-width:0}
+.price-compare-sec li strong{text-align:right;font-variant-numeric:tabular-nums}
+.price-compare-sec li.now span{font-weight:600}
+.price-compare-sec small{color:var(--muted);font-size:13px;font-weight:400}
+
+/* budget: comparison plan review */
+.plan-review{margin-top:24px;padding:0 14px;border:1px solid var(--gold-line);border-top:3px solid var(--gold);border-radius:6px;background:var(--surface)}
+.plan-review>summary,.pr-pick>summary,.pr-row>summary{list-style:none;cursor:pointer;position:relative}
+.plan-review>summary::-webkit-details-marker,.pr-pick>summary::-webkit-details-marker,.pr-row>summary::-webkit-details-marker{display:none}
+.plan-review>summary{display:block;padding:12px 0}
+.plan-review>summary h3{display:flex;justify-content:space-between;gap:12px;margin:0;color:var(--gold);font-family:var(--serif);font-size:18px}
+.plan-review>summary h3::after{content:"+";flex:none;color:var(--muted);font-family:var(--sans);font-weight:400}
+.plan-review[open]>summary h3::after{content:"−"}
+.plan-review>summary .lead{margin:4px 0 0;color:var(--muted);font-size:14px;line-height:1.6}
+.pr-body{display:grid;gap:12px;padding:0 0 14px}
+.pr-body>.tip,.pr-body>.price-note,.pr-body>.price-builder-empty{margin:0}
+.pr-sum{margin-top:0}
+.pr-diff.over,.pr-row-diff.over{color:var(--hong)}
+.pr-diff.room,.pr-row-diff.room{color:var(--chung)}
+.pr-legend,.pr-keep{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
+.pr-pick,.pr-row{border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.pr-pick>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 36px 0 12px;font-size:15px;font-weight:600}
+.pr-pick>summary span{color:var(--muted);font-size:13px;font-weight:500}
+.pr-pick>summary::after,.pr-row>summary::after{content:"+";position:absolute;right:12px;top:10px;color:var(--muted);font-weight:400}
+.pr-pick[open]>summary::after,.pr-row[open]>summary::after{content:"−"}
+.pr-picklist{list-style:none;margin:0;padding:0 12px}
+.pr-picklist li{border-top:1px solid var(--line)}
+.pr-apply{width:100%;align-items:flex-start;padding:8px 0;text-align:left}
+.pr-apply .price-select-icon{margin-top:2px}
+.pr-apply b{display:block;font-weight:600}
+.pr-apply small{display:block;color:var(--muted);font-size:13px;line-height:1.5}
+.pr-pick .detail-actions{align-items:center;padding:8px 12px 12px}
+.pr-list{display:grid;gap:8px;list-style:none;margin:0;padding:0}
+.pr-row>summary{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:2px 10px;padding:10px 36px 10px 12px}
+.pr-row-name{min-width:0;font-weight:600}
+.pr-row-name small{color:var(--muted);font-size:13px;font-weight:400}
+.pr-row-diff{font-size:14px;font-weight:600;text-align:right}
+.pr-row-diff.none{color:var(--muted);font-weight:500}
+.pr-row-nums{grid-column:1/-1;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.pr-row-body{display:grid;gap:10px;padding:0 12px 12px}
+.pr-lines{list-style:none;margin:0;padding:0}
+.pr-lines li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.pr-lines li span{min-width:0}
+.pr-lines small{display:block;color:var(--muted);font-size:13px;line-height:1.5}
+.pr-lines strong{max-width:45%;text-align:right;font-variant-numeric:tabular-nums}
+.pr-row-body .btn{text-align:left}
+.know .price-extra-list,.price-builder .price-custom-list{list-style:none;margin:0;padding:0}
+.know .price-extra-list li,.price-builder .price-custom-list li{margin:0}
+.price-extra-list .price-pick{padding:6px 0 8px;border-bottom:1px solid var(--line)}
+.price-extra-list .price-pick:last-child{border-bottom:0}
+.price-extra-to{display:inline-block;color:var(--ink)}
+.pt-sec small{color:var(--muted);font-family:var(--sans);font-size:13px;font-weight:500}
+.price-custom>summary{min-height:44px;display:flex;align-items:center;color:var(--chung);font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.price-custom-item,.price-custom-add{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end;gap:8px 10px}
+.price-custom-item{padding:10px 0;border-bottom:1px solid var(--line)}
+.price-custom-add{margin-top:10px}
+.price-custom-item>label:first-child,.price-custom-add>.price-custom-head,.price-custom-add>.price-custom-head+label,.price-custom-add>.btn{grid-column:1/-1}
+.price-custom-head{margin:0;color:var(--ink);font-size:14px;font-weight:600}
+.price-extra-list .price-pick-in{padding-bottom:8px}
+.price-custom-item select,.price-custom-add select{width:100%;min-width:0}
+/* 금액은 숫자 중간에서 줄이 나뉘지 않게(본문은 overflow-wrap:anywhere) */
+.price-pick-amt,.price-picked li strong,.price-compare-sec li strong,.pr-lines strong,.pr-row-diff,.pr-sum strong{overflow-wrap:normal}
+.pr-lines li span{flex:1 1 auto}
+.pr-lines strong{flex:0 1 auto}
 .rtable{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
 .rtable th,.rtable td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
 .rtable thead th{font-size:13px;color:var(--muted);font-weight:600}
@@ -248,10 +402,9 @@ select{width:auto;min-width:140px}
 .rtable td.avg{font-weight:700}
 .rtable tr.nat{background:var(--chung-soft)}
 
-.rbox{margin-top:16px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
-.rbox-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
-.rbox-head label{font-weight:600;font-size:15px}
-.rbox .tip{margin-top:8px}
+.region-select{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
+.region-select label{font-size:14px;font-weight:600}
+.region-select select{width:auto;min-width:160px;min-height:44px}
 
 .qsec{margin-top:24px;padding-top:4px}
 .qtitle{font-family:var(--serif);font-size:19px;margin:0 0 4px}
@@ -349,6 +502,7 @@ html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + var(--tabs-height) +
 @media (max-width:380px){.tab{font-size:13px}.tabs .wrap{padding-inline:4px}}
 @media (max-width:359px){.phase-head{padding-left:44px}.sum .v{font-size:22px}}
 @media (max-width:430px){.tabs .wrap{grid-template-columns:repeat(7,minmax(44px,1fr));padding-inline:4px}.tab{padding:6px 0 5px;font-size:clamp(10px,2.8vw,13px)}}
+@media (max-width:380px){.price-builder{padding:12px}.price-builder-head{display:block}.price-builder-total{text-align:left;margin-top:8px}.price-builder-total span,.price-builder-total strong{display:inline-block;margin-right:6px}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.strand i{transition:none}}
 
 /* 좌우로 밀리지 않게: 화면 폭 밖으로 나가는 것은 잘라내고, 진행 순서는 세로로만 움직이게 */
@@ -569,6 +723,53 @@ var TASKS = [
   {id:'t43',off:30,title:'부모님 지원금 받았다면 증여세 신고',tip:'신고기한은 증여받은 날이 속한 달의 말일부터 3개월이에요.'},
   {id:'t44',off:120,rule:'taxyear',title:'연말정산에서 결혼세액공제 챙기기',tip:'혼인신고한 해의 연말정산(다음 해 1~2월) 때 반영돼요. 현행법은 2026년 12월 31일까지 혼인신고분이 대상이에요.'}
 ];
+
+var TASK_DETAILS = {
+  t01:[{id:'ts01a',title:'양가에 각각 알릴 시점과 방법 정하기'},{id:'ts01b',title:'결혼을 생각하게 된 계기와 기본 계획 나누기'},{id:'ts01c',title:'부모님이 궁금해할 점과 다음 대화 일정 적어 두기'}],
+  t02:[{id:'ts02a',title:'두 사람이 쓸 수 있는 총액 상한 정하기'},{id:'ts02b',title:'예식·스드메·여행·집 항목으로 예산 나누기'},{id:'ts02c',title:'양가 지원과 각자 부담, 예비비 기록하기'}],
+  t03:[{id:'ts03a',title:'신랑·신부·양가 하객 수를 따로 어림잡기'},{id:'ts03b',title:'하객이 오기 편한 지역과 교통 기준 정하기'},{id:'ts03c',title:'예식 형태와 필요한 홀 규모 정하기'}],
+  t04:[{id:'ts04a',title:'예산·지역에 맞는 후보 홀 추리기'},{id:'ts04b',title:'가능한 날짜와 투어 시간 문의하기'},{id:'ts04c',title:'대관료·식대·보증인원·주차를 같은 기준으로 비교하기'}],
+  t05:[{id:'ts05a',title:'양가가 편한 날짜와 장소 정하기'},{id:'ts05b',title:'예산·예식 규모·예물·예단 대화 범위 맞추기'},{id:'ts05c',title:'합의한 내용과 남은 질문을 둘이 정리하기'}],
+  t06:[{id:'ts06a',title:'견적서에 대관료·식대·기본 장식 포함 여부 확인하기'},{id:'ts06b',title:'최소 보증인원과 인원 변경 조건 확인하기'},{id:'ts06c',title:'추가요금·취소·환급 조건을 계약서에서 확인하기'}],
+  t07:[{id:'ts07a',title:'플래너를 쓸지, 직접 준비할지 결정하기'},{id:'ts07b',title:'담당 업무와 계약 기간·해지 조건 비교하기'},{id:'ts07c',title:'기본·선택 품목과 각 서비스 가격표 받기'}],
+  t08:[{id:'ts08a',title:'결혼식과 혼인신고 날짜를 따로 놓고 비교하기'},{id:'ts08b',title:'세금·대출·청약에 미칠 영향을 공식 자료로 확인하기'},{id:'ts08c',title:'두 사람이 합의한 예정일을 기록하기'}],
+  t09:[{id:'ts09a',title:'두 사람의 출퇴근 지역과 시간을 나란히 보기'},{id:'ts09b',title:'전세·매매·월세의 예산과 장단점 비교하기'},{id:'ts09c',title:'집 명의와 희망 입주 시기 정하기'}],
+  t10:[{id:'ts10a',title:'패키지에 포함된 촬영·의상·메이크업 확인하기'},{id:'ts10b',title:'피팅·헬퍼·원본 파일 등 추가 비용표 받기'},{id:'ts10c',title:'수정·취소 조건과 결과물 일정을 계약서에 남기기'}],
+  t11:[{id:'ts11a',title:'사진·영상 업체의 샘플과 촬영 범위 비교하기'},{id:'ts11b',title:'원본·보정본·납품 시기 확인하기'},{id:'ts11c',title:'촬영 시간·장소·비용을 계약서에 기록하기'}],
+  t12:[{id:'ts12a',title:'여행지와 출발·귀국 날짜 정하기'},{id:'ts12b',title:'여권·입국 서류와 현지 이동 방법 확인하기'},{id:'ts12c',title:'항공권·숙소 예약 내용을 한곳에 모으기'}],
+  t13:[{id:'ts13a',title:'예물·예단을 할지 양가와 이야기하기'},{id:'ts13b',title:'준비할 품목과 금액 상한 정하기'},{id:'ts13c',title:'생략하거나 정한 내용을 양가에 같은 말로 전하기'}],
+  t14:[{id:'ts14a',title:'두 사람이 검사를 받을지 결정하기'},{id:'ts14b',title:'e보건소·주소지 보건소에서 현재 지원 조건 확인하기'},{id:'ts14c',title:'필요한 신청·의뢰서 절차를 먼저 밟고 예약하기'}],
+  t15:[{id:'ts15a',title:'관심 있는 대출·청약 상품 이름과 기준 모으기'},{id:'ts15b',title:'혼인신고 전후 소득·자산 조건을 공식 사이트에서 비교하기'},{id:'ts15c',title:'필요 서류와 상담할 기관을 적어 두기'}],
+  t16:[{id:'ts16a',title:'계약금·잔금·대출 일정을 예산에 반영하기'},{id:'ts16b',title:'계약서의 보증금·수리·해지 조건 확인하기'},{id:'ts16c',title:'입주일과 이사·청소·주소 변경 일정을 맞추기'}],
+  t17:[{id:'ts17a',title:'촬영 콘셉트와 꼭 찍고 싶은 장면 정하기'},{id:'ts17b',title:'의상·소품·이동 동선을 업체와 확인하기'},{id:'ts17c',title:'촬영 후 선택·수정·앨범 일정을 기록하기'}],
+  t18:[{id:'ts18a',title:'드레스 투어와 피팅 날짜 예약하기'},{id:'ts18b',title:'기본 포함 벌수와 추가 피팅 비용 확인하기'},{id:'ts18c',title:'본식 드레스와 액세서리·수령 일자 확정하기'}],
+  t19:[{id:'ts19a',title:'맞춤·대여 중 원하는 방식을 정하기'},{id:'ts19b',title:'신랑 예복과 양가 혼주 의상 치수 확인하기'},{id:'ts19c',title:'가봉·수령·반납 날짜를 일정표에 적기'}],
+  t20:[{id:'ts20a',title:'신혼집에 둘 가전·가구와 치수 목록 만들기'},{id:'ts20b',title:'먼저 살 것과 입주 후 살 것 나누기'},{id:'ts20c',title:'구매 예산·배송·설치 날짜 확인하기'}],
+  t21:[{id:'ts21a',title:'종이·모바일 청첩장 방식과 디자인 고르기'},{id:'ts21b',title:'이름·날짜·장소·교통 안내 문구 확인하기'},{id:'ts21c',title:'인쇄 수량과 모바일 공개 시점 정하기'}],
+  t22:[{id:'ts22a',title:'신랑·신부·양가 명단을 나눠 적기'},{id:'ts22b',title:'이름·연락처·전달 방법 확인하기'},{id:'ts22c',title:'초대 여부와 답변을 하객 탭에 기록하기'}],
+  t23:[{id:'ts23a',title:'사회자·축가·축사 부탁할 사람 정하기'},{id:'ts23b',title:'참여 가능 여부와 필요한 준비 확인하기'},{id:'ts23c',title:'식순·시간·리허설 정보를 공유하기'}],
+  t24:[{id:'ts24a',title:'두 사람의 여권 만료일 확인하기'},{id:'ts24b',title:'여행지의 입국 서류·비자 조건을 공식 사이트에서 확인하기'},{id:'ts24c',title:'필요한 갱신이나 신청 일정을 잡기'}],
+  t25:[{id:'ts25a',title:'구매 품목별 주문·배송 상태 확인하기'},{id:'ts25b',title:'입주 청소와 배송 순서 맞추기'},{id:'ts25c',title:'설치 장소와 현장 수령 담당자 정하기'}],
+  t26:[{id:'ts26a',title:'직접 만나 전할 사람과 모바일로 보낼 사람 나누기'},{id:'ts26b',title:'초대할 날짜와 연락 방법 정하기'},{id:'ts26c',title:'보낸 날짜와 참석 답변 기록하기'}],
+  t27:[{id:'ts27a',title:'입장·인사·축가·폐백 순서 초안 만들기'},{id:'ts27b',title:'예식장 담당자와 진행 시간·장비 확인하기'},{id:'ts27c',title:'사회자와 참여자에게 최종 식순 보내기'}],
+  t28:[{id:'ts28a',title:'사진·문구·음악을 모아 영상 구성 정하기'},{id:'ts28b',title:'예식장 파일 형식·재생 시간·제출일 확인하기'},{id:'ts28c',title:'최종본을 미리 재생해 보고 백업하기'}],
+  t29:[{id:'ts29a',title:'양가 혼주별 헤어·메이크업 예약 확인하기'},{id:'ts29b',title:'도착 시간과 이동 방법 맞추기'},{id:'ts29c',title:'예약 담당자와 당일 연락처 공유하기'}],
+  t30:[{id:'ts30a',title:'답례품 품목과 단가 정하기'},{id:'ts30b',title:'하객 수에 맞춰 수량과 여유분 계산하기'},{id:'ts30c',title:'배송 날짜·보관 장소·배부 담당 정하기'}],
+  t31:[{id:'ts31a',title:'패키지나 예식장에 꽃 장식이 포함되는지 확인하기'},{id:'ts31b',title:'부케·부토니에 색과 꽃 종류 정하기'},{id:'ts31c',title:'수령 시각·장소·전달 담당자 확인하기'}],
+  t32:[{id:'ts32a',title:'초대 답변과 동행 인원 정리하기'},{id:'ts32b',title:'예식장 계약서에서 최종 인원 통보일 확인하기'},{id:'ts32c',title:'확정 인원과 식사 요청을 담당자에게 전달하기'}],
+  t33:[{id:'ts33a',title:'최종 피팅 날짜와 준비물을 확인하기'},{id:'ts33b',title:'본식 때 신을 신발·속옷을 가져가 맞춰 보기'},{id:'ts33c',title:'수선·수령 시각과 반납 방법 확인하기'}],
+  t34:[{id:'ts34a',title:'축의대와 가방을 맡을 사람 정하기'},{id:'ts34b',title:'기록할 명단과 정산 방법 정하기'},{id:'ts34c',title:'담당자에게 위치·연락처·유의사항 설명하기'}],
+  t35:[{id:'ts35a',title:'메이크업부터 예식까지 시간표 한 장에 정리하기'},{id:'ts35b',title:'업체별 담당자·주소·연락처 적기'},{id:'ts35c',title:'양가·사회자·도우미에게 같은 최종본 공유하기'}],
+  t36:[{id:'ts36a',title:'여권·예약 확인서·결제 수단 챙기기'},{id:'ts36b',title:'옷·상비약·충전기 등 짐 목록 확인하기'},{id:'ts36c',title:'여행자보험과 출발 당일 이동편 확인하기'}],
+  t37:[{id:'ts37a',title:'업체별 잔금과 당일 추가 비용 목록 만들기'},{id:'ts37b',title:'결제 수단이나 봉투를 업체별로 준비하기'},{id:'ts37c',title:'지급 담당자·시점·금액을 서로 확인하기'}],
+  t38:[{id:'ts38a',title:'반지·신분증·의상 등 당일 물품 모으기'},{id:'ts38b',title:'업체 도착 시간과 이동 동선 다시 확인하기'},{id:'ts38c',title:'연락 담당자에게 최종 시간표 전달하고 쉬기'}],
+  t39:[{id:'ts39a',title:'당일 담당자와 시작 전 준비 상태 확인하기'},{id:'ts39b',title:'반지·부케·식순 등 맡긴 물품 확인하기'},{id:'ts39c',title:'함께 온 사람들과 오늘을 즐기기'}],
+  t40:[{id:'ts40a',title:'혼인신고서와 두 사람 신분증 준비하기'},{id:'ts40b',title:'증인 서명과 추가로 필요한 서류 확인하기'},{id:'ts40c',title:'접수 후 혼인관계증명서 발급 여부 확인하기'}],
+  t41:[{id:'ts41a',title:'축의금과 전달받은 물품 기록 정리하기'},{id:'ts41b',title:'감사 인사를 전할 사람과 연락처 추리기'},{id:'ts41c',title:'양가와 인사 담당을 나누고 보낸 날짜 기록하기'}],
+  t42:[{id:'ts42a',title:'새 주소와 전입 날짜 확인하기'},{id:'ts42b',title:'정부24 또는 주민센터에서 신고 방법 확인하기'},{id:'ts42c',title:'공과금·우편물 주소도 함께 바꾸기'}],
+  t43:[{id:'ts43a',title:'받은 지원금의 날짜·금액·증빙 정리하기'},{id:'ts43b',title:'현재 신고 기준을 국세청 자료에서 확인하기'},{id:'ts43c',title:'필요하면 세무 상담 후 신고 일정 기록하기'}],
+  t44:[{id:'ts44a',title:'혼인신고 접수 날짜를 확인할 자료 보관하기'},{id:'ts44b',title:'신고한 해의 연말정산 안내에서 공제 대상 확인하기'},{id:'ts44c',title:'회사 제출 자료와 신고 기한 확인하기'}]
+};
 
 var PHASES = [
   {name:'1년~8개월 전', range:'D-365~D-240'},
@@ -870,6 +1071,7 @@ var ui = {
   openKnow: {},
   openBudget: {},
   showHiddenBudget: false,
+  priceDeleteAsk: null,
   honeyMonth: Number(lsGet('wd-honey')) || 0, guestView: 'list',
   guestSide: 'all', guestQuery: '', openGuest: {}, addSide: 'groom', addGroup: '친구'
 };
@@ -881,7 +1083,13 @@ function buildTasks(st){
   var start = parseYMD(st.startDate) || today();
   var list = [];
   TASKS.forEach(function(t, idx){
-    var s = (st.tasks && st.tasks[t.id]) || {};
+    var taskStore = st.tasks || {}, s = taskStore[t.id] || {}, subDefs = TASK_DETAILS[t.id] || [];
+    var hasSubtaskState = subDefs.some(function(sub){ return Object.prototype.hasOwnProperty.call(taskStore, sub.id); });
+    var subtasks = subDefs.map(function(sub){
+      var saved = taskStore[sub.id] || {};
+      return {id:sub.id, title:sub.title, done:hasSubtaskState ? !!saved.done : !!s.done};
+    });
+    var done = subDefs.length ? (hasSubtaskState ? subtasks.every(function(sub){ return sub.done; }) : !!s.done) : !!s.done;
     var base = null;
     if (wd) {
       if (t.rule === 'reg') base = reg || addDays(wd, t.off);
@@ -891,7 +1099,7 @@ function buildTasks(st){
     var override = parseYMD(s.date);
     var due = override || base;
     list.push({kind:'t', id:t.id, title:t.title, tip:t.tip, wedding:!!t.wedding, due:due, off: (wd && due) ? diffDays(due, wd) : t.off,
-      done:!!s.done, memo:s.memo || '', hidden:!!s.hidden, overridden:!!override, order:idx, book: parseYMD(s.book),
+      done:done, subtasks:subtasks, memo:s.memo || '', hidden:!!s.hidden, overridden:!!override, order:idx, book: parseYMD(s.book),
       catchup: !!(wd && due && !override && diffDays(due, start) < 0)});
   });
   var cu = st.custom || {};
@@ -908,14 +1116,17 @@ function counts(list){
   var t0 = today(), c = {total:0, done:0, left:0, week:0, late:0, catchup:0};
   list.forEach(function(it){
     if (it.hidden) return;
-    c.total++;
-    if (it.done) { c.done++; return; }
-    c.left++;
-    if (it.catchup) { c.catchup++; return; }
-    if (it.due) {
-      var d = diffDays(it.due, t0);
-      if (d < 0) c.late++; else if (d <= 7) c.week++;
-    }
+    var units = it.subtasks && it.subtasks.length ? it.subtasks : [{done:it.done}];
+    units.forEach(function(unit){
+      c.total++;
+      if (unit.done) { c.done++; return; }
+      c.left++;
+      if (it.catchup) { c.catchup++; return; }
+      if (it.due) {
+        var d = diffDays(it.due, t0);
+        if (d < 0) c.late++; else if (d <= 7) c.week++;
+      }
+    });
   });
   return c;
 }
@@ -1059,19 +1270,29 @@ function dueHTML(it, wd, t0){
   return '<span class="due"><span class="rel">'+rel+'</span>'+(it.book ? '진행 ' : '')+esc(fmtShort(it.due, t0.getFullYear()))+(it.wedding && state.weddingTime ? ' '+esc(fmtTime(state.weddingTime)) : '')+'</span>';
 }
 
+function taskProgress(it){
+  var total = it.subtasks && it.subtasks.length ? it.subtasks.length : 1;
+  var done = it.subtasks && it.subtasks.length ? it.subtasks.filter(function(sub){ return sub.done; }).length : (it.done ? 1 : 0);
+  return {total:total, done:done};
+}
+
 function taskHTML(it, wd, t0){
   var late = !it.done && !it.catchup && it.due && diffDays(it.due, t0) < 0;
   var open = !!ui.open[it.id];
+  var progress = taskProgress(it);
   var cls = 'task' + (it.done ? ' done' : '') + (late ? ' overdue' : '') + (it.catchup && !it.done ? ' catchup' : '') + (it.wedding ? ' wedding' : '');
   var h = '<li class="'+cls+'">' +
     '<button class="knot" type="button" role="checkbox" aria-checked="'+(it.done?'true':'false')+'" aria-label="완료 표시: '+esc(it.title)+'" data-act="toggle" data-fk="task-check-'+it.id+'" data-kind="'+it.kind+'" data-id="'+it.id+'"'+dis()+'>'+CHECK+'</button>' +
-    '<div class="row"><button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="open" data-fk="task-open-'+it.id+'" data-id="'+it.id+'">'+esc(it.title)+(it.kind==='c' ? '<span class="mine">직접 추가</span>' : '')+'</button>' + dueHTML(it, wd, t0) + '</div>';
+    '<div class="row"><button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="open" data-fk="task-open-'+it.id+'" data-id="'+it.id+'">'+esc(it.title)+(it.kind==='c' ? '<span class="mine">직접 추가</span>' : '')+(progress.total > 1 ? '<span class="sub-progress">'+progress.done+'/'+progress.total+' 세부</span>' : '')+'</button>' + dueHTML(it, wd, t0) + '</div>';
   var dl = [];
   if (it.book) dl.push('<span><b>예약</b> '+esc(fmtShort(it.book, t0.getFullYear()))+'</span>');
   if (dl.length) h += '<p class="tdates">'+dl.join('')+'</p>';
   if (!open && it.memo) h += '<p class="preview">'+esc(it.memo)+'</p>';
   if (open) {
     h += '<div class="detail">' + (it.tip ? '<p class="tip">'+esc(it.tip)+'</p>' : '') +
+      (it.subtasks && it.subtasks.length ? '<section class="subtasks" aria-label="'+esc(it.title)+' 세부 체크"><h4>세부 체크 <span>'+progress.done+'/'+progress.total+' 완료</span></h4><ul class="subtask-list">' + it.subtasks.map(function(sub){
+        return '<li class="subtask'+(sub.done?' done':'')+'"><button class="subtask-check" type="button" role="checkbox" aria-checked="'+(sub.done?'true':'false')+'" aria-label="완료 표시: '+esc(sub.title)+'" data-act="subtask-toggle" data-parent="'+it.id+'" data-id="'+sub.id+'" data-fk="subtask-check-'+sub.id+'"'+dis()+'>'+CHECK+'</button><span>'+esc(sub.title)+'</span></li>';
+      }).join('')+'</ul></section>' : '') +
       '<div class="field-row"><label class="field">예약일' +
         '<input type="date" value="'+(it.book ? ymd(it.book) : '')+'" data-act-change="book" data-fk="task-book-'+it.kind+'-'+it.id+'" data-kind="'+it.kind+'" data-id="'+it.id+'"'+dis()+'></label>' +
         '<label class="field">진행일' +
@@ -1104,7 +1325,11 @@ function timelineHTML(list){
   });
   groups.forEach(function(g){ g.items.sort(function(a,b){ return (a.off - b.off) || (a.order - b.order); }); });
 
-  var catchN = list.filter(function(i){ return i.catchup && !i.done && !i.hidden; }).length;
+  var catchN = list.reduce(function(total, i){
+    if (!i.catchup || i.done || i.hidden) return total;
+    var progress = taskProgress(i);
+    return total + progress.total - progress.done;
+  }, 0);
   var h = (catchN ? '<p class="lead-note">결혼식까지 남은 기간보다 앞선 일 '+catchN+'개는 ‘지금 챙기기’로 표시했어요. 이미 끝낸 일은 체크하고, 필요 없는 일은 열어서 숨기세요.</p>' : '') +
     '<div class="tools">' +
     '<button class="toggle" type="button" aria-pressed="'+(ui.hideDone?'true':'false')+'" data-act="hide-done" data-fk="hide-done">완료한 일 숨기기</button>' +
@@ -1117,8 +1342,8 @@ function timelineHTML(list){
   groups.forEach(function(g, gi){
     var shown = g.items.filter(function(it){ return !(ui.hideDone && it.done); });
     if (!g.items.length) return;
-    var doneN = g.items.filter(function(i){ return i.done && !i.hidden; }).length;
-    var totalN = g.items.filter(function(i){ return !i.hidden; }).length;
+    var doneN = 0, totalN = 0;
+    g.items.filter(function(i){ return !i.hidden; }).forEach(function(i){ var progress = taskProgress(i); doneN += progress.done; totalN += progress.total; });
     h += '<section class="phase'+(g.p.after?' after':'')+'"><div class="phase-head"><h3>'+esc(g.p.name)+'</h3><span class="meta">'+esc(g.p.range)+'</span><span class="meta count">'+doneN+'/'+totalN+'</span></div><ul class="rail">';
     if (!shown.length) h += '<li class="empty">이 구간은 모두 끝냈어요.</li>';
     shown.forEach(function(it){
@@ -1160,19 +1385,525 @@ function regCalcHTML(key){
 function regionTable(cap, key, unit, dec){
   function f(v){ return v == null ? '–' : (dec ? v.toFixed(1) : v.toLocaleString('ko-KR')); }
   var h = '<p class="rcap">'+cap+' <span class="unit">('+unit+')</span></p><div class="rwrap"><table class="rtable"><thead><tr><th scope="col">지역</th><th scope="col">저</th><th scope="col">평균</th><th scope="col">고</th></tr></thead><tbody>';
-  REGION_COST.forEach(function(r){
+  var reg = (state.budget && state.budget.region) || '전국';
+  var selected = REGION_COST.filter(function(r){ return r.n === reg; })[0] || REGION_COST[0];
+  [selected].forEach(function(r){
     var v = r[key];
     h += '<tr'+(r.n === '전국' ? ' class="nat"' : '')+'><th scope="row">'+r.n+'<small>자료 '+v[3]+'건</small></th><td>'+f(v[0])+'</td><td class="avg">'+f(v[1])+'</td><td>'+f(v[2])+'</td></tr>';
   });
   return h + '</tbody></table></div>';
 }
-function ptSec(id, title){ return '<h4 class="pt-sec" id="'+id+'" tabindex="-1">'+title+'</h4>'; }
-function priceTable(cap, rows, head){
+function ptSec(id, title){ return '<details class="pt-accordion" data-k="'+id+'"'+(ui.openKnow[id]?' open':'')+'><summary><h4 class="pt-sec" id="'+id+'" tabindex="-1">'+title+'</h4></summary><div class="pt-content">'; }
+function ptEnd(){ return '</div></details>'; }
+/* 가격 비교표의 행. 비교안은 '그룹-순번'(예: hall-rent-1) 행 ID로 저장돼요.
+   있는 행의 순서는 바꾸지 말고, 새 행은 표 끝에 추가하세요. */
+var PRICE_TABLES = {
+  'overall': [
+    ['결혼서비스 전체 비용', '2,139만원', '평균, 2026년 2월'],
+    ['  그중 식대 비중', '61.4%', '참가격 통계'],
+    ['  그중 대관료 비중', '20.9%', '참가격 통계'],
+    ['  그중 기본 장식비 비중', '3.5%', '참가격 통계']
+  ],
+  'hall-basic': [
+    ['결혼식장 계약금(대관료+식대+기본 장식)', '1,550만원', '중간값, 2026년 2월'],
+    ['  성수기 / 비수기', '1,610만원 / 1,250만원', '중간값, 2025년 4월~2026년 6월'],
+    ['최소 보증인원', '200명', '중간값, 성수기·비수기 같음']
+  ],
+  'hall-rent': [
+    ['성수기 / 비수기', '350만원 / 250만원', '중간값, 2025년 4월~2026년 6월']
+  ],
+  'hall-meal': [
+    ['1인 식대(전국)', '6만원', '중간값, 2025년 8월'],
+    ['  서울 강남 1인 식대', '9만원', '중간값, 2025년 12월']
+  ],
+  'hall-extra': [
+    ['생화 꽃장식', '280만원', '중간값, 2026년 2월'],
+    ['  (이전 조사)', '262만원', '중간값, 2025년 12월'],
+    ['본식 촬영', '80만원', '중간값, 2025년 6월'],
+    ['본식 원판 사진 구매', '51만원', '중간값, 2025년 12월'],
+    ['본식 사회자', '30만원', '참가격 통계(전국)'],
+    ['본식 도우미', '30만원', '참가격 통계(전국)'],
+    ['폐백 음식', '30만원', '참가격 통계(전국)'],
+    ['폐백 수모비', '10만원', '참가격 통계(전국)'],
+    ['혼주 헤어·메이크업 여성 / 남성', '23만원 / 10만원', '중간값, 2025년 4월'],
+    ['  (다른 구성 조사)', '15만원', '중간값, 2025년 12월']
+  ],
+  'studio-basic': [
+    ['스튜디오 기본', '137만원', '중간값, 2026년 2월'],
+    ['  (이전 조사)', '132만원', '중간값, 2025년 8월'],
+    ['가장 비싼 지역 / 싼 지역', '강원 159만원 / 경기·충청 100만원', '중간값, 2025년 4월'],
+    ['서울 강남', '150만원', '중간값, 2025년 4월']
+  ],
+  'studio-extra': [
+    ['원본 파일 전체 구매', '22만원', '중간값, 2025년 4월'],
+    ['앨범 페이지 추가', '장당 3만원', '중간값, 2025년 4월'],
+    ['야외 촬영 / 야간 촬영', '각 15만원', '중간값, 2025년 4월'],
+    ['촬영 출장비', '20만원', '참가격 통계(전국)'],
+    ['들러리 촬영', '8만원', '참가격 통계(전국)'],
+    ['반려동물 촬영', '8만원', '참가격 통계(전국)']
+  ],
+  'dress-basic': [
+    ['드레스 기본', '160만원', '중간값, 2026년 2월'],
+    ['가장 비싼 지역 / 싼 지역', '대전 220만원 / 서울(강남 외) 118만원', '중간값, 2025년 12월'],
+    ['서울 강남', '198만원', '중간값, 2025년 12월']
+  ],
+  'dress-extra': [
+    ['피팅(시착)', '6만원', '중간값, 2025년 4월'],
+    ['기본 개수 넘는 추가 시착', '5만원', '중간값, 2025년 4월'],
+    ['헬퍼(도우미) 촬영 / 본식', '각 25만원', '참가격 통계(전국)']
+  ],
+  'make-basic': [
+    ['메이크업 기본', '79만원', '중간값, 2026년 2월'],
+    ['가장 비싼 지역 / 싼 지역', '서울 강남 101만원 / 광주 33만원', '중간값, 2025년 12월']
+  ],
+  'make-extra': [
+    ['얼리스타트 오전 4시대', '20만원', '중간값, 2025년 4월'],
+    ['얼리스타트 오전 5시대 / 6시대', '11만원 / 5만원', '중간값, 2025년 4월'],
+    ['촬영 출장비', '20만원', '참가격 통계(전국)']
+  ],
+  'package': [
+    ['스드메 패키지', '292만원', '중간값, 2025년 6월'],
+    ['스드메 전국 / 서울', '약 319만원 / 399만원', '평균, 2026년 4월'],
+    ['드메(스튜디오 제외)', '160만원', '중간값, 2025년 4월~2026년 6월']
+  ],
+  'timing': [
+    ['가장 비싼 달 / 싼 달', '4월 2,238만원 / 1월 1,913만원', '평균, 2025년 4월~2026년 6월'],
+    ['성수기(3~6월, 9~12월) 추가 비용', '평균 202만원 더', '2025년 4월~2026년 6월'],
+    ['비수기 평일 대관료', '성수기 주말 점심의 69.1%', '2025년 4월~2026년 6월'],
+    ['예식 10개월 전 계약 / 2개월 전 계약', '2,231만원 / 1,626만원', '평균, 2025년 10월 발표']
+  ]
+};
+/* 비교안에 담는 항목. id와 선택지 id는 저장된 비교안의 키라서 바꾸거나 지우지 않아요.
+   budget: 연결되는 예산 항목(BUDGET_ITEMS 고정 ID). bundle: 여러 예산 항목을 묶은 가격. perHead: 1인 가격이라 인원을 곱해요.
+   regional: 지역별 표(REGION_COST)의 그 지역 평균을 선택지로 더해요.
+   opts: 한 항목의 가격 선택지(하나만 골라요). row = 값을 읽는 표의 행, part = 'A / B' 값 중 몇 번째인지, regions = 그 값의 지역(없으면 전국). */
+var PRICE_ITEMS = [
+  {id:'overall-1', sec:'total', name:'결혼서비스 전체 비용', budget:['b01','b02','b05','b06','b07'], bundle:true, regional:'t', opts:[{id:'overall-1', row:'overall-1'}]},
+  {id:'hall-basic-1', sec:'hall', name:'결혼식장 계약금', budget:['b01','b02'], bundle:true, opts:[{id:'hall-basic-1', row:'hall-basic-1'}, {id:'hall-basic-2', row:'hall-basic-2'}]},
+  {id:'hall-rent-1', sec:'hall', name:'대관료', budget:['b01'], regional:'h', opts:[{id:'hall-rent-1', row:'hall-rent-1'}]},
+  {id:'hall-meal-1', sec:'hall', name:'식대', budget:['b02'], perHead:true, regional:'m', opts:[{id:'hall-meal-1', row:'hall-meal-1'}, {id:'hall-meal-2', row:'hall-meal-2', regions:['서울 강남']}]},
+  {id:'hall-extra-1', sec:'hall', name:'생화 꽃장식', budget:['b27'], opts:[{id:'hall-extra-1', row:'hall-extra-1'}, {id:'hall-extra-2', row:'hall-extra-2'}]},
+  {id:'hall-extra-3', sec:'hall', name:'본식 촬영', budget:['b03'], opts:[{id:'hall-extra-3', row:'hall-extra-3'}]},
+  {id:'hall-extra-4', sec:'hall', name:'본식 원판 사진 구매', budget:['b03'], opts:[{id:'hall-extra-4', row:'hall-extra-4'}]},
+  {id:'hall-extra-5', sec:'hall', name:'본식 사회자', budget:['b04'], opts:[{id:'hall-extra-5', row:'hall-extra-5'}]},
+  {id:'hall-extra-6', sec:'hall', name:'본식 도우미', budget:['b27'], opts:[{id:'hall-extra-6', row:'hall-extra-6'}]},
+  {id:'hall-extra-7', sec:'hall', name:'폐백 음식', budget:['b11'], opts:[{id:'hall-extra-7', row:'hall-extra-7'}]},
+  {id:'hall-extra-8', sec:'hall', name:'폐백 수모비', budget:['b11'], opts:[{id:'hall-extra-8', row:'hall-extra-8'}]},
+  {id:'hall-extra-9', sec:'hall', name:'혼주 헤어·메이크업', budget:['b27'], opts:[{id:'hall-extra-9', row:'hall-extra-9', label:'여성 + 남성'}, {id:'hall-extra-9a', row:'hall-extra-9', part:0, label:'여성'}, {id:'hall-extra-9b', row:'hall-extra-9', part:1, label:'남성'}, {id:'hall-extra-10', row:'hall-extra-10'}]},
+  {id:'studio-basic-1', sec:'studio', name:'스튜디오 기본', budget:['b05'], opts:[{id:'studio-basic-1', row:'studio-basic-1'}, {id:'studio-basic-2', row:'studio-basic-2'}, {id:'studio-basic-3a', row:'studio-basic-3', part:0, label:'가장 비싼 지역', regions:['강원']}, {id:'studio-basic-3b', row:'studio-basic-3', part:1, label:'가장 싼 지역', regions:['경기','충청']}, {id:'studio-basic-4', row:'studio-basic-4', regions:['서울 강남']}]},
+  {id:'studio-extra-1', sec:'studio', name:'원본 파일 전체 구매', budget:['b08'], opts:[{id:'studio-extra-1', row:'studio-extra-1'}]},
+  {id:'studio-extra-2', sec:'studio', name:'앨범 페이지 추가(1장)', budget:['b08'], opts:[{id:'studio-extra-2', row:'studio-extra-2'}]},
+  {id:'studio-extra-3', sec:'studio', name:'야외·야간 촬영', budget:['b08'], opts:[{id:'studio-extra-3', row:'studio-extra-3', label:'야외 + 야간'}, {id:'studio-extra-3a', row:'studio-extra-3', part:0, label:'야외 촬영만'}, {id:'studio-extra-3b', row:'studio-extra-3', part:1, label:'야간 촬영만'}]},
+  {id:'studio-extra-4', sec:'studio', name:'스튜디오 촬영 출장비', budget:['b08'], opts:[{id:'studio-extra-4', row:'studio-extra-4'}]},
+  {id:'studio-extra-5', sec:'studio', name:'들러리 촬영', budget:['b08'], opts:[{id:'studio-extra-5', row:'studio-extra-5'}]},
+  {id:'studio-extra-6', sec:'studio', name:'반려동물 촬영', budget:['b08'], opts:[{id:'studio-extra-6', row:'studio-extra-6'}]},
+  {id:'dress-basic-1', sec:'dress', name:'드레스 기본', budget:['b06'], opts:[{id:'dress-basic-1', row:'dress-basic-1'}, {id:'dress-basic-2a', row:'dress-basic-2', part:0, label:'가장 비싼 지역', regions:['대전']}, {id:'dress-basic-2b', row:'dress-basic-2', part:1, label:'가장 싼 지역', regions:['서울(강남 외)']}, {id:'dress-basic-3', row:'dress-basic-3', regions:['서울 강남']}]},
+  {id:'dress-extra-1', sec:'dress', name:'피팅(시착)', budget:['b08'], opts:[{id:'dress-extra-1', row:'dress-extra-1'}]},
+  {id:'dress-extra-2', sec:'dress', name:'기본 개수 넘는 추가 시착', budget:['b08'], opts:[{id:'dress-extra-2', row:'dress-extra-2'}]},
+  {id:'dress-extra-3', sec:'dress', name:'헬퍼(도우미)', budget:['b08'], opts:[{id:'dress-extra-3', row:'dress-extra-3', label:'촬영 + 본식'}, {id:'dress-extra-3a', row:'dress-extra-3', part:0, label:'촬영만'}, {id:'dress-extra-3b', row:'dress-extra-3', part:1, label:'본식만'}]},
+  {id:'make-basic-1', sec:'make', name:'메이크업 기본', budget:['b07'], opts:[{id:'make-basic-1', row:'make-basic-1'}, {id:'make-basic-2a', row:'make-basic-2', part:0, label:'가장 비싼 지역', regions:['서울 강남']}, {id:'make-basic-2b', row:'make-basic-2', part:1, label:'가장 싼 지역', regions:['광주']}]},
+  {id:'make-extra-1', sec:'make', name:'얼리스타트', budget:['b08'], opts:[{id:'make-extra-1', row:'make-extra-1'}, {id:'make-extra-2', row:'make-extra-2'}]},
+  {id:'make-extra-3', sec:'make', name:'메이크업 촬영 출장비', budget:['b08'], opts:[{id:'make-extra-3', row:'make-extra-3'}]},
+  {id:'package-1', sec:'package', name:'스드메 패키지', budget:['b05','b06','b07'], bundle:true, opts:[{id:'package-1', row:'package-1'}, {id:'package-2a', row:'package-2', part:0, label:'스드메 전국'}, {id:'package-2b', row:'package-2', part:1, label:'스드메 서울', regions:['서울 강남','서울(강남 외)']}]},
+  {id:'package-3', sec:'package', name:'드메(스튜디오 제외)', budget:['b06','b07'], bundle:true, opts:[{id:'package-3', row:'package-3'}]}
+];
+/* 가격표에 시세가 없는 그 밖의 비용. 참고 시세 없이 금액을 직접 넣어요.
+   id는 저장된 비교안의 키라서 바꾸거나 지우지 않아요. [id, 이름, 연결 예산 항목(BUDGET_ITEMS), 알아둘 점] */
+var PRICE_EXTRA_GROUPS = [
+  {id:'flower', name:'꽃·부케', items:[
+    ['x-bouquet','부케·부토니에·코사지','b27','신부 부케, 신랑 부토니에, 양가 혼주 코사지예요. 스드메나 식장 생화 장식에 들어 있는지 먼저 확인하세요.'],
+    ['x-bouquet-keep','부케 보존·포장·배송','b27','식이 끝난 부케를 드라이플라워·압화·레진 액자 등으로 보존하는 비용과, 업체로 보내고 돌려받는 포장·택배비예요. 꽃이 시들기 전에 보내야 해서 보낼 날을 미리 정해 두세요.'],
+    ['x-bouquet-friend','부케 받는 친구 답례','b04','부케를 받아 준 친구에게 하는 선물이나 식사예요.']
+  ]},
+  {id:'thanks', name:'도와준 사람 사례', items:[
+    ['x-song','축가 사례','b04','축가를 불러 준 사람에게 하는 사례금이나 선물이에요. 반주자나 음원 준비가 따로 들면 함께 잡으세요.'],
+    ['x-officiant','주례·축사 사례','b04','주례를 모시거나 축사를 부탁했다면 사례와 교통비를 잡으세요.'],
+    ['x-helpers','축의대·가방·안내 사례','b04','축의금 접수, 축의금 가방, 하객 안내를 맡은 사람에게 하는 사례나 식사예요.'],
+    ['x-friend-photo','지인 사진·영상 사례','b04','지인이 사진이나 영상을 찍어 주면 사례를 해요.']
+  ]},
+  {id:'venue', name:'예식 당일·식장', items:[
+    ['x-video','본식 영상 촬영','b03','가격표의 본식 촬영은 사진이에요. 영상은 따로 계약하는 경우가 많아요.'],
+    ['x-snap','본식 스냅(외부 작가)','b03','식장 촬영과 별도로 개인 스냅 작가를 쓰는 비용이에요. 식장이 외부 업체 반입료를 받는지 함께 확인하세요.'],
+    ['x-outside-fee','외부 업체 반입료','b27','외부 스냅·영상·꽃 업체를 쓰면 식장이 반입료를 받기도 해요.'],
+    ['x-drinks','주류·음료','b27','식대에 주류·음료가 들어 있는지, 따로라면 어떻게 계산하는지 계약서로 확인하세요.'],
+    ['x-effects','입장 연출·포토테이블','b27','꽃가루·버블·조명·포토테이블처럼 기본에 없는 연출이에요.'],
+    ['x-opening-video','식전 영상 제작','b03','직접 만들지 않으면 제작비가 들어요. 식장 상영 형식과 길이를 먼저 확인하세요.'],
+    ['x-pyebaek','폐백 의상·진행','b11','폐백 음식·수모비 말고 의상 대여나 진행비가 따로일 수 있어요.'],
+    ['x-parking','하객 주차·셔틀','b27','무료 주차 시간을 넘기거나 셔틀을 운영하면 비용이 생겨요.'],
+    ['x-bus','하객 버스 대절','b26','먼 지역 하객을 모시는 버스예요. 기사 식사와 사례도 함께 잡으세요.'],
+    ['x-car','웨딩카·당일 이동','b26','웨딩카 대여·장식, 식장과 숙소·공항 사이 이동 비용이에요.'],
+    ['x-day-meal','당일 식사·간식','b26','이른 메이크업부터 식이 끝날 때까지 신랑신부와 도와준 사람의 식사·간식이에요.']
+  ]},
+  {id:'wear', name:'의상·꾸밈', items:[
+    ['x-2nd-dress','2부 드레스·추가 의상','b08','2부(피로연) 의상은 드레스 기본 벌수에 없는 경우가 많아요.'],
+    ['x-accessory','구두·액세서리·속옷','b08','드레스샵 대여에 들어 있는지 확인하고, 사야 한다면 따로 잡으세요.'],
+    ['x-touchup','본식 메이크업 동행','b08','식 내내 머리와 화장을 고쳐 줄 담당자가 함께 다니는 비용이에요.'],
+    ['x-groom-wear','신랑 예복','b12','턱시도 대여인지 맞춤 정장인지에 따라 달라요. 셔츠·구두·넥타이까지 함께 잡으세요.'],
+    ['x-hanbok','한복(신랑신부·혼주)','b13','양가 어머니 한복과 폐백·인사용 신랑신부 한복의 대여나 맞춤 비용이에요.'],
+    ['x-care','결혼 전 관리','b26','피부 관리, 왁싱, 네일, 운동처럼 결혼 전에 드는 관리 비용이에요.']
+  ]},
+  {id:'gifts', name:'예물·예단·함', items:[
+    ['x-rings','결혼반지','b09','커플링이나 결혼반지예요. 각인·사이즈 조정 비용과 제작 기간도 확인하세요.'],
+    ['x-jewelry','예물(시계·주얼리)','b09','반지 말고 주고받는 예물이에요. 양가가 생략하기로 했다면 담지 않아도 돼요.'],
+    ['x-yedan','예단','b10','현금 예단이나 이불·반상기 같은 예단이에요. 할지, 범위와 금액을 양가가 먼저 맞추세요.'],
+    ['x-yedan-return','예단 답례·꾸밈비','b10','예단을 받은 쪽의 답례나 꾸밈비처럼 집안마다 다른 비용이에요. 할지와 금액을 양가가 먼저 정하세요.'],
+    ['x-ham','함','b11','함을 보낸다면 함 구성품과 함 들이는 사람 사례예요.'],
+    ['x-ibaji','이바지 음식','b11','신부 쪽이 신랑 쪽에 보내는 음식이에요. 할지 양가가 먼저 정하세요.']
+  ]},
+  {id:'card', name:'청첩장·하객', items:[
+    ['x-card-print','종이 청첩장','b14','인쇄비와 봉투·스티커·추가 인쇄예요. 명단보다 넉넉히 잡으세요.'],
+    ['x-card-mobile','모바일 청첩장','b14','템플릿 이용료나 제작비예요.'],
+    ['x-card-post','청첩장 우편 발송','b14','우편으로 보낼 청첩장의 우표·등기 비용이에요.'],
+    ['x-card-meet','청첩장 모임 식사','b14','청첩장을 건네며 갖는 식사 자리예요. 모임이 많으면 큰돈이 돼요.'],
+    ['x-guest-gift','하객 답례품','b15','하객에게 드리는 답례품이에요. 수량은 보증인원을 기준으로 잡으세요.'],
+    ['x-after-thanks','결혼 후 감사 인사','b15','식 뒤에 도와준 사람과 하객에게 하는 감사 선물이나 식사예요.']
+  ]},
+  {id:'family', name:'상견례·양가·준비', items:[
+    ['x-meeting','상견례','b25','상견례 식사비와 양가가 주고받는 선물이에요.'],
+    ['x-family-gift','양가 인사 선물','b26','첫인사나 명절에 양가를 찾아갈 때 드리는 선물이에요.'],
+    ['x-planner','웨딩플래너 비용','b26','플래너 수수료가 스드메 가격에 들어 있는지, 동행비가 따로인지 계약서로 확인하세요.'],
+    ['x-change-fee','일정·업체 변경 위약금','b26','날짜나 업체를 바꾸면 위약금이 생길 수 있어요. 예비비로 잡아 두면 안심이에요.']
+  ]},
+  {id:'trip', name:'신혼여행', items:[
+    ['x-trip-insurance','여행자보험','b18','신혼여행 기간의 여행자보험이에요.'],
+    ['x-trip-docs','비자·전자여행허가·여권','b18','나라에 따라 비자나 전자여행허가가 필요하고, 여권을 새로 만들면 발급 비용이 들어요.'],
+    ['x-trip-move','공항 이동·주차','b18','떠나는 날과 돌아오는 날 공항까지 이동하고 주차하는 비용이에요.'],
+    ['x-trip-phone','로밍·유심·환전 수수료','b18','현지 통신과 환전·해외 카드 결제 수수료예요.'],
+    ['x-trip-souvenir','여행 선물','b18','양가와 지인에게 줄 여행 선물이에요.']
+  ]},
+  {id:'home', name:'신혼집·혼수', items:[
+    ['x-move','이사·입주 청소','b23','이사 업체와 입주 청소 비용이에요. 결혼식·혼수 배송 날짜와 겹치지 않게 잡으세요.'],
+    ['x-broker','중개보수','b24','집 계약을 중개한 공인중개사에게 내는 보수예요. 계약 전에 금액을 확인하세요.'],
+    ['x-registry','취득세·등기(매매)','b22','집을 사면 취득세와 등기·법무사 비용이 따로 들어요. 금액은 집값과 조건에 따라 달라요.'],
+    ['x-jeonse-guarantee','전세보증보험','b22','전세라면 보증금을 돌려받지 못할 때를 대비하는 보증 상품의 보증료예요.'],
+    ['x-install','가전·가구 배송·설치','b19','설치비, 사다리차, 쓰던 가전 수거 비용이 따로 붙는지 확인하세요.'],
+    ['x-interior','커튼·조명·소품','b21','커튼·블라인드·조명·수납용품처럼 입주하며 사는 것들이에요.'],
+    ['x-utilities','인터넷·TV·가스 개통','b21','새집에서 인터넷·TV를 신청하고 가스를 연결하는 비용이에요.']
+  ]}
+];
+PRICE_EXTRA_GROUPS.forEach(function(g){ g.items.forEach(function(x){ PRICE_ITEMS.push({id:x[0], sec:'extra', grp:g.id, name:x[1], budget:[x[2]], note:x[3], opts:[]}); }); });
+var PRICE_SECS = {total:'전체 비용', hall:'예식장', studio:'스튜디오', dress:'드레스', make:'메이크업', package:'스드메 묶음', extra:'그 밖의 비용', custom:'직접 추가'};
+var PRICE_ITEM_BY_ID = {}, PRICE_ROW_REF = {}, PRICE_ITEM_LAST_ROW = {};
+PRICE_ITEMS.forEach(function(it){
+  PRICE_ITEM_BY_ID[it.id] = it;
+  it.opts.forEach(function(o){
+    if (!PRICE_ROW_REF[o.row]) PRICE_ROW_REF[o.row] = {item:it.id, opt:o.id};
+    PRICE_ITEM_LAST_ROW[it.id] = o.row;
+  });
+});
+function priceRow(rowId){ var i = rowId.lastIndexOf('-'), rows = PRICE_TABLES[rowId.slice(0, i)]; return rows ? rows[Number(rowId.slice(i + 1)) - 1] : null; }
+/* 인원 기준: 예산 탭 식대 보증인원, 없으면 가격표 '최소 보증인원' 중간값 */
+var PRICE_BASE_HEADS = parseInt(priceRow('hall-basic-3')[1], 10);
+function priceReferenceBounds(label, value){
+  var matches = value.match(/[\d,]+(?:\.\d+)?(?=만원)/g) || [];
+  var amounts = matches.map(function(x){ return Number(x.replace(/,/g,'')); }).filter(function(x){ return isFinite(x); });
+  if (!amounts.length) return null;
+  if (label.indexOf('혼주 헤어·메이크업 여성 / 남성') >= 0) {
+    var combined = amounts.reduce(function(sum, x){ return sum + x; }, 0);
+    return {low:combined, high:combined};
+  }
+  if (value.indexOf('각 ') >= 0 && label.indexOf('/') >= 0) {
+    var eachTotal = amounts.reduce(function(sum, x){ return sum + x; }, 0) * 2;
+    return {low:eachTotal, high:eachTotal};
+  }
+  return {low:Math.min.apply(Math, amounts), high:Math.max.apply(Math, amounts)};
+}
+function fmtPriceRange(amount){
+  if (!amount) return '기준값 없음';
+  return Math.round(amount.low) === Math.round(amount.high) ? fmtMan(amount.low) : fmtMan(amount.low)+' ~ '+fmtMan(amount.high);
+}
+function fmtUnitMan(v){ return (Math.round(v * 10) / 10).toLocaleString('ko-KR') + '만원'; }
+function regionRow(name){ return REGION_COST.filter(function(r){ return r.n === name; })[0] || null; }
+function curRegion(){ var r = (state.budget && state.budget.region) || '전국'; return regionRow(r) ? r : '전국'; }
+function priceOption(item, optId){
+  if (!item || typeof optId !== 'string') return null;
+  if (optId.indexOf('reg:') === 0) {
+    var rn = optId.slice(4), rr = item.regional ? regionRow(rn) : null;
+    if (!rr) return null;
+    var rv = rr[item.regional];
+    return {id:optId, label:rn+(item.perHead ? ' 1인 평균' : ' 평균'), value:(item.perHead ? rv[1].toFixed(1) : rv[1].toLocaleString('ko-KR'))+'만원',
+      source:'지역별 평균, 자료 '+rv[3]+'건', amount:{low:rv[1], high:rv[1]}, regions:[rn]};
+  }
+  var o = item.opts.filter(function(x){ return x.id === optId; })[0], row = o ? priceRow(o.row) : null;
+  if (!row) return null;
+  var value = row[1], amount;
+  if (o.part == null) amount = priceReferenceBounds(row[0].trim(), row[1]);
+  else {
+    var nums = (row[1].match(/[\d,]+(?:\.\d+)?(?=만원)/g) || []).map(function(x){ return Number(x.replace(/,/g,'')); });
+    var parts = row[1].split(' / '), n = nums[o.part] != null ? nums[o.part] : nums[0];
+    amount = {low:n, high:n};
+    value = (parts[o.part] != null ? parts[o.part] : parts[0]).replace(/^각 /, '');
+    if (/^약 /.test(row[1]) && !/^약 /.test(value)) value = '약 ' + value;
+  }
+  return amount ? {id:o.id, label:o.label || row[0].trim(), value:value, source:row[2], amount:amount, regions:o.regions || ['전국']} : null;
+}
+function priceOptionIds(item, region, current){
+  var ids = item.opts.map(function(o){ return o.id; });
+  if (item.regional) { ids.push('reg:' + region); if (current && current.indexOf('reg:') === 0 && current !== 'reg:' + region) ids.push(current); }
+  return ids;
+}
+/* 처음 담을 때의 선택지: 지금 지역의 값이 있으면 그것, 없으면 표의 첫 값 */
+function priceDefaultOpt(item, region){
+  if (!item.opts.length) return '';
+  if (item.regional) return 'reg:' + region;
+  var hit = item.opts.filter(function(o){ return (o.regions || ['전국']).indexOf(region) >= 0; })[0];
+  return (hit || item.opts[0]).id;
+}
+function priceOptText(o, region){
+  var extra = o.amount.low !== o.amount.high || /\/|각 /.test(o.value) ? ' ('+fmtPriceRange(o.amount)+')' : '';
+  return o.label+' '+o.value+extra+(region !== '전국' && o.regions.indexOf(region) >= 0 ? ' · 지금 지역' : '');
+}
+function priceHeadBasis(){ var g = guaranteeHeads(); return g != null && g > 0 ? {n:g, fromBudget:true} : {n:PRICE_BASE_HEADS, fromBudget:false}; }
+/* 비교안 금액: 직접 넣은 금액이 있으면 그 값, 비워 두면 참고 시세. 식대는 1인 금액(원) × 인원. */
+function priceOwn(group, item){ return group ? (item.perHead ? group.units : group.amounts)[item.id] : null; }
+function priceLine(item, optId, basis, group){
+  var o = item.opts.length ? priceOption(item, optId) : null;
+  if (item.opts.length && !o) return null;
+  var own = priceOwn(group, item), line = {item:item, opt:o, ref:o ? o.amount : null, amount:o ? o.amount : {low:0,high:0}, mine:own != null, noPrice:!o && own == null};
+  if (item.perHead && o) {
+    line.heads = basis.n; line.refUnit = o.amount.low; line.ref = {low:o.amount.low * basis.n, high:o.amount.high * basis.n};
+    line.unit = own != null ? own / 10000 : o.amount.low;
+    line.amount = own != null ? {low:line.unit * basis.n, high:line.unit * basis.n} : line.ref;
+  } else if (own != null) line.amount = {low:own, high:own};
+  return line;
+}
+function priceAmountText(line){
+  if (line.noPrice) return '금액 미입력';
+  return line.item.perHead ? fmtUnitMan(line.unit)+' × '+line.heads.toLocaleString('ko-KR')+'명 = '+fmtMan(line.amount.low) : fmtPriceRange(line.amount);
+}
+function priceRefText(line){
+  if (!line.ref) return '없음';
+  return line.item.perHead ? fmtUnitMan(line.refUnit)+' × '+line.heads.toLocaleString('ko-KR')+'명 = '+fmtMan(line.ref.low) : fmtPriceRange(line.ref);
+}
+function priceLinesTotal(lines){
+  return lines.reduce(function(sum, line){ sum.low += line.amount.low; sum.high += line.amount.high; return sum; }, {low:0,high:0});
+}
+/* 저장된 비교안을 읽어요. PR #4의 행 단위 선택(items[행 ID])과 그 전의 pricePlan[행 ID].include·amount(내 금액)도 같은 항목으로 옮겨 읽어요. */
+function priceGroupFrom(id, raw){
+  var items = isObj(raw.items) ? raw.items : {}, opts = isObj(raw.opts) ? raw.opts : {}, apply = isObj(raw.apply) ? raw.apply : {};
+  var amounts = isObj(raw.amounts) ? raw.amounts : {}, units = isObj(raw.units) ? raw.units : {};
+  var g = {id:id, name:raw.name || '이름 없는 비교안', rawName:typeof raw.name === 'string' ? raw.name : '', items:{}, opts:{}, apply:{}, amounts:{}, units:{}, rawItems:items, rawApply:apply, rawAmounts:amounts, rawUnits:units};
+  PRICE_ITEMS.forEach(function(it){
+    var own = num((it.perHead ? units : amounts)[it.id]);
+    if (own != null && own >= 0) (it.perHead ? g.units : g.amounts)[it.id] = own;
+    var sel = false, opt = '';
+    if (items[it.id] === true) { sel = true; opt = !it.opts.length ? '' : (priceOption(it, opts[it.id]) ? opts[it.id] : it.id); }
+    else it.opts.forEach(function(o){ if (!sel && o.row !== it.id && items[o.row] === true && PRICE_ROW_REF[o.row].opt === o.id) { sel = true; opt = o.id; } });
+    if (!sel) return;
+    g.items[it.id] = true; g.opts[it.id] = opt; g.apply[it.id] = apply[it.id] === true;
+  });
+  var custom = isObj(raw.custom) ? raw.custom : {};
+  g.custom = Object.keys(custom).filter(function(k){ return isObj(custom[k]) && !custom[k].deleted; }).map(function(k){
+    var c = custom[k], amt = num(c.amount);
+    return {id:k, name:c.name || '이름 없는 항목', rawName:typeof c.name === 'string' ? c.name : '', budget:BUDGET_ITEMS.some(function(t){ return t.id === c.budget; }) ? c.budget : 'b26', amount:amt != null && amt >= 0 ? amt : null, created:c.created || 0};
+  });
+  g.custom.forEach(function(c){ g.apply[c.id] = apply[c.id] === true; });
+  return g;
+}
+function priceGroupsSaved(){
+  var stored = isObj((state.pricePlan || {}).groups) ? state.pricePlan.groups : {};
+  return Object.keys(stored).some(function(id){ return isObj(stored[id]) && !stored[id].deleted; });
+}
+function priceGroups(){
+  var plan = state.pricePlan || {}, stored = isObj(plan.groups) ? plan.groups : {};
+  var ids = Object.keys(stored).filter(function(id){ return isObj(stored[id]) && !stored[id].deleted; });
+  var legacyItems = {}, legacyAmounts = {}, legacyUnits = {};
+  Object.keys(plan).forEach(function(id){
+    if (!isObj(plan[id]) || id === 'groups') return;
+    if (plan[id].include) legacyItems[id] = true;
+    var ref = PRICE_ROW_REF[id], v = num(plan[id].amount), it = ref && PRICE_ITEM_BY_ID[ref.item];
+    if (it && v != null && v >= 0) { var bag = it.perHead ? legacyUnits : legacyAmounts; if (bag[it.id] == null) bag[it.id] = it.perHead ? v * 10000 : v; }
+  });
+  if (ids.length) return ids.map(function(id){
+    var raw = stored[id];
+    if (id === 'default' && !isObj(raw.amounts) && !isObj(raw.units)) raw = mergeInto(clone(raw), {amounts:legacyAmounts, units:legacyUnits});
+    return priceGroupFrom(id, raw);
+  });
+  return [priceGroupFrom('default', {name:'기본안', items:legacyItems, amounts:legacyAmounts, units:legacyUnits})];
+}
+function priceGroupById(id, groups){ return (groups || priceGroups()).filter(function(g){ return g.id === id; })[0] || null; }
+function activePriceGroup(groups){ groups = groups || priceGroups(); return priceGroupById((state.pricePlan || {}).activeGroup, groups) || groups[0]; }
+/* 저장할 때는 비교안 하나를 통째로 정리해서 써요. 옛 행 ID 키는 false로 꺼 두고(키는 지우지 않음), 고른 선택지를 함께 남겨요. */
+function priceGroupRecord(g){
+  var rec = {name:g.rawName, items:{}, opts:{}, apply:{}};
+  Object.keys(g.rawItems).forEach(function(k){ if (g.rawItems[k] === true && !g.items[k]) rec.items[k] = false; });
+  Object.keys(g.rawApply).forEach(function(k){ if (g.rawApply[k] === true && !(g.items[k] && g.apply[k])) rec.apply[k] = false; });
+  Object.keys(g.items).forEach(function(k){ if (!g.items[k]) return; rec.items[k] = true; rec.opts[k] = g.opts[k]; rec.apply[k] = !!g.apply[k]; });
+  [['amounts','rawAmounts'],['units','rawUnits']].forEach(function(p){
+    rec[p[0]] = {};
+    Object.keys(g[p[1]]).concat(Object.keys(g[p[0]])).forEach(function(k){ rec[p[0]][k] = g[p[0]][k] != null ? g[p[0]][k] : ''; });
+  });
+  rec.custom = {};
+  (g.custom || []).forEach(function(c){ rec.custom[c.id] = {name:c.rawName, budget:c.budget, amount:c.amount != null ? c.amount : '', created:c.created}; rec.apply[c.id] = !!g.apply[c.id]; });
+  return rec;
+}
+function pricePlanPatch(groups, extra){
+  var p = {pricePlan:{groups:{}}};
+  if (!priceGroupsSaved()) priceGroups().forEach(function(g){ p.pricePlan.groups[g.id] = priceGroupRecord(g); });
+  groups.forEach(function(g){ p.pricePlan.groups[g.id] = priceGroupRecord(g); });
+  if (extra) mergeInto(p.pricePlan, extra);
+  return p;
+}
+function priceGroupLines(group){
+  var basis = priceHeadBasis();
+  return PRICE_ITEMS.filter(function(it){ return group.items[it.id]; }).map(function(it){ return priceLine(it, group.opts[it.id], basis, group); }).filter(Boolean)
+    .concat((group.custom || []).map(function(c){
+      return {item:{id:c.id, sec:'custom', name:c.name, budget:[c.budget], custom:true}, opt:null, ref:null, mine:c.amount != null, noPrice:c.amount == null, amount:{low:c.amount || 0, high:c.amount || 0}};
+    }));
+}
+function budgetName(id){ var t = BUDGET_ITEMS.filter(function(x){ return x.id === id; })[0]; return t ? t.name : id; }
+function budgetOptionsHTML(sel){
+  return BUDGET_CATS.map(function(c){
+    return '<optgroup label="'+esc(c.name)+'">' + BUDGET_ITEMS.filter(function(t){ return t.cat === c.id; }).map(function(t){ return '<option value="'+t.id+'"'+(t.id === sel ? ' selected' : '')+'>'+esc(t.name)+'</option>'; }).join('') + '</optgroup>';
+  }).join('');
+}
+function priceCustomHTML(group){
+  if (ui.openKnow['price-custom'] == null) ui.openKnow['price-custom'] = false;
+  var list = group.custom.map(function(c){
+    return '<li class="price-custom-item"><label class="field">항목 이름<input type="text" maxlength="30" value="'+esc(c.rawName)+'" placeholder="'+esc(c.name)+'" data-price-custom-name="'+c.id+'" data-group="'+group.id+'" data-fk="price-custom-name-'+c.id+'"'+dis()+'></label>' +
+      '<label class="field">금액(만원)<input type="text" inputmode="numeric" value="'+(c.amount != null ? c.amount : '')+'" placeholder="견적 금액" data-price-custom-amount="'+c.id+'" data-group="'+group.id+'" data-fk="price-custom-amount-'+c.id+'"'+dis()+'></label>' +
+      '<label class="field">예산 항목<select data-price-custom-budget="'+c.id+'" data-group="'+group.id+'" data-fk="price-custom-budget-'+c.id+'"'+dis()+'>'+budgetOptionsHTML(c.budget)+'</select></label>' +
+      '<button class="link" type="button" data-act="price-custom-del" data-id="'+c.id+'" data-group="'+group.id+'" data-fk="price-custom-del-'+c.id+'"'+dis()+'>삭제</button></li>';
+  }).join('');
+  return '<details class="price-custom" data-k="price-custom"'+(ui.openKnow['price-custom'] ? ' open' : '')+'><summary>가격표에 없는 항목 직접 추가 ('+group.custom.length+')</summary>' +
+    (list ? '<ul class="price-custom-list">'+list+'</ul>' : '') +
+    (Store.readOnly ? '' : '<div class="price-custom-add" id="priceCustomAddForm">' +
+      '<p class="price-custom-head">새 항목</p><label class="field">항목 이름<input type="text" id="priceCustomName" maxlength="30" placeholder="예: 축가 반주" data-fk="price-custom-add-name"'+dis()+'></label>' +
+      '<label class="field">금액(만원)<input type="text" inputmode="numeric" id="priceCustomAmount" placeholder="예: 20" data-fk="price-custom-add-amount"'+dis()+'></label>' +
+      '<label class="field">예산 항목<select id="priceCustomBudget" data-fk="price-custom-add-budget"'+dis()+'>'+budgetOptionsHTML(ui.priceCustomBudget || 'b26')+'</select></label>' +
+      '<button class="btn" type="button" data-act="price-custom-add" data-group="'+group.id+'"'+dis()+'>이 비교안에 추가</button></div>') + '</details>';
+}
+function priceExtraItemHTML(it, group){
+  var on = !!group.items[it.id], own = priceOwn(group, it);
+  return '<li class="price-pick'+(on ? ' on' : '')+'"><div class="price-pick-in">' +
+    '<button class="price-select-button" type="button" role="checkbox" aria-checked="'+(on?'true':'false')+'" aria-label="'+esc(group.name)+'에 '+esc(it.name)+' 담기" data-act="price-toggle" data-id="'+it.id+'" data-group="'+group.id+'" data-fk="price-select-'+it.id+'"'+dis()+'><span class="price-select-icon" aria-hidden="true"></span><span>'+esc(it.name)+' 담기</span></button>' +
+    (on ? '<strong class="price-pick-amt">'+(own != null ? '내 금액 '+fmtMan(own) : '금액 미입력')+'</strong>' : '') +
+    '<p class="price-pick-src">'+esc(it.note)+' <span class="price-extra-to">예산: '+esc(it.budget.map(budgetName).join(' · '))+'</span></p>' +
+    (on ? '<label class="field price-mine">이 비교안 금액(만원)<input type="text" inputmode="numeric" value="'+(own != null ? own : '')+'" placeholder="견적이나 예상 금액" data-price-mine="'+it.id+'" data-group="'+group.id+'" data-fk="price-mine-'+it.id+'"'+dis()+'></label>' : '') +
+    '</div></li>';
+}
+function priceExtraHTML(){
+  var active = activePriceGroup(), body = '';
+  PRICE_EXTRA_GROUPS.forEach(function(g){
+    var k = 'px-' + g.id, items = PRICE_ITEMS.filter(function(it){ return it.grp === g.id; });
+    var n = items.filter(function(it){ return active.items[it.id]; }).length;
+    body += '<details class="pt-accordion" data-k="'+k+'"'+(ui.openKnow[k] ? ' open' : '')+'><summary><h4 class="pt-sec" id="'+k+'" tabindex="-1">'+esc(g.name)+' <small>'+(n ? n+'/'+items.length+'개 담김' : items.length+'개')+'</small></h4></summary><div class="pt-content"><ul class="price-extra-list">' +
+      items.map(function(it){ return priceExtraItemHTML(it, active); }).join('') + '</ul></div></details>';
+  });
+  return card('k14', '그 밖에 드는 비용', '가격표에 없는데 따로 드는 비용이에요. 필요한 것만 담고 받은 견적이나 예상 금액을 넣으세요. 이 항목들은 참고 시세가 없어요.', body);
+}
+/* 묶음 가격(계약금·패키지·전체 비용)과 그 안에 든 개별 항목을 함께 담으면 합계가 겹쳐요. */
+function priceOverlaps(lines){
+  var pairs = [];
+  lines.forEach(function(x, i){
+    lines.slice(i + 1).forEach(function(y){
+      if ((x.item.bundle || y.item.bundle) && x.item.budget.some(function(b){ return y.item.budget.indexOf(b) >= 0; })) pairs.push(x.item.name+' + '+y.item.name);
+    });
+  });
+  return pairs;
+}
+function priceRegionMismatch(group, region){
+  return PRICE_ITEMS.filter(function(it){
+    if (!group.items[it.id] || priceOwn(group, it) != null) return false;
+    var cur = priceOption(it, group.opts[it.id]), def = priceOption(it, priceDefaultOpt(it, region));
+    return !!(cur && def && cur.id !== def.id && cur.regions.indexOf(region) < 0 && def.regions.indexOf(region) >= 0);
+  });
+}
+function priceNotesHTML(group, lines, region, where){
+  var h = '', miss = priceRegionMismatch(group, region), overlap = priceOverlaps(lines);
+  if (miss.length) h += '<p class="price-note">지금 지역('+esc(region)+')과 다른 지역 시세로 고른 항목이 '+miss.length+'개 있어요: '+esc(miss.map(function(it){ return it.name; }).join(', '))+'. ' +
+    '<button class="link" type="button" data-act="price-align-region" data-group="'+group.id+'" data-fk="price-align-'+where+'"'+dis()+'>'+esc(region)+' 시세로 맞추기</button></p>';
+  if (overlap.length) h += '<p class="price-note">묶음 가격과 그 안에 든 항목이 함께 들어 있어 합계가 겹칠 수 있어요: '+esc(overlap.join(', '))+'.</p>';
+  if (lines.some(function(l){ return l.item.perHead; })) {
+    var basis = priceHeadBasis();
+    h += '<p class="price-builder-empty">식대는 1인 금액 × '+(basis.fromBudget ? '예산 탭 식대 보증인원 ' : '최소 보증인원 중간값 ')+basis.n.toLocaleString('ko-KR')+'명으로 계산했어요.'+(basis.fromBudget ? '' : ' 예산 탭 식대에 인원을 넣으면 그 인원으로 바뀌어요.')+'</p>';
+  }
+  return h;
+}
+function pricePickRow(item, group, region, basis){
+  var on = !!group.items[item.id], line = on ? priceLine(item, group.opts[item.id], basis, group) : null;
+  var h = '<tr class="price-pick'+(on ? ' on' : '')+'"><td colspan="4"><div class="price-pick-in">' +
+    '<button class="price-select-button" type="button" role="checkbox" aria-checked="'+(on?'true':'false')+'" aria-label="'+esc(group.name)+'에 '+esc(item.name)+' 담기" data-act="price-toggle" data-id="'+item.id+'" data-group="'+group.id+'" data-fk="price-select-'+item.id+'"'+dis()+'><span class="price-select-icon" aria-hidden="true"></span><span>'+esc(item.name)+' 담기</span></button>';
+  if (line) {
+    var own = priceOwn(group, item), hint = item.perHead ? Math.round(line.refUnit * 10000).toLocaleString('ko-KR')
+      : (Math.round(line.ref.low) === Math.round(line.ref.high) ? Math.round(line.ref.low) : Math.round(line.ref.low)+'~'+Math.round(line.ref.high));
+    h += '<strong class="price-pick-amt">'+(line.mine ? '내 금액 ' : '참고 ')+esc(priceAmountText(line))+'</strong>' +
+      '<label class="field price-mine">'+(item.perHead ? '이 비교안 1인 금액(원)' : '이 비교안 금액(만원)')+'<input type="text" inputmode="numeric" value="'+(own != null ? own : '')+'" placeholder="참고 '+hint+'" data-price-mine="'+item.id+'" data-group="'+group.id+'" data-fk="price-mine-'+item.id+'"'+dis()+'></label>';
+    // 참고 시세는 고르는 칸이 아니라 펼쳐 보여 줘요. 금액을 비우면 지역에 맞춰 정해진 '기준' 값으로 계산해요.
+    var ids = priceOptionIds(item, region, line.opt.id);
+    if (ids.length > 1) {
+      h += '<div class="price-refs"><p class="price-refs-title">참고 시세 <small>조사값이라 실제 견적과 달라요</small></p><ul class="price-ref-list">' +
+        ids.map(function(id){
+          var o = priceOption(item, id);
+          if (!o) return '';
+          var used = id === line.opt.id, here = region !== '전국' && o.regions.indexOf(region) >= 0;
+          // 범위(성수기/비수기 등)는 값 자체가 두 금액이라 다시 적지 않고, 합으로 계산되는 값(각 15만원 등)만 합계를 덧붙여요.
+          var val = o.value + (o.amount.low === o.amount.high && /\/|각 /.test(o.value) ? ' ('+fmtPriceRange(o.amount)+')' : '');
+          return '<li'+(used ? ' class="used"' : '')+'><span class="price-ref-name">'+esc(o.label)+(here ? ' <em>지금 지역</em>' : '')+(used ? ' <em class="price-ref-base">기준</em>' : '')+'</span><strong>'+esc(val)+'</strong><small>'+esc(o.source)+'</small></li>';
+        }).join('') + '</ul><p class="price-refs-note">'+(line.mine ? '합계에는 직접 넣은 금액을 써요.' : '금액을 비우면 ‘기준’ 값으로 계산해요.')+'</p></div>';
+    } else h += '<p class="price-pick-src">'+(line.mine ? '참고 시세 '+esc(priceRefText(line))+' · ' : '참고 시세 · ')+esc(line.opt.source)+'</p>';
+  }
+  return h + '</div></td></tr>';
+}
+function priceTable(cap, rows, head, group){
   head = head || ['항목', '중간값', '조사 시점'];
+  group = group || 'reference';
+  var active = activePriceGroup(), region = curRegion(), basis = priceHeadBasis();
   var h = '<p class="rcap">'+cap+'</p><div class="rwrap"><table class="rtable ptable"><thead><tr>' +
-    head.map(function(x, i){ return '<th scope="col">'+x+'</th>'; }).join('') + '</tr></thead><tbody>';
-  rows.forEach(function(r){ h += '<tr><th scope="row">'+r[0]+'</th><td class="avg">'+r[1]+'</td><td>'+r[2]+'</td></tr>'; });
+    head.concat(['비교안']).map(function(x){ return '<th scope="col">'+x+'</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(r, index){
+    var id = group + '-' + (index + 1), ref = PRICE_ROW_REF[id];
+    h += '<tr><th scope="row">'+r[0]+'</th><td class="avg">'+r[1]+'</td><td class="price-source">'+r[2]+'</td>' +
+      (ref ? '' : '<td class="price-config"><span class="tip">참고값 · 합계에서 제외</span></td>') + '</tr>';
+    if (ref && PRICE_ITEM_LAST_ROW[ref.item] === id) h += pricePickRow(PRICE_ITEM_BY_ID[ref.item], active, region, basis);
+  });
   return h + '</tbody></table></div>';
+}
+function priceCompareHTML(groups, activeId){
+  if (groups.length < 2) return '';
+  if (ui.openKnow['price-compare'] == null) ui.openKnow['price-compare'] = false;
+  var data = groups.map(function(g){
+    var lines = priceGroupLines(g), bySec = {};
+    lines.forEach(function(l){ var s = bySec[l.item.sec] || (bySec[l.item.sec] = {low:0, high:0, n:0}); s.low += l.amount.low; s.high += l.amount.high; s.n++; });
+    return {g:g, n:lines.length, total:priceLinesTotal(lines), bySec:bySec};
+  });
+  function block(title, cells){
+    return '<div class="price-compare-sec"><h4>'+title+'</h4><ul>' + cells.map(function(c){ return '<li'+(c[2] ? ' class="now"' : '')+'><span>'+esc(c[0])+(c[2] ? ' <small>(보는 중)</small>' : '')+'</span><strong>'+c[1]+'</strong></li>'; }).join('') + '</ul></div>';
+  }
+  var h = block('비교안 합계', data.map(function(d){ return [d.g.name, d.n ? fmtPriceRange(d.total)+' · '+d.n+'개' : '담긴 항목 없음', d.g.id === activeId]; }));
+  Object.keys(PRICE_SECS).forEach(function(s){
+    if (!data.some(function(d){ return d.bySec[s]; })) return;
+    h += block(PRICE_SECS[s], data.map(function(d){ var v = d.bySec[s]; return [d.g.name, v ? fmtPriceRange(v)+' · '+v.n+'개' : '없음', d.g.id === activeId]; }));
+  });
+  return '<details class="price-compare" data-k="price-compare"'+(ui.openKnow['price-compare'] ? ' open' : '')+'><summary>비교안 나란히 보기 ('+groups.length+'개)</summary><div class="price-compare-body">'+h+'</div></details>';
+}
+function pricePlanHTML(){
+  var groups = priceGroups(), active = activePriceGroup(groups), region = curRegion();
+  var chosen = priceGroupLines(active), total = priceLinesTotal(chosen), mineN = chosen.filter(function(l){ return l.mine; }).length, noPriceN = chosen.filter(function(l){ return l.noPrice; }).length, ask = ui.priceDeleteAsk === active.id && groups.length > 1;
+  var tabs = groups.map(function(group){
+    var lines = priceGroupLines(group), sum = fmtPriceRange(priceLinesTotal(lines));
+    return '<button class="price-group-tab" type="button" aria-pressed="'+(group.id === active.id?'true':'false')+'" aria-label="'+esc(group.name)+' 비교안, '+lines.length+'개 담김, 합계 '+sum+'" data-act="price-group-select" data-id="'+group.id+'" data-fk="price-group-tab-'+group.id+'"><span class="price-group-tab-head"><b>'+esc(group.name)+'</b><small>'+lines.length+'개</small></span><strong>'+sum+'</strong></button>';
+  }).join('');
+  var rowsHTML = chosen.map(function(line){
+    return '<li><span><b>'+esc(PRICE_SECS[line.item.sec])+' · '+esc(line.item.name)+'</b><small>'+(line.mine ? '직접 넣은 금액'+(line.ref ? ' · 참고 시세 '+esc(priceRefText(line)) : '') : line.opt ? '참고 시세 · '+esc(priceOptText(line.opt, region)) : '금액을 넣어 주세요')+'</small></span><strong>'+esc(priceAmountText(line))+'</strong><button class="price-picked-remove" type="button" aria-label="'+esc(active.name)+'에서 '+esc(line.item.name)+' 빼기" data-act="'+(line.item.custom ? 'price-custom-del' : 'price-remove')+'" data-id="'+line.item.id+'" data-group="'+active.id+'" data-fk="price-remove-'+line.item.id+'"'+dis()+'>빼기</button></li>';
+  }).join('');
+  if (ui.openKnow['price-picked'] == null) ui.openKnow['price-picked'] = false;
+  return '<section class="price-builder" aria-labelledby="price-builder-title"><div class="price-builder-head"><div><span class="price-eyebrow">MY PRICE PLAN</span><h3 id="price-builder-title">비교안 만들기</h3>' +
+    '<p class="price-builder-intro">아래 가격표에서 항목을 담고, 받은 견적이나 예상 금액을 직접 넣으세요. 비워 둔 항목은 참고 시세로 계산해요. 참고 시세는 한국소비자원 조사의 중간값·평균이라 실제 견적은 업체마다 달라요. 부케·축가 사례처럼 가격표에 없는 비용은 아래 ‘그 밖에 드는 비용’에서 담거나 여기서 직접 추가하세요.</p></div></div>' +
+    '<div class="price-group-tabs" role="group" aria-label="비교안 선택">'+tabs+'</div>' +
+    '<div class="price-group-edit"><label class="field">비교안 이름<input type="text" value="'+esc(active.rawName)+'" maxlength="30" placeholder="'+esc(active.name)+'" data-price-group-name="'+active.id+'" data-fk="price-group-name-'+active.id+'"'+dis()+'></label>' +
+    (ask ? '' : '<button class="link price-group-delete" type="button" data-act="price-group-delete-ask" data-id="'+active.id+'" data-fk="price-group-delete-'+active.id+'"'+(groups.length === 1?' disabled':'')+dis()+'>비교안 삭제</button>') + '</div>' +
+    (ask ? '<div class="price-confirm" role="group" aria-label="비교안 삭제 확인"><p>‘'+esc(active.name)+'’ 비교안을 지울까요? 담은 항목도 함께 지워져요.</p><div class="detail-actions">' +
+      '<button class="btn" type="button" data-act="price-group-delete-cancel" data-fk="price-group-delete-cancel">취소</button>' +
+      '<button class="btn primary" type="button" data-act="price-group-delete" data-id="'+active.id+'" data-fk="price-group-delete-yes"'+dis()+'>지우기</button></div></div>' : '') +
+    '<div class="price-group-add" id="priceGroupAddForm"><label class="sr" for="priceGroupAddName">새 비교안 이름</label><input type="text" id="priceGroupAddName" maxlength="30" placeholder="예: 서울 예식안" data-fk="price-group-add-name"'+dis()+'><button class="btn" type="button" data-act="price-group-add" data-fk="price-group-add"'+dis()+'>비교안 추가</button></div>' +
+    '<div class="price-group-summary"><div><span>담긴 항목</span><strong>'+chosen.length+'개</strong></div><div><span>비교안 합계</span><strong>'+fmtPriceRange(total)+'</strong></div>' +
+      (chosen.length ? '<div><span>직접 넣은 금액 / 참고 시세</span><strong>'+mineN+'개 / '+(chosen.length - mineN - noPriceN)+'개</strong></div>' : '') +
+      (noPriceN ? '<div><span>금액 미입력 (합계에서 빠짐)</span><strong class="pr-diff over">'+noPriceN+'개</strong></div>' : '') + '</div>' +
+    priceNotesHTML(active, chosen, region, 'price') + priceCustomHTML(active) +
+    (chosen.length ? '<details class="price-picked-details" data-k="price-picked"'+(ui.openKnow['price-picked'] ? ' open' : '')+'><summary>담긴 항목 보기 ('+chosen.length+')</summary><ul class="price-picked">'+rowsHTML+'</ul></details>' : '<p class="price-builder-empty">아래 가격표의 항목마다 있는 ‘담기’를 누르면 이 비교안에 들어가요. 담은 뒤 받은 금액을 직접 넣으세요.</p>') +
+    priceCompareHTML(groups, active.id) +
+    '</section>';
 }
 function cmpRow(t, pre, post){
   return '<div class="cmp-row"><h4>'+t+'</h4><p class="pre"><span class="tag">신고 전</span> '+pre+'</p><p class="post"><span class="tag">신고 후</span> '+post+'</p></div>';
@@ -1247,13 +1978,6 @@ function knowHTML(){
     '<p>90일 전까지: 계약금 전액 환급</p><p>89~60일 전: 총비용의 10%</p><p>59~30일 전: 총비용의 20%</p><p>29~10일 전: 40%</p><p>9~1일 전: 50%</p><p>당일: 70%</p>' +
     '<p>계약서에 따로 정한 조항이 없을 때 쓰는 권고 기준이에요. 계약서 조항이 이보다 불리하면 사인 전에 고쳐 달라고 하세요. 총비용은 대관료·식대·장식처럼 계약서에 적힌 예식 당일 비용 전체예요.</p></div>',
     a('https://www.price.go.kr','참가격') + a('https://www.1372.go.kr','1372 소비자상담센터'));
-  h += card('k11', '견적서 밖에서 나오는 돈',
-    '기본 견적에 없다가 계약 뒤에 붙는 항목이 많아요. 아래 항목이 포함인지 별도인지 계약 전에 물어보세요.',
-    '<ul><li>식장: 생화 꽃장식, 본식 촬영, 본식 도우미, 폐백, 주류·음료, 부가세 포함 여부, 외부 촬영 업체를 쓸 때 반입료.</li>' +
-    '<li>스드메: 원본 사진 구매, 앨범 페이지 추가, 드레스 도우미, 드레스 투어·피팅비, 메이크업 이른 시간 추가금이나 담당자 지정비.</li>' +
-    '<li>앨범 페이지 추가, 드레스 도우미, 본식 촬영은 10명 중 6~7명이 쓰는 사실상 필수 항목이에요.</li>' +
-    '<li>식대가 오르면 차액을 내야 하는지, 보증인원을 줄일 수 있는 마감일이 언제인지도 계약서에서 확인하세요.</li>' +
-    '<li>항목별 금액은 가격 비교 탭에서 확인할 수 있어요. <button class="link" type="button" data-act="goto-price">가격 비교 탭 열기</button></li></ul>');
   h += card('k7', '부부재산약정',
     '결혼 전 재산을 어떻게 나눌지 미리 정하는 계약이에요. 혼인신고 전에만 할 수 있어요.',
     '<ul><li>혼인신고 전에 약정해야 하고, 제3자에게도 주장하려면 혼인신고 전에 등기까지 해 둬야 해요.</li>' +
@@ -1269,116 +1993,62 @@ function knowHTML(){
 }
 
 function priceHTML(){
-  var h = '<p class="basis">참고(한국소비자원 중간값): 1인 식대 전국 약 6만원, 최소 보증인원 200명, 대관료 성수기 350만원·비수기 250만원, 스드메 패키지 292만원. 항목별 가격표와 지역별 참고 시세를 모았어요.</p>' + regionBoxHTML() + '<div class="know">';
-  h += card('k13', '항목별 가격 비교표',
-    '공개된 결혼 가격을 항목별로 모았어요. 받은 견적이 어디쯤인지 같은 항목끼리 비교하세요.',
-    '<div class="pt-nav" role="group" aria-label="가격표 항목">' +
-      [['pt-read','읽는 법'],['pt-total','전체 비용'],['pt-hall','예식장'],['pt-studio','스튜디오'],['pt-dress','드레스'],['pt-makeup','메이크업'],['pt-package','스드메 묶음'],['pt-timing','시기·계약 시점'],['pt-check','업체별 가격 확인']]
-        .map(function(x){ return '<button class="mchip" type="button" data-act="pt-jump" data-sec="'+x[0]+'">'+x[1]+'</button>'; }).join('') +
-    '</div>' +
-
-    ptSec('pt-read', '읽는 법') +
+  var h = '<p class="basis">필요한 항목을 눌러 가격과 해당 지역 시세를 확인하세요.</p>' + regionSelectHTML('priceRegion', '가격 비교 지역') + '<div class="know">';
+  if (ui.openKnow.k13 == null) ui.openKnow.k13 = true;
+  var priceBody = ptSec('pt-read', '읽는 법') +
     '<ul><li><b>중간값</b>: 가격을 줄 세웠을 때 가운데 값이에요. 비싼 업체 몇 곳에 덜 흔들려서 이 표는 대부분 중간값이에요.</li>' +
     '<li><b>평균</b>: 비싼 업체가 섞이면 중간값보다 높게 나와요. 평균인 줄은 \'평균\'이라고 따로 적었어요.</li>' +
     '<li>모두 한국소비자원 조사값이고, 조사 시점이 항목마다 달라요. 같은 항목에 시점이 다른 값이 있으면 최신 값을 위에 두었어요.</li>' +
-    '<li>기본 가격에는 선택 품목(추가금)이 빠져 있어요. 추가금은 항목마다 따로 정리했어요.</li></ul>' +
+    '<li>기본 가격에는 선택 품목(추가금)이 빠져 있어요. 추가금은 항목마다 따로 정리했어요.</li></ul>' + ptEnd() +
 
     ptSec('pt-total', '전체 비용 (예식장+스드메)') +
-    priceTable('전국', [
-      ['결혼서비스 전체 비용', '2,139만원', '평균, 2026년 2월'],
-      ['  그중 식대 비중', '61.4%', '참가격 통계'],
-      ['  그중 대관료 비중', '20.9%', '참가격 통계'],
-      ['  그중 기본 장식비 비중', '3.5%', '참가격 통계']
-    ], ['항목', '금액', '기준·시점']) +
-    regionTable('지역별 전체 비용', 't', '만원', false) +
+    priceTable('전국', PRICE_TABLES['overall'], ['항목', '금액', '기준·시점'], 'overall') +
+    regionTable('지역별 전체 비용', 't', '만원', false) + ptEnd() +
 
     ptSec('pt-hall', '예식장') +
-    priceTable('기본(필수) 항목', [
-      ['결혼식장 계약금(대관료+식대+기본 장식)', '1,550만원', '중간값, 2026년 2월'],
-      ['  성수기 / 비수기', '1,610만원 / 1,250만원', '중간값, 2025년 4월~2026년 6월'],
-      ['최소 보증인원', '200명', '중간값, 성수기·비수기 같음'],
-      ['대관료 성수기 / 비수기', '350만원 / 250만원', '중간값, 2025년 4월~2026년 6월'],
-      ['1인 식대(전국)', '6만원', '중간값, 2025년 8월'],
-      ['  서울 강남 1인 식대', '9만원', '중간값, 2025년 12월']
-    ], ['항목', '금액', '기준·시점']) +
-    regionTable('지역별 1인 식대', 'm', '만원', true) +
+    priceTable('기본(필수) 항목', PRICE_TABLES['hall-basic'], ['항목', '금액', '기준·시점'], 'hall-basic') +
+    priceTable('대관료', PRICE_TABLES['hall-rent'], ['항목', '금액', '기준·시점'], 'hall-rent') +
     regionTable('지역별 대관료', 'h', '만원', false) +
-    priceTable('추가금(선택 항목)', [
-      ['생화 꽃장식', '280만원', '중간값, 2026년 2월'],
-      ['  (이전 조사)', '262만원', '중간값, 2025년 12월'],
-      ['본식 촬영', '80만원', '중간값, 2025년 6월'],
-      ['본식 원판 사진 구매', '51만원', '중간값, 2025년 12월'],
-      ['본식 사회자', '30만원', '참가격 통계(전국)'],
-      ['본식 도우미', '30만원', '참가격 통계(전국)'],
-      ['폐백 음식', '30만원', '참가격 통계(전국)'],
-      ['폐백 수모비', '10만원', '참가격 통계(전국)'],
-      ['혼주 헤어·메이크업 여성 / 남성', '23만원 / 10만원', '중간값, 2025년 4월'],
-      ['  (다른 구성 조사)', '15만원', '중간값, 2025년 12월']
-    ], ['항목', '금액', '기준·시점']) +
-    '<p class="tip">식장이 많이 취급하는 추가 항목은 본식 촬영(67.8%), 혼주 헤어·메이크업(62.4%), 본식 사회자(46.7%) 순이에요. 성수기 주말엔 생화 장식이나 본식 도우미를 필수로 붙이는 식장이 32.8%였어요.</p>' +
+    priceTable('1인 식대', PRICE_TABLES['hall-meal'], ['항목', '금액', '기준·시점'], 'hall-meal') +
+    regionTable('지역별 1인 식대', 'm', '만원', true) +
+    priceTable('추가금(선택 항목)', PRICE_TABLES['hall-extra'], ['항목', '금액', '기준·시점'], 'hall-extra') +
+    '<p class="tip">식장이 많이 취급하는 추가 항목은 본식 촬영(67.8%), 혼주 헤어·메이크업(62.4%), 본식 사회자(46.7%) 순이에요. 성수기 주말엔 생화 장식이나 본식 도우미를 필수로 붙이는 식장이 32.8%였어요.</p>' + ptEnd() +
 
     ptSec('pt-studio', '스튜디오') +
-    priceTable('기본(20P 앨범·20R 액자)', [
-      ['스튜디오 기본', '137만원', '중간값, 2026년 2월'],
-      ['  (이전 조사)', '132만원', '중간값, 2025년 8월'],
-      ['가장 비싼 지역 / 싼 지역', '강원 159만원 / 경기·충청 100만원', '중간값, 2025년 4월'],
-      ['서울 강남', '150만원', '중간값, 2025년 4월']
-    ], ['항목', '금액', '기준·시점']) +
-    priceTable('추가금(선택 항목)', [
-      ['원본 파일 전체 구매', '22만원', '중간값, 2025년 4월'],
-      ['앨범 페이지 추가', '장당 3만원', '중간값, 2025년 4월'],
-      ['야외 촬영 / 야간 촬영', '각 15만원', '중간값, 2025년 4월'],
-      ['촬영 출장비', '20만원', '참가격 통계(전국)'],
-      ['들러리 촬영', '8만원', '참가격 통계(전국)'],
-      ['반려동물 촬영', '8만원', '참가격 통계(전국)']
-    ], ['항목', '금액', '기준·시점']) +
+    priceTable('기본(20P 앨범·20R 액자)', PRICE_TABLES['studio-basic'], ['항목', '금액', '기준·시점'], 'studio-basic') +
+    priceTable('추가금(선택 항목)', PRICE_TABLES['studio-extra'], ['항목', '금액', '기준·시점'], 'studio-extra') + ptEnd() +
 
     ptSec('pt-dress', '드레스') +
-    priceTable('기본(본식 1벌+촬영 3벌)', [
-      ['드레스 기본', '160만원', '중간값, 2026년 2월'],
-      ['가장 비싼 지역 / 싼 지역', '대전 220만원 / 서울(강남 외) 118만원', '중간값, 2025년 12월'],
-      ['서울 강남', '198만원', '중간값, 2025년 12월']
-    ], ['항목', '금액', '기준·시점']) +
-    priceTable('추가금(선택 항목)', [
-      ['피팅(시착)', '6만원', '중간값, 2025년 4월'],
-      ['기본 개수 넘는 추가 시착', '5만원', '중간값, 2025년 4월'],
-      ['헬퍼(도우미) 촬영 / 본식', '각 25만원', '참가격 통계(전국)']
-    ], ['항목', '금액', '기준·시점']) +
+    priceTable('기본(본식 1벌+촬영 3벌)', PRICE_TABLES['dress-basic'], ['항목', '금액', '기준·시점'], 'dress-basic') +
+    priceTable('추가금(선택 항목)', PRICE_TABLES['dress-extra'], ['항목', '금액', '기준·시점'], 'dress-extra') + ptEnd() +
 
     ptSec('pt-makeup', '메이크업') +
-    priceTable('기본(본식+촬영, 원장급)', [
-      ['메이크업 기본', '79만원', '중간값, 2026년 2월'],
-      ['가장 비싼 지역 / 싼 지역', '서울 강남 101만원 / 광주 33만원', '중간값, 2025년 12월']
-    ], ['항목', '금액', '기준·시점']) +
-    priceTable('추가금(선택 항목)', [
-      ['얼리스타트 오전 4시대', '20만원', '중간값, 2025년 4월'],
-      ['얼리스타트 오전 5시대 / 6시대', '11만원 / 5만원', '중간값, 2025년 4월'],
-      ['촬영 출장비', '20만원', '참가격 통계(전국)']
-    ], ['항목', '금액', '기준·시점']) +
-    '<p class="tip">얼리스타트는 조사 업체의 27%만 운영하고, 시간이 이를수록 비싸요.</p>' +
+    priceTable('기본(본식+촬영, 원장급)', PRICE_TABLES['make-basic'], ['항목', '금액', '기준·시점'], 'make-basic') +
+    priceTable('추가금(선택 항목)', PRICE_TABLES['make-extra'], ['항목', '금액', '기준·시점'], 'make-extra') +
+    '<p class="tip">얼리스타트는 조사 업체의 27%만 운영하고, 시간이 이를수록 비싸요.</p>' + ptEnd() +
 
     ptSec('pt-package', '스드메 묶음(패키지)') +
-    priceTable('스튜디오+드레스+메이크업', [
-      ['스드메 패키지', '292만원', '중간값, 2025년 6월'],
-      ['스드메 전국 / 서울', '약 319만원 / 399만원', '평균, 2026년 4월'],
-      ['드메(스튜디오 제외)', '160만원', '중간값, 2025년 4월~2026년 6월']
-    ], ['항목', '금액', '기준·시점']) +
-    '<p class="tip">드메는 같은 기간 140만원에서 180만원으로 올랐어요.</p>' +
+    priceTable('스튜디오+드레스+메이크업', PRICE_TABLES['package'], ['항목', '금액', '기준·시점'], 'package') +
+    '<p class="tip">드메는 같은 기간 140만원에서 180만원으로 올랐어요.</p>' + ptEnd() +
 
     ptSec('pt-timing', '시기·계약 시점') +
-    priceTable('언제 하고 언제 계약하나', [
-      ['가장 비싼 달 / 싼 달', '4월 2,238만원 / 1월 1,913만원', '평균, 2025년 4월~2026년 6월'],
-      ['성수기(3~6월, 9~12월) 추가 비용', '평균 202만원 더', '2025년 4월~2026년 6월'],
-      ['비수기 평일 대관료', '성수기 주말 점심의 69.1%', '2025년 4월~2026년 6월'],
-      ['예식 10개월 전 계약 / 2개월 전 계약', '2,231만원 / 1,626만원', '평균, 2025년 10월 발표']
-    ], ['항목', '금액', '기준·시점']) +
+    priceTable('언제 하고 언제 계약하나', PRICE_TABLES['timing'], ['항목', '금액', '기준·시점'], 'timing') + ptEnd() +
 
     ptSec('pt-check', '업체별 가격 확인') +
     '<ul><li>참가격에서는 가격을 스스로 공개한 예식장의 홀별 대관료·장식비·식대·보증인원과, 결혼준비대행 업체의 제휴 스드메 기본·선택 가격을 검색할 수 있어요. 공개한 업체만 나와요.</li>' +
     '<li>참가격이 공개하는 선택 품목은 예식장 17개, 스튜디오 20개, 드레스 14개, 메이크업 16개예요.</li>' +
     '<li>2025년 11월부터 업체는 기본·선택 품목 가격과 위약금·환급 기준을 홈페이지나 참가격 중 한 곳과 계약서 표지에 표시해야 해요. 공정위가 2026년 8월 1일부터 집중 점검 중이고, 어기면 과태료가 최대 1억원이에요. 표시가 없으면 요구하세요.</li>' +
-    '<li>공정위는 2024년 11월 사진 파일 구입비·드레스 피팅비·얼리스타트비를 기본 서비스에 포함하라고 했지만, 2025년 9월 조사에서도 20곳 중 19곳이 따로 받았어요. 따로라면 금액을 계약서에 적게 하세요.</li></ul>',
-    a('https://www.price.go.kr','참가격 업체별 가격·예상 견적'));
+    '<li>공정위는 2024년 11월 사진 파일 구입비·드레스 피팅비·얼리스타트비를 기본 서비스에 포함하라고 했지만, 2025년 9월 조사에서도 20곳 중 19곳이 따로 받았어요. 따로라면 금액을 계약서에 적게 하세요.</li></ul>' + ptEnd();
+  h += pricePlanHTML() + card('k13', '항목별 가격 비교표',
+    '공개된 결혼 가격을 항목별로 모았어요. 받은 견적이 어디쯤인지 같은 항목끼리 비교하세요.',
+    priceBody, a('https://www.price.go.kr','참가격 업체별 가격·예상 견적'));
+  h += priceExtraHTML();
+  h += card('k11', '견적서 밖에서 나오는 돈',
+    '기본 견적에 없다가 계약 뒤에 붙는 항목이 많아요. 아래 항목이 포함인지 별도인지 계약 전에 물어보세요.',
+    '<ul><li>식장: 생화 꽃장식, 본식 촬영, 본식 도우미, 폐백, 주류·음료, 부가세 포함 여부, 외부 촬영 업체를 쓸 때 반입료.</li>' +
+    '<li>스드메: 원본 사진 구매, 앨범 페이지 추가, 드레스 도우미, 드레스 투어·피팅비, 메이크업 이른 시간 추가금이나 담당자 지정비.</li>' +
+    '<li>앨범 페이지 추가, 드레스 도우미, 본식 촬영은 10명 중 6~7명이 쓰는 사실상 필수 항목이에요.</li>' +
+    '<li>식대가 오르면 차액을 내야 하는지, 보증인원을 줄일 수 있는 마감일이 언제인지도 계약서에서 확인하세요.</li></ul>');
   return h + '</div>';
 }
 
@@ -1427,6 +2097,7 @@ function budgetHTML(){
   var left = total != null ? total - planSum : null;
   var h = '<div class="totalrow"><label for="bTotal">총예산</label>' +
     '<input type="text" inputmode="numeric" id="bTotal" value="'+(total != null ? total : '')+'" placeholder="예: 5000" data-btotal="1" data-fk="btotal"'+dis()+'><span class="unit">만원</span></div>';
+  h += regionSelectHTML('bRegion', '예산 참고 지역');
   h += '<p class="basis">지역별 참고 시세와 항목별 가격은 가격 비교 탭에서 확인할 수 있어요. <button class="link" type="button" data-act="goto-price">가격 비교 탭 열기</button></p>';
   h += '<div class="sumgrid">' +
     '<div class="sum"><span class="k">항목별 예산 합계</span><span class="v">'+(anyPlan ? fmtMan(planSum) : '-')+'</span></div>' +
@@ -1435,6 +2106,7 @@ function budgetHTML(){
     '<div class="sum"><span class="k">앞으로 낼 돈</span><span class="v">'+fmtMan(dueSum)+'</span></div>' +
   '</div>';
   h += '<p class="who"><span>공동 <b>'+fmtMan(who.both)+'</b></span><span>신랑 쪽 <b>'+fmtMan(who.groom)+'</b></span><span>신부 쪽 <b>'+fmtMan(who.bride)+'</b></span><span>미정 <b>'+fmtMan(who[''])+'</b></span><span>낸 돈 <b>'+fmtMan(paidSum)+'</b></span></p>';
+  h += planReviewHTML();
   h += quoteHTML();
   var hiddenN = rows.length - vis.length;
   if (hiddenN) h += '<div class="tools"><button class="toggle" type="button" aria-pressed="'+(ui.showHiddenBudget?'true':'false')+'" data-act="b-show-hidden">숨긴 항목 보기 ('+hiddenN+')</button></div>';
@@ -1458,21 +2130,136 @@ function budgetHTML(){
   }
   return h;
 }
-function regionBoxHTML(){
+function regionSelectHTML(id, label){
+  id = id || 'bRegion';
+  label = label || '예산 참고 지역';
   var reg = (state.budget && state.budget.region) || '전국';
-  var row = REGION_COST.filter(function(r){ return r.n === reg; })[0] || REGION_COST[0];
-  function f(v, dec){ return v == null ? '–' : (dec ? v.toFixed(1) : v.toLocaleString('ko-KR')); }
-  function tr(label, v, dec){
-    return '<tr><th scope="row">'+label+'<small>자료 '+v[3]+'건</small></th><td>'+f(v[0],dec)+'</td><td class="avg">'+f(v[1],dec)+'</td><td>'+f(v[2],dec)+'</td></tr>';
+  var opts = REGION_COST.map(function(r){ return '<option value="'+esc(r.n)+'"'+(r.n === reg ? ' selected' : '')+'>'+esc(r.n)+'</option>'; }).join('');
+  return '<div class="region-select"><label for="'+id+'">'+label+'</label>' +
+    '<select id="'+id+'" data-fk="'+id+'" data-bregion="1"'+dis()+'>'+opts+'</select></div>';
+}
+/* 예산 탭: 고른 비교안에서 반영한 항목을 예산 항목(고정 ID)별로 묶어, 참고 시세와 내 예산(예산 칸)을 나란히 비교해요. */
+function priceLineOrder(l){ return l.item.custom ? PRICE_ITEMS.length : PRICE_ITEMS.indexOf(l.item); }
+function planReviewData(group){
+  var lines = priceGroupLines(group), applied = lines.filter(function(l){ return group.apply[l.item.id]; });
+  var byId = {}, order = {}, targets = [];
+  budgetRows().forEach(function(r){ if (r.kind === 't') byId[r.id] = r; });
+  BUDGET_ITEMS.forEach(function(t, i){ order[t.id] = i; });
+  applied.forEach(function(line){
+    var t = {budget:line.item.budget.slice(), lines:[line]};
+    targets = targets.filter(function(o){
+      if (!o.budget.some(function(b){ return t.budget.indexOf(b) >= 0; })) return true;
+      o.budget.forEach(function(b){ if (t.budget.indexOf(b) < 0) t.budget.push(b); });
+      t.lines = o.lines.concat(t.lines);
+      return false;
+    });
+    targets.push(t);
+  });
+  var sum = {ref:{low:0,high:0}, mine:0, entered:0, cmpRef:{low:0,high:0}, cmpMine:0, compared:0, missing:0};
+  targets.forEach(function(t){
+    t.budget.sort(function(a, b){ return order[a] - order[b]; });
+    t.lines.sort(function(a, b){ return priceLineOrder(a) - priceLineOrder(b); });
+    t.key = t.budget.join('-');
+    t.rows = t.budget.map(function(b){ return byId[b]; }).filter(Boolean);
+    t.ref = priceLinesTotal(t.lines);
+    t.allRef = t.lines.every(function(l){ return !l.mine; });
+    t.priced = t.lines.every(function(l){ return !l.noPrice; });
+    var entered = t.rows.filter(function(r){ return r.plan != null; });
+    t.mine = entered.reduce(function(s, r){ return s + r.plan; }, 0);
+    t.budgetDone = t.rows.length > 0 && entered.length === t.rows.length;
+    t.complete = t.budgetDone && t.priced;
+    sum.ref.low += t.ref.low; sum.ref.high += t.ref.high; sum.mine += t.mine; sum.entered += entered.length;
+    if (t.complete) { sum.cmpRef.low += t.ref.low; sum.cmpRef.high += t.ref.high; sum.cmpMine += t.mine; sum.compared++; } else sum.missing++;
+  });
+  targets.sort(function(a, b){ return order[a.budget[0]] - order[b.budget[0]]; });
+  return {lines:lines, applied:applied, targets:targets, sum:sum};
+}
+/* 내 예산 - 참고 시세. 음수면 시세가 예산보다 높다는 뜻(초과), 양수면 여유. */
+function planDiff(mine, ref){
+  var a = Math.round(mine - ref.high), b = Math.round(mine - ref.low);
+  if (a === 0 && b === 0) return {cls:'even', text:'시세와 같아요'};
+  if (a >= 0) return {cls:'room', text:(a === b ? fmtMan(a) : fmtMan(a)+' ~ '+fmtMan(b))+' 여유'};
+  if (b <= 0) return {cls:'over', text:(a === b ? fmtMan(-a) : fmtMan(-b)+' ~ '+fmtMan(-a))+' 초과'};
+  return {cls:'mid', text:'시세 범위 안 · 최대 '+fmtMan(-a)+' 초과'};
+}
+function planImportHTML(t){
+  if (Store.readOnly) return '';
+  if (t.rows.length !== 1) return '<p class="tip">여러 예산 항목을 묶은 가격이라 한 칸에 넣지 않아요. 위에서 항목마다 직접 입력하세요.</p>';
+  if (!t.priced) return '<p class="tip">금액을 넣지 않은 항목이 있어 예산에 넣을 값이 없어요. 가격 비교 탭에서 금액을 넣어 주세요.</p>';
+  var r = t.rows[0], line = t.lines[0];
+  if (r.perHead) {
+    var meal = t.lines.filter(function(l){ return l.item.perHead; })[0];
+    if (!meal) return '';
+    var won = Math.round(meal.unit * 10000), setHeads = r.heads == null, label;
+    if (setHeads) label = meal.heads.toLocaleString('ko-KR')+'명 × '+won.toLocaleString('ko-KR')+'원 넣기'+(r.plan != null ? ' (지금 예산 '+fmtMan(r.plan)+' 대신 계산)' : '');
+    else if (r.unit === won) return '<p class="pr-keep">1인 금액이 이미 참고 시세와 같아요.</p>';
+    else label = '1인 금액을 '+won.toLocaleString('ko-KR')+'원으로 '+(r.unit != null ? '바꾸기 (지금 '+r.unit.toLocaleString('ko-KR')+'원)' : '넣기');
+    return '<div class="detail-actions"><button class="btn" type="button" data-act="b-plan-import" data-id="'+r.id+'" data-unit="'+won+'"'+(setHeads ? ' data-heads="'+meal.heads+'"' : '')+'>'+label+'</button></div>';
   }
-  var opts = REGION_COST.map(function(r){ return '<option value="'+esc(r.n)+'"'+(r.n === row.n ? ' selected' : '')+'>'+esc(r.n)+'</option>'; }).join('');
-  return '<div class="rbox"><div class="rbox-head"><label for="bRegion">지역별 참고 시세</label>' +
-    '<select id="bRegion" data-fk="bRegion" data-bregion="1"'+dis()+'>'+opts+'</select></div>' +
-    '<div class="rwrap"><table class="rtable"><thead><tr><th scope="col">항목(만원)</th><th scope="col">저</th><th scope="col">평균</th><th scope="col">고</th></tr></thead><tbody>' +
-    tr('총비용(식장+스드메)', row.t, false) + tr('1인당 식대', row.m, true) + tr('대관료', row.h, false) +
-    '</tbody></table></div>' +
-    '<p class="tip">한국소비자원 2025년 4월~2026년 2월 발표값 기준이에요. 저·고는 발표 시점별 최저·최고이고, 선택 품목은 빠진 금액이에요. ' +
-    '<button class="link" type="button" data-act="goto-price" data-sec="pt-total">전체 지역 표 보기</button></p></div>';
+  var vals = Math.round(t.ref.low) === Math.round(t.ref.high) ? [['', t.ref.low]] : [['최저 ', t.ref.low], ['최고 ', t.ref.high]], from = t.allRef ? '참고 시세 ' : '비교안 금액 ';
+  var btns = vals.map(function(v){
+    var n = Math.round(v[1]);
+    if (r.plan != null && Math.round(r.plan) === n) return '';
+    return '<button class="btn" type="button" data-act="b-plan-import" data-id="'+r.id+'" data-plan="'+n+'">'+(r.plan == null ? from+v[0]+fmtMan(n)+' 예산에 넣기' : '예산을 '+v[0]+fmtMan(n)+'으로 바꾸기 (지금 '+fmtMan(r.plan)+')')+'</button>';
+  }).join('');
+  return btns ? '<div class="detail-actions">'+btns+'</div>' : '<p class="pr-keep">예산이 이미 참고 시세와 같아요.</p>';
+}
+function planTargetHTML(t){
+  var k = 'pr-row-' + t.key, open = !!ui.openKnow[k], d = t.complete ? planDiff(t.mine, t.ref) : null;
+  var names = t.rows.map(function(r){ return r.name; }).join(' · ');
+  var h = '<li><details class="pr-row" data-k="'+k+'"'+(open ? ' open' : '')+'><summary><span class="pr-row-name">'+esc(names)+(t.rows.some(function(r){ return r.hidden; }) ? ' <small>(예산에서 숨김)</small>' : '')+'</span>' +
+    '<span class="pr-row-diff '+(d ? d.cls : 'none')+'">'+(d ? d.text : (t.priced ? '예산 미입력' : '금액 미입력'))+'</span>' +
+    '<span class="pr-row-nums">'+(t.allRef ? '참고 ' : '비교안 ')+fmtPriceRange(t.ref)+(t.priced ? '' : ' + 미입력')+' · 내 예산 '+(t.budgetDone ? fmtMan(t.mine) : (t.mine ? fmtMan(t.mine)+'(일부)' : '-'))+'</span></summary><div class="pr-row-body">';
+  h += '<ul class="pr-lines">' + t.lines.map(function(l){ return '<li><span>'+esc(PRICE_SECS[l.item.sec])+' · '+esc(l.item.name)+'<small>'+(l.mine ? '직접 넣은 금액'+(l.ref ? ' · 참고 시세 '+esc(priceRefText(l)) : '') : l.opt ? '참고 시세 · '+esc(l.opt.label+' '+l.opt.value)+' · '+esc(l.opt.source) : '가격 비교 탭에서 금액을 넣어 주세요')+'</small></span><strong>'+esc(priceAmountText(l))+'</strong></li>'; }).join('') + '</ul>';
+  if (t.lines.length > 1 && priceOverlaps(t.lines).length) h += '<p class="price-note">묶음 가격과 그 안에 든 항목이 함께 반영돼 시세가 겹칠 수 있어요.</p>';
+  t.rows.forEach(function(r){
+    var many = t.rows.length > 1, nm = many ? r.name+' ' : '';
+    var f = function(key, label, val, ph){ return '<label class="field">'+esc(label)+'<input type="text" inputmode="numeric" value="'+(val != null ? val : '')+'"'+(ph ? ' placeholder="'+ph+'"' : '')+' data-bnum="'+key+'" data-bkind="t" data-id="'+r.id+'" data-fk="pr-'+key+'-'+r.id+'"'+dis()+'></label>'; };
+    if (r.perHead) {
+      h += '<div class="bedit two">' + f('heads', nm+'인원(명)', r.heads, '예: 200') + f('unit', '1인 금액(원)', r.unit, '예: 65000') + '</div>' +
+        (r.calc ? '<div class="field">'+esc(nm)+'내 예산(만원)<div class="calcval">'+fmtMan(r.plan)+'</div></div>' : f('plan', nm+'내 예산(만원)', r.plan));
+    } else h += f('plan', nm+'내 예산(만원)', r.plan);
+    var kept = [];
+    if (r.actual != null) kept.push('확정 '+fmtMan(r.actual));
+    if (r.paid != null) kept.push('낸 돈 '+fmtMan(r.paid));
+    if (kept.length) h += '<p class="pr-keep">'+esc(nm)+kept.join(' · ')+'은 그대로 둬요.</p>';
+  });
+  return h + planImportHTML(t) + '</div></details></li>';
+}
+function planReviewHTML(){
+  var groups = priceGroups(), gid = (state.budget && state.budget.planGroup) || '', group = gid ? priceGroupById(gid, groups) : null, region = curRegion();
+  if (ui.openKnow['pr-box'] == null && Store.ready) ui.openKnow['pr-box'] = !!group;
+  var data = group ? planReviewData(group) : null, s = data && data.sum, total = s && s.compared ? planDiff(s.cmpMine, s.cmpRef) : null;
+  var lead = !group ? '가격 비교 탭에서 만든 비교안을 불러와 내 예산과 나란히 봐요.'
+    : group.name+' · '+(data.lines.length ? '반영 '+data.applied.length+'/'+data.lines.length+'개'+(total ? ' · '+total.text : '') : '담긴 항목 없음');
+  var h = '<details class="plan-review" data-k="pr-box"'+(ui.openKnow['pr-box'] ? ' open' : '')+'><summary><h3>비교안으로 예산 검토</h3><p class="lead">'+esc(lead)+'</p></summary><div class="pr-body">' +
+    '<p class="tip">비교안을 고른 뒤 예산에 반영할 항목만 고르세요. 예산·확정·낸 돈은 그대로 두고, 비교안 금액은 ‘넣기’나 ‘바꾸기’를 눌러야 예산에 들어가요.</p>' +
+    '<label class="field pr-select">불러올 비교안<select id="bPlanGroup" data-fk="b-plan-group" data-bplan="1"'+dis()+'><option value="">고르지 않음</option>' +
+    groups.map(function(g){ var gl = priceGroupLines(g); return '<option value="'+esc(g.id)+'"'+(group && g.id === group.id ? ' selected' : '')+'>'+esc(g.name+' · '+gl.length+'개 · '+fmtPriceRange(priceLinesTotal(gl)))+'</option>'; }).join('') + '</select></label>';
+  if (!group) {
+    var any = groups.some(function(g){ return priceGroupLines(g).length; });
+    h += '<p class="tip">'+(any ? '위에서 비교안을 고르면 담긴 항목이 나와요.' : '아직 항목을 담은 비교안이 없어요.')+' <button class="link" type="button" data-act="goto-price">가격 비교 탭 열기</button></p>';
+    return h + '</div></details>';
+  }
+  if (!data.lines.length) return h + '<p class="tip">이 비교안에는 담긴 항목이 없어요. <button class="link" type="button" data-act="goto-price" data-group="'+group.id+'">가격 비교 탭에서 담기</button></p></div></details>';
+  h += priceNotesHTML(group, data.applied, region, 'budget');
+  h += '<div class="price-group-summary pr-sum"><div><span>비교안 금액 합계 (반영 '+data.applied.length+'개)</span><strong>'+(data.applied.length ? fmtPriceRange(s.ref) : '-')+'</strong></div>' +
+    '<div><span>내 예산 합계</span><strong>'+(s.entered ? fmtMan(s.mine) : '-')+'</strong></div>' +
+    '<div><span>차액</span><strong class="pr-diff '+(total ? total.cls : 'none')+'">'+(total ? total.text : '-')+'</strong></div></div>' +
+    '<p class="pr-legend">비교안 금액은 직접 넣은 금액이고, 비워 둔 항목은 참고 시세예요. 초과는 그 금액이 내 예산보다 높다는 뜻, 여유는 내 예산이 더 넉넉하다는 뜻이에요.'+(s.missing ? ' 예산이나 금액을 넣지 않은 '+s.missing+'곳은 차액에서 뺐어요.' : '')+'</p>';
+  var pk = 'pr-pick-' + group.id;
+  if (ui.openKnow[pk] == null) ui.openKnow[pk] = !data.applied.length;
+  h += '<details class="pr-pick" data-k="'+pk+'"'+(ui.openKnow[pk] ? ' open' : '')+'><summary>반영할 항목 고르기 <span>'+data.applied.length+'/'+data.lines.length+'개 반영</span></summary><ul class="pr-picklist">' +
+    data.lines.map(function(l){
+      var on = !!group.apply[l.item.id], to = l.item.budget.map(budgetName).join(' · ');
+      return '<li><button class="price-select-button pr-apply" type="button" role="checkbox" aria-checked="'+(on ? 'true' : 'false')+'" data-act="b-plan-apply" data-group="'+group.id+'" data-id="'+l.item.id+'" data-fk="pr-apply-'+l.item.id+'"'+dis()+'><span class="price-select-icon" aria-hidden="true"></span>' +
+        '<span><span class="sr">예산에 반영: </span><b>'+esc(PRICE_SECS[l.item.sec])+' · '+esc(l.item.name)+'</b><small>'+esc(priceAmountText(l))+(l.mine ? ' (직접)' : l.noPrice ? '' : ' (참고)')+' → '+esc(to)+'</small></span></button></li>';
+    }).join('') + '</ul>' +
+    (Store.readOnly ? '' : '<div class="detail-actions"><button class="btn" type="button" data-act="b-plan-apply-all" data-group="'+group.id+'" data-v="1">모두 반영</button><button class="btn" type="button" data-act="b-plan-apply-all" data-group="'+group.id+'" data-v="0">모두 빼기</button>' +
+      '<button class="link" type="button" data-act="goto-price" data-group="'+group.id+'">가격 비교에서 고치기</button></div>') + '</details>';
+  if (data.targets.length) h += '<ul class="pr-list" aria-label="반영한 항목의 비교안 금액과 내 예산">' + data.targets.map(planTargetHTML).join('') + '</ul>';
+  else h += '<p class="tip">반영한 항목이 없어요. 위에서 예산에 반영할 항목을 고르세요.</p>';
+  return h + '</div></details>';
 }
 function quoteRows(){
   var q = (state.budget && state.budget.quotes) || {}, list = [];
@@ -1882,8 +2669,23 @@ document.addEventListener('click', function(e){
   if (!b || b.disabled) return;
   var act = b.getAttribute('data-act'), id = b.getAttribute('data-id'), kind = b.getAttribute('data-kind');
   if (act === 'toggle') {
-    var cur = taskState(kind, id);
-    commit(patchItem(kind, id, {done: !cur.done}));
+    var cur = taskState(kind, id), taskDetails = kind === 't' ? (TASK_DETAILS[id] || []) : [];
+    if (taskDetails.length) {
+      var nextDone = b.getAttribute('aria-checked') !== 'true', groupPatch = {tasks:{}};
+      groupPatch.tasks[id] = {done:nextDone};
+      taskDetails.forEach(function(sub){ groupPatch.tasks[sub.id] = {done:nextDone}; });
+      commit(groupPatch);
+    } else commit(patchItem(kind, id, {done: !cur.done}));
+  } else if (act === 'subtask-toggle') {
+    var parentId = b.getAttribute('data-parent'), parent = buildTasks(state).filter(function(it){ return it.id === parentId; })[0];
+    var nextSubDone = b.getAttribute('aria-checked') !== 'true', subPatch = {tasks:{}}, allSubDone = true;
+    (parent ? parent.subtasks : []).forEach(function(sub){
+      var checked = sub.id === id ? nextSubDone : sub.done;
+      subPatch.tasks[sub.id] = {done:checked};
+      if (!checked) allSubDone = false;
+    });
+    if (parentId) subPatch.tasks[parentId] = {done:allSubDone};
+    commit(subPatch);
   } else if (act === 'open') {
     ui.open[id] = !ui.open[id]; render();
   } else if (act === 'clear-book') {
@@ -1934,6 +2736,74 @@ document.addEventListener('click', function(e){
         b27:{plan: qq.extra != null ? qq.extra : ''}
       }}});
     }
+  } else if (act === 'price-group-add') {
+    var nameField = document.getElementById('priceGroupAddName'), groupName = nameField ? nameField.value.trim() : '';
+    var newGroupId = 'pg'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+    ui.priceDeleteAsk = null;
+    commit(pricePlanPatch([priceGroupFrom(newGroupId, {name:groupName || '새 비교안'})], {activeGroup:newGroupId}));
+  } else if (act === 'price-group-select') {
+    ui.priceDeleteAsk = null;
+    commit({pricePlan:{activeGroup:id}});
+  } else if (act === 'price-group-delete-ask' || act === 'price-group-delete-cancel') {
+    ui.priceDeleteAsk = act === 'price-group-delete-ask' ? id : null; render();
+    var askFocus = document.querySelector(act === 'price-group-delete-ask' ? '[data-act="price-group-delete-cancel"]' : '[data-act="price-group-delete-ask"]');
+    if (askFocus) askFocus.focus({preventScroll:true});
+  } else if (act === 'price-group-delete') {
+    var nextGroup = priceGroups().filter(function(group){ return group.id !== id; })[0];
+    ui.priceDeleteAsk = null;
+    if (nextGroup) {
+      var deletePatch = {pricePlan:{groups:{}, activeGroup:nextGroup.id}}; deletePatch.pricePlan.groups[id] = {deleted:true};
+      if (state.budget && state.budget.planGroup === id) deletePatch.budget = {planGroup:''};
+      commit(deletePatch);
+      var afterDelete = document.querySelector('[data-fk="price-group-tab-'+nextGroup.id+'"]');
+      if (afterDelete) afterDelete.focus({preventScroll:true});
+    }
+  } else if (act === 'price-toggle' || act === 'price-remove') {
+    var pg = priceGroupById(b.getAttribute('data-group')), pit = PRICE_ITEM_BY_ID[id];
+    if (pg && pit) {
+      if (act === 'price-toggle' && !pg.items[id]) { pg.items[id] = true; pg.opts[id] = priceDefaultOpt(pit, curRegion()); pg.apply[id] = false; }
+      else { delete pg.items[id]; delete pg.apply[id]; }
+      commit(pricePlanPatch([pg], {activeGroup:pg.id}));
+      if (act === 'price-remove') { var removeFocus = document.querySelector('#panel-price .price-picked-details > summary') || document.querySelector('[data-fk="price-group-tab-'+pg.id+'"]'); if (removeFocus) removeFocus.focus({preventScroll:true}); }
+    }
+  } else if (act === 'price-custom-add') {
+    var customGroup = priceGroupById(b.getAttribute('data-group')), customName = document.getElementById('priceCustomName');
+    var customAmount = document.getElementById('priceCustomAmount'), customBudget = document.getElementById('priceCustomBudget');
+    if (customGroup && customName) {
+      var cname = customName.value.trim();
+      if (!cname) { customName.focus(); return; }
+      var camt = customAmount ? customAmount.value.replace(/[^0-9]/g, '') : '';
+      ui.priceCustomBudget = customBudget ? customBudget.value : 'b26';
+      customGroup.custom.push({id:'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), name:cname, rawName:cname, budget:ui.priceCustomBudget, amount:camt === '' ? null : Number(camt), created:Date.now()});
+      commit(pricePlanPatch([customGroup], {activeGroup:customGroup.id}));
+      var nextName = document.getElementById('priceCustomName'); if (nextName) nextName.focus();
+    }
+  } else if (act === 'price-custom-del') {
+    var delGroup = priceGroupById(b.getAttribute('data-group'));
+    if (delGroup) {
+      delGroup.custom = delGroup.custom.filter(function(c){ return c.id !== id; }); delete delGroup.apply[id];
+      var customDelPatch = pricePlanPatch([delGroup]);
+      customDelPatch.pricePlan.groups[delGroup.id].custom[id] = {deleted:true}; customDelPatch.pricePlan.groups[delGroup.id].apply[id] = false;
+      commit(customDelPatch);
+      var delFocus = document.getElementById('priceCustomName') || document.querySelector('[data-fk="price-group-tab-'+delGroup.id+'"]'); if (delFocus) delFocus.focus({preventScroll:true});
+    }
+  } else if (act === 'price-align-region') {
+    var alignGroup = priceGroupById(b.getAttribute('data-group')), alignRegion = curRegion();
+    if (alignGroup) { priceRegionMismatch(alignGroup, alignRegion).forEach(function(it){ alignGroup.opts[it.id] = priceDefaultOpt(it, alignRegion); }); commit(pricePlanPatch([alignGroup])); }
+  } else if (act === 'b-plan-apply' || act === 'b-plan-apply-all') {
+    var applyGroup = priceGroupById(b.getAttribute('data-group'));
+    if (applyGroup) {
+      var applyIds = Object.keys(applyGroup.items).concat(applyGroup.custom.map(function(c){ return c.id; }));
+      if (act === 'b-plan-apply') { if (applyIds.indexOf(id) >= 0) applyGroup.apply[id] = !applyGroup.apply[id]; }
+      else applyIds.forEach(function(k){ applyGroup.apply[k] = b.getAttribute('data-v') === '1'; });
+      commit(pricePlanPatch([applyGroup]));
+    }
+  } else if (act === 'b-plan-import') {
+    // 사용자가 누른 칸 하나만 바꿔요. 확정·낸 돈은 건드리지 않아요.
+    var imp = {}, impUnit = b.getAttribute('data-unit'), impHeads = b.getAttribute('data-heads'), impPlan = b.getAttribute('data-plan');
+    if (impUnit != null) { imp.unit = Number(impUnit); if (impHeads != null) imp.heads = Number(impHeads); }
+    else if (impPlan != null) imp.plan = Number(impPlan);
+    if (!isEmpty(imp) && BUDGET_ITEMS.some(function(t){ return t.id === id; })) commit(bPatch('t', id, imp));
   } else if (act === 'g-open') {
     ui.openGuest[id] = !ui.openGuest[id]; render();
   } else if (act === 'g-view') {
@@ -1960,10 +2830,15 @@ document.addEventListener('click', function(e){
     var el = (sec && document.getElementById(sec)) || document.querySelector('details[data-k="'+k+'"]');
     if (el) { el.scrollIntoView({block:'start'}); if (sec) try { el.focus({preventScroll:true}); } catch(e5){} }
   } else if (act === 'goto-price') {
-    var sec = b.getAttribute('data-sec');
+    var sec = b.getAttribute('data-sec'), gotoGroup = b.getAttribute('data-group');
+    if (gotoGroup && priceGroupById(gotoGroup)) commit({pricePlan:{activeGroup:gotoGroup}}, {render:false});
     ui.tab = 'price'; lsSet('wd-tab', 'price'); ui.openKnow.k13 = true; render();
-    var el = (sec && document.getElementById(sec)) || document.querySelector('#panel-price details[data-k="k13"]');
-    if (el) { el.scrollIntoView({block:'start'}); if (sec) try { el.focus({preventScroll:true}); } catch(e7){} }
+    var el = (sec && document.getElementById(sec)) || document.querySelector(gotoGroup ? '#panel-price .price-builder' : '#panel-price details[data-k="k13"]');
+    if (el) {
+      var section = el.closest && el.closest('#panel-price details.pt-accordion');
+      if (section) section.open = true;
+      el.scrollIntoView({block:'start'}); if (sec) try { el.focus({preventScroll:true}); } catch(e7){}
+    }
   } else if (act === 'pt-jump') {
     var tgt = document.getElementById(b.getAttribute('data-sec'));
     if (tgt) { tgt.scrollIntoView({block:'start'}); try { tgt.focus({preventScroll:true}); } catch(e6){} }
@@ -1988,6 +2863,24 @@ document.addEventListener('input', function(e){
     var dg = t.value.replace(/[^0-9]/g, '');
     if (dg !== t.value) t.value = dg;
     commit({budget:{total: dg === '' ? '' : Number(dg)}}, {delay:600});
+  } else if (t.matches('input[data-price-mine]')) {
+    var mineDigits = t.value.replace(/[^0-9]/g, '');
+    if (mineDigits !== t.value) t.value = mineDigits;
+    var mineGroup = priceGroupById(t.getAttribute('data-group')), mineItem = PRICE_ITEM_BY_ID[t.getAttribute('data-price-mine')];
+    if (mineGroup && mineItem) {
+      var mineBag = mineItem.perHead ? mineGroup.units : mineGroup.amounts;
+      if (mineDigits === '') delete mineBag[mineItem.id]; else mineBag[mineItem.id] = Number(mineDigits);
+      commit(pricePlanPatch([mineGroup]), {delay:600});
+    }
+  } else if (t.matches('input[data-price-custom-amount], input[data-price-custom-name]')) {
+    var isAmount = t.hasAttribute('data-price-custom-amount'), cid = t.getAttribute(isAmount ? 'data-price-custom-amount' : 'data-price-custom-name');
+    var editGroup = priceGroupById(t.getAttribute('data-group')), editItem = editGroup && editGroup.custom.filter(function(c){ return c.id === cid; })[0];
+    if (isAmount) { var cd = t.value.replace(/[^0-9]/g, ''); if (cd !== t.value) t.value = cd; if (editItem) editItem.amount = cd === '' ? null : Number(cd); }
+    else if (editItem) editItem.rawName = t.value;
+    if (editItem) commit(pricePlanPatch([editGroup]), isAmount ? {delay:600} : {render:false, delay:600});
+  } else if (t.matches('input[data-price-group-name]')) {
+    var renameGroup = priceGroupById(t.getAttribute('data-price-group-name'));
+    if (renameGroup) { renameGroup.rawName = t.value; commit(pricePlanPatch([renameGroup]), {render:false, delay:600}); }
   } else if (t.matches('input[data-gf]')) {
     var gk = t.getAttribute('data-gf'), gv = t.value;
     if (gk === 'count' || gk === 'gift') { var gd = gv.replace(/[^0-9]/g, ''); if (gd !== gv) t.value = gd; gv = gd === '' ? '' : Number(gd); }
@@ -2023,6 +2916,16 @@ document.addEventListener('change', function(e){
   }
   if (t.matches && t.matches('select[data-gaddside]')) { ui.addSide = t.value; return; }
   if (t.matches && t.matches('select[data-gaddgroup]')) { ui.addGroup = t.value; return; }
+  if (t.matches && t.matches('select[data-price-custom-budget]')) {
+    var budgetGroup = priceGroupById(t.getAttribute('data-group')), budgetItem = budgetGroup && budgetGroup.custom.filter(function(c){ return c.id === t.getAttribute('data-price-custom-budget'); })[0];
+    if (budgetItem) { budgetItem.budget = t.value; commit(pricePlanPatch([budgetGroup])); }
+    return;
+  }
+  if (t.matches && t.matches('#priceCustomBudget')) { ui.priceCustomBudget = t.value; return; }
+  if (t.matches && t.matches('select[data-bplan]')) {
+    commit({budget:{planGroup: t.value}});
+    return;
+  }
   if (t.matches && t.matches('select[data-bregion]')) {
     commit({budget:{region: t.value}});
     return;
@@ -2096,7 +2999,7 @@ document.addEventListener('click', function(e){
 /* Enter in a one-line field runs that row's button */
 document.addEventListener('keydown', function(e){
   if (e.key !== 'Enter' || e.isComposing || !e.target.matches || !e.target.matches('input')) return;
-  var box = e.target.closest('#addForm, #bAddForm, #qAddForm, #heroForm, #settingsForm, #gAddForm, #gGiftAdd');
+  var box = e.target.closest('#addForm, #bAddForm, #qAddForm, #heroForm, #settingsForm, #gAddForm, #gGiftAdd, #priceGroupAddForm, #priceCustomAddForm');
   if (!box) return;
   e.preventDefault();
   var btn = box.id === 'settingsForm' ? document.getElementById('saveSettings') : box.querySelector('button[data-act]');
