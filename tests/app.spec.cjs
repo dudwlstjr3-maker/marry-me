@@ -176,3 +176,25 @@ test('ceremony decorations are inert, compact and respect motion preferences',as
  await expect(app.locator('.petals')).toBeHidden();
  expect(await app.locator('.petal').first().evaluate(e=>getComputedStyle(e).animationName)).toBe('none');
 });
+
+test('wedding shoot checklist follows the shoot date and saves each item',async({page})=>{
+ const {app,errors}=await openApp(page);
+ await app.locator('[data-act="open"][data-id="t16"]').click();
+ await expect(app.locator('[data-act="chk"][data-id="t16"]')).toHaveCount(0);
+ await app.locator('[data-act="open"][data-id="t17"]').click();
+ const items=app.locator('[data-act="chk"][data-id="t17"]');
+ await expect(items).toHaveCount(32);
+ // 2027-05-08 wedding → shoot D-120 = 2027-01-08; first group is two weeks earlier.
+ await expect(app.locator('.cl-group h4').first()).toContainText('12월 25일 (금)까지');
+ const w01=app.locator('[data-act="chk"][data-c="w01"]');
+ await w01.click();
+ await expect(w01).toHaveAttribute('aria-checked','true');
+ await expect.poll(async()=> (await stored(app)).tasks?.t17?.checks?.w01).toBe(true);
+ await expect(app.locator('.cl-head span')).toHaveText('1 / 32');
+ await w01.click();
+ await expect.poll(async()=> (await stored(app)).tasks?.t17?.checks?.w01).toBe(false);
+ await app.locator('[data-act="chk"][data-c="w32"]').click();
+ await app.locator('[data-act="open"][data-id="t17"]').click();
+ await expect(app.locator('[data-act="open"][data-id="t17"]').locator('xpath=ancestor::li[1]').locator('.tdates')).toContainText('준비 1 / 32');
+ const st=await stored(app);expect(st.tasks.t17.done).toBeFalsy();expect(noArrays(st)).toBe(true);expect(errors).toEqual([]);
+});
