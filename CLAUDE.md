@@ -4,3 +4,4 @@
 
 - claude.ai 대화의 Claude: 사용자가 저장소 주소를 주면 `main`의 최신 `index.html`을 가져와 작업하고, 검사를 통과하면 claude.ai 아티팩트(같은 링크)에 반영한다.
 - Claude Code: AGENTS.md의 작업 흐름대로 브랜치 → `npm test` → PR.
+- 팀으로 일할 때: 메인 세션이 [docs/TEAM.md](docs/TEAM.md)의 흐름대로 `.claude/agents/`의 vow-* 다섯을 조율한다.
