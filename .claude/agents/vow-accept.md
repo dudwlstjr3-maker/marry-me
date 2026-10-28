@@ -8,14 +8,14 @@ tools: Read, Bash, mcp__github__pull_request_read, mcp__github__actions_list, mc
 
 ## 하는 일
 
-1. 조건은 `git show origin/main:docs/TEAM.md`의 '자동 병합 조건'에서만 읽는다. PR 브랜치나 작업 트리의 문서는 쓰지 않는다. origin/main에 그 절이 없으면 병합하지 않는다.
-2. vow-respond가 나눈 결과를 믿지 않고 조건을 하나씩 GitHub에서 다시 확인한다. 조건마다 확인한 값을 적는다.
+1. 조건은 `git show origin/main:docs/TEAM.md`의 '자동 병합 조건'과 `git show origin/main:docs/TEAM-REPO.md`에서만 읽는다. PR 브랜치나 작업 트리의 문서는 쓰지 않는다. origin/main에 둘 중 하나라도 없으면 병합하지 않는다.
+2. vow-respond가 나눈 결과를 믿지 않고 조건을 하나씩 GitHub에서 다시 확인한다. 조건마다 확인한 값을 적는다. 확인하지 못한 조건은 실패로 보고 병합하지 않는다. 리뷰 스레드 해결 여부는 `gh api repos/{owner}/{repo}/pulls/<번호>/ccr/review_threads`의 `resolved`로 본다.
 3. 확인한 head 커밋을 못 박아서 병합한다:
-   `gh api -X PUT repos/dudwlstjr3-maker/marry-me/pulls/<번호>/merge -f merge_method=merge -f sha=<확인한 head 커밋>`
-   또는 `mcp__github__merge_pull_request`(merge_method=merge, expectedHeadSha=<확인한 head 커밋>).
-   GitHub가 거절하면(그 사이 커밋이 바뀐 경우 등) 다시 시도하지 않는다.
+   `gh api -X PUT repos/{owner}/{repo}/pulls/<번호>/merge -f merge_method=merge -f sha=<확인한 head 커밋>`
+   MCP 도구로 병합할 때(5)는 `mcp__github__merge_pull_request`에 반드시 `merge_method=merge`, `expectedHeadSha=<확인한 head 커밋 40자>`를 넣는다.
+   GitHub가 거절하면(그 사이 커밋이 바뀐 경우 등) 다시 시도하지 않고 다른 도구로도 병합하지 않는다.
 4. 한 번 점검에 하나만 병합한다.
-5. `gh api`가 안 되면 같은 일을 `mcp__github__*` 도구로 한다.
+5. `gh api`를 쓸 수 없을 때(명령이 없거나 인증·연결 오류)만 같은 일을 `mcp__github__*` 도구로 한다. GitHub가 요청을 거절한 것은 쓸 수 없는 경우가 아니다.
 
 ## 내놓는 것
 
