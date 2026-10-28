@@ -148,6 +148,21 @@ input:disabled,textarea:disabled{opacity:.6}
 .tdates{display:flex;flex-wrap:wrap;gap:2px 14px;margin:4px 0 0;font-size:13px;color:var(--muted)}
 .tdates b{font-weight:600;color:var(--chung)}
 .empty{color:var(--muted);font-size:14px;padding:12px 0 0 44px}
+.cl{display:grid;gap:4px;margin:2px 0 0}
+.cl-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0}
+.cl-head b{font-family:var(--serif);font-size:16px;font-weight:700}
+.cl-head span{font-size:13px;color:var(--muted);white-space:nowrap}
+.cl-group{margin:8px 0 0}
+.cl-group h4{display:flex;flex-wrap:wrap;justify-content:space-between;gap:0 10px;margin:0;padding:6px 0 2px;font-size:14px;font-weight:600;color:var(--ink);border-bottom:1px solid var(--line)}
+.cl-group h4 span{font-weight:400;color:var(--muted);font-size:13px}
+.cl-list{list-style:none;margin:0;padding:0}
+.chk{appearance:none;border:0;background:none;width:100%;min-height:44px;display:flex;align-items:flex-start;gap:10px;padding:10px 0;text-align:left;cursor:pointer;font-size:15px;line-height:1.5;color:var(--ink)}
+.chk .box{flex:none;width:20px;height:20px;margin-top:2px;border:2px solid var(--ink);border-radius:5px;display:grid;place-items:center;background:var(--surface)}
+.chk .box svg{width:12px;height:12px;opacity:0;color:var(--paper)}
+.chk[aria-checked="true"] .box{background:var(--ink)}
+.chk[aria-checked="true"] .box svg{opacity:1}
+.chk[aria-checked="true"] .txt{text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:var(--muted)}
+.chk:disabled{cursor:default}
 
 /* knowledge */
 .basis{margin:18px 0 6px;font-size:13px;color:var(--muted)}
@@ -1059,6 +1074,81 @@ function dueHTML(it, wd, t0){
   return '<span class="due"><span class="rel">'+rel+'</span>'+(it.book ? '진행 ' : '')+esc(fmtShort(it.due, t0.getFullYear()))+(it.wedding && state.weddingTime ? ' '+esc(fmtTime(state.weddingTime)) : '')+'</span>';
 }
 
+/* 할 일에 붙는 준비 체크리스트. 묶음 off는 그 할 일 진행일 기준 날짜(일). 항목 ID는 바꾸지 않는다. */
+var CHECKLISTS = {
+  t17: {title:'촬영 날 체크리스트', groups:[
+    {g:'1~2주 전', off:-14, end:'까지', items:[
+      {id:'w01',t:'메이크업 시작·스튜디오 도착 시간, 헬퍼 이모님 만날 곳 확인'},
+      {id:'w02',t:'현장에서 낼 돈 확인: 헬퍼비, 얼리스타트비, 원본·추가 비용, 현금만 받는지'},
+      {id:'w03',t:'원하는 포즈·분위기 사진을 앨범 하나에 모아 작가에게 공유'},
+      {id:'w04',t:'구두·부케·소품을 스튜디오에서 빌려주는지 확인'},
+      {id:'w05',t:'왁싱·피부 시술은 1주 전까지 끝내기'},
+      {id:'w06',t:'신부 네일은 3~5일 전에, 신랑도 손톱 정리'}
+    ]},
+    {g:'전날', off:-1, items:[
+      {id:'w07',t:'짠 음식·술 피하고 일찍 자기(붓기)'},
+      {id:'w08',t:'신랑 면도: 피부가 예민하면 전날 밤, 아니면 당일 아침'},
+      {id:'w09',t:'짐 싸 두기, 이동 경로·주차 확인'}
+    ]},
+    {g:'공통 준비물', off:-1, end:'까지', items:[
+      {id:'w14',t:'현금(헬퍼비 등 현장 결제)'},
+      {id:'w15',t:'보조배터리·충전기'},
+      {id:'w16',t:'빨대(립스틱 보호), 물, 한입 간식'},
+      {id:'w17',t:'진통제·소화제·밴드'},
+      {id:'w18',t:'반지·커플 소품'}
+    ]},
+    {g:'신부 준비물', off:-1, end:'까지', items:[
+      {id:'w19',t:'누드톤 심리스 속옷·누브라, 살색 이너'},
+      {id:'w20',t:'편한 신발이나 슬리퍼'},
+      {id:'w21',t:'렌즈 여분·렌즈액·안약'},
+      {id:'w22',t:'실핀·머리끈·손거울·데오도란트'}
+    ]},
+    {g:'신랑 준비물', off:-1, end:'까지', items:[
+      {id:'w23',t:'셔츠에 비치지 않는 흰 무지 이너'},
+      {id:'w24',t:'검정 긴 정장 양말, 구두'},
+      {id:'w25',t:'쿠션 팩트나 기름종이, 데오도란트'},
+      {id:'w26',t:'렌즈·안경'}
+    ]},
+    {g:'당일 아침', off:0, items:[
+      {id:'w10',t:'머리 감고 완전히 말리기(왁스·에센스 없이)'},
+      {id:'w11',t:'얼굴은 기초만, 렌즈 끼고 가기'},
+      {id:'w12',t:'앞트임 상의(셔츠·지퍼) 입고 가기'},
+      {id:'w13',t:'아침은 가볍게'}
+    ]},
+    {g:'촬영 중', off:0, items:[
+      {id:'w27',t:'신랑은 이동·짐·물·빨대 챙기기(신부는 드레스 때문에 손을 거의 못 써요)'},
+      {id:'w28',t:'컷 사이 모니터 보며 앞머리·넥타이·드레스 주름 확인'},
+      {id:'w29',t:'원하는 컷은 레퍼런스를 보여 주며 요청'}
+    ]},
+    {g:'촬영 후', off:0, items:[
+      {id:'w30',t:'원본 받는 방식·날짜, 셀렉 일정, 수정 장수, 앨범 납기 확인'},
+      {id:'w31',t:'대여품 반납, 렌즈·반지·액세서리 챙기기'},
+      {id:'w32',t:'헬퍼 이모님 정산'}
+    ]}
+  ]}
+};
+function checkCount(id, checks){
+  var cl = CHECKLISTS[id], n = 0, d = 0;
+  if (!cl) return null;
+  cl.groups.forEach(function(g){ g.items.forEach(function(x){ n++; if (checks && checks[x.id]) d++; }); });
+  return {n:n, d:d};
+}
+function checklistHTML(it, t0){
+  var cl = CHECKLISTS[it.id], checks = taskState('t', it.id).checks || {}, c = checkCount(it.id, checks);
+  var h = '<div class="cl"><p class="cl-head"><b>'+esc(cl.title)+'</b><span>'+c.d+' / '+c.n+'</span></p>';
+  cl.groups.forEach(function(g){
+    var when = it.due ? fmtShort(addDays(it.due, g.off), t0.getFullYear()) + (g.end || '') : '';
+    h += '<div class="cl-group"><h4>'+esc(g.g)+(when ? '<span>'+esc(when)+'</span>' : '')+'</h4><ul class="cl-list">';
+    g.items.forEach(function(x){
+      var on = !!checks[x.id];
+      h += '<li><button class="chk" type="button" role="checkbox" aria-checked="'+(on?'true':'false')+'" data-act="chk" data-id="'+it.id+'" data-c="'+x.id+'" data-fk="chk-'+it.id+'-'+x.id+'"'+dis()+'>' +
+        '<span class="box" aria-hidden="true">'+CHECK+'</span><span class="txt">'+esc(x.t)+'</span></button></li>';
+    });
+    h += '</ul></div>';
+  });
+  return h + '</div>';
+}
+
 function taskHTML(it, wd, t0){
   var late = !it.done && !it.catchup && it.due && diffDays(it.due, t0) < 0;
   var open = !!ui.open[it.id];
@@ -1068,10 +1158,13 @@ function taskHTML(it, wd, t0){
     '<div class="row"><button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="open" data-fk="task-open-'+it.id+'" data-id="'+it.id+'">'+esc(it.title)+(it.kind==='c' ? '<span class="mine">직접 추가</span>' : '')+'</button>' + dueHTML(it, wd, t0) + '</div>';
   var dl = [];
   if (it.book) dl.push('<span><b>예약</b> '+esc(fmtShort(it.book, t0.getFullYear()))+'</span>');
+  var cc = it.kind === 't' ? checkCount(it.id, taskState('t', it.id).checks) : null;
+  if (cc && cc.d) dl.push('<span><b>준비</b> '+cc.d+' / '+cc.n+'</span>');
   if (dl.length) h += '<p class="tdates">'+dl.join('')+'</p>';
   if (!open && it.memo) h += '<p class="preview">'+esc(it.memo)+'</p>';
   if (open) {
     h += '<div class="detail">' + (it.tip ? '<p class="tip">'+esc(it.tip)+'</p>' : '') +
+      (it.kind === 't' && CHECKLISTS[it.id] ? checklistHTML(it, t0) : '') +
       '<div class="field-row"><label class="field">예약일' +
         '<input type="date" value="'+(it.book ? ymd(it.book) : '')+'" data-act-change="book" data-fk="task-book-'+it.kind+'-'+it.id+'" data-kind="'+it.kind+'" data-id="'+it.id+'"'+dis()+'></label>' +
         '<label class="field">진행일' +
@@ -1884,6 +1977,10 @@ document.addEventListener('click', function(e){
   if (act === 'toggle') {
     var cur = taskState(kind, id);
     commit(patchItem(kind, id, {done: !cur.done}));
+  } else if (act === 'chk') {
+    var ck = b.getAttribute('data-c'), cs = taskState('t', id).checks || {}, cp = {};
+    cp[ck] = !cs[ck];
+    commit(patchItem('t', id, {checks: cp}));
   } else if (act === 'open') {
     ui.open[id] = !ui.open[id]; render();
   } else if (act === 'clear-book') {
