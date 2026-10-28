@@ -11,7 +11,7 @@
 
 1. 항상 최신 `main`에서 새 브랜치를 만든다(예: `feat/guest-export`, `fix/budget-total`).
 2. 수정한 뒤 `npm test`를 모두 통과시킨다.
-3. `main`에 직접 푸시하지 말고 PR을 만든다. 병합은 사용자가 한다.
+3. `main`에 직접 푸시하지 말고 PR을 만든다. 병합은 사용자가 한다. 예외: Claude의 `vow-accept`는 [docs/TEAM.md](docs/TEAM.md) '자동 병합 조건'을 모두 통과한 PR만 병합한다. 다른 AI는 병합하지 않는다.
 4. 새 기능을 넣으면 `tests/app.spec.cjs`에 그 기능의 시험도 추가한다.
 5. PR 본문 순서: 결과(바꾼 것) → 검증(시험 결과) → 가정 → 남은 문제. 서두와 요약은 쓰지 않는다.
 
