@@ -450,7 +450,10 @@ test('legacy price data is read into the new plans and everything survives a rel
  await page.reload();await expect(app.locator('#status')).toHaveText('이 기기에만 저장돼요');
  await expect(app.locator('#tab-budget')).toHaveAttribute('aria-selected','true');
  await expect(app.locator('#bPlanGroup')).toHaveValue('default');
- await expect(app.locator('details[data-k="pr-box"]')).toHaveJSProperty('open',true);
+ // The review starts folded after a reload; its title line still names the plan and how many items are reflected.
+ await expect(app.locator('details[data-k="pr-box"]')).toHaveJSProperty('open',false);
+ await expect(app.locator('details[data-k="pr-box"] .lead')).toContainText('반영 1/');
+ await app.locator('details[data-k="pr-box"] > summary').click();
  await expect(app.locator('details[data-k="pr-row-b05"] .pr-row-nums')).toHaveText('참고 132만원 · 내 예산 128만원');
  await expect(app.locator('details[data-k="pr-row-b05"] .pr-row-diff')).toHaveText('4만원 초과');
  const saved=await stored(app);
@@ -473,7 +476,9 @@ test('plan review and item picks fit 320–430px with labels, 44px targets and A
   const audit=await app.locator('body').evaluate(()=>{
    const visible=e=>!!e.getClientRects().length&&!e.closest('[hidden]')&&getComputedStyle(e).visibility!=='hidden';
    const controls=[...document.querySelectorAll('input,textarea,select')].filter(visible);const keys=controls.map(e=>e.dataset.fk);
-   const wide=[...document.querySelectorAll('body *')].filter(visible).filter(e=>{const r=e.getBoundingClientRect();return r.width&&(r.right>innerWidth+0.5||r.left<-0.5);}).map(e=>e.className||e.tagName);
+   const inScroller=e=>{for(let n=e.parentElement;n;n=n.parentElement){if(['auto','scroll'].includes(getComputedStyle(n).overflowX))return true;}return false;};
+   // Items inside a sideways-scrolling strip (the tab bar) are reachable by scrolling, so they are not cut off.
+   const wide=[...document.querySelectorAll('body *')].filter(visible).filter(e=>!inScroller(e)).filter(e=>{const r=e.getBoundingClientRect();return r.width&&(r.right>innerWidth+0.5||r.left<-0.5);}).map(e=>e.className||e.tagName);
    const small=[...document.querySelectorAll('button:not(.knot),input,select,summary,a')].filter(visible).map(e=>({t:e.textContent.slice(0,30),r:e.getBoundingClientRect()})).filter(x=>x.r.width<43.9||x.r.height<43.9).map(x=>x.t);
    function rgba(s){return s.match(/[\d.]+/g).map(Number)}
    function blend(a,b){const alpha=a[3]??1;return a.slice(0,3).map((x,i)=>x*alpha+b[i]*(1-alpha))}
@@ -704,4 +709,26 @@ test('a quote photo is read by Claude, checked, edited and saved without storing
  await expect(app.locator('.q-photo-msg')).toHaveText('이 화면에서는 사진 읽기를 쓸 수 없어요. 아래에 직접 넣어 주세요.');
  await expect(btn).toHaveCount(0);await expect(app.locator('#qName')).toBeFocused();
  expect(noArrays(await stored(app))).toBe(true);expect(errors).toEqual([]);
+});
+
+test('tabs stay on one line and scroll to the open tab; empty budget groups start folded',async({page})=>{
+ const {app,errors}=await openApp(page);
+ const tabs=await app.locator('.tab').evaluateAll(els=>els.map(e=>({h:e.getBoundingClientRect().height,lines:Math.round(e.getBoundingClientRect().height/parseFloat(getComputedStyle(e).lineHeight))})));
+ expect(tabs.every(t=>t.h>=44&&t.h<=52)).toBe(true);
+ const inView=id=>app.locator('.tabs [role=tablist]').evaluate((w,id)=>{const a=document.getElementById(id).getBoundingClientRect(),r=w.getBoundingClientRect();return a.left>=r.left-1&&a.right<=r.right+1;},id);
+ await app.locator('#tab-talk').click();expect(await inView('tab-talk')).toBe(true);
+ await app.locator('#tab-timeline').click();expect(await inView('tab-timeline')).toBe(true);
+ await app.locator('#tab-budget').click();
+ // SEED has amounts only under 예식.
+ await expect(app.locator('details[data-k="bcat-wed"]')).toHaveJSProperty('open',true);
+ await expect(app.locator('details[data-k="bcat-wed"] > summary .meta')).toHaveText('1,509만원5개 중 2개 입력');
+ await expect(app.locator('details[data-k="bcat-sdm"]')).toHaveJSProperty('open',false);
+ await expect(app.locator('details[data-k="bcat-sdm"] > summary .meta')).toHaveText('입력 전4개 중 0개 입력');
+ await expect(app.locator('details[data-k="pr-box"]')).toHaveJSProperty('open',false);
+ await app.locator('details[data-k="bcat-sdm"] > summary').click();
+ await app.locator('[data-act="b-open"][data-id="b06"]').click();
+ const dress=app.locator('[data-fk="b-plan-b06"]');await dress.fill('180');
+ await expect.poll(async()=> (await stored(app))?.budget?.items?.b06?.plan).toBe(180);
+ await expect(app.locator('details[data-k="bcat-sdm"]')).toHaveJSProperty('open',true);await expect(dress).toBeFocused();
+ expect(errors).toEqual([]);
 });
