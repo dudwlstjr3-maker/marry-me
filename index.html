@@ -271,14 +271,14 @@ select{width:auto;min-width:140px}
 .price-builder{margin:18px 0 22px;padding:14px;border:1px solid var(--gold-line);border-top:3px solid var(--gold);border-radius:6px;background:var(--surface)}
 .price-builder-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .price-builder h3{font-family:var(--serif);font-size:18px;margin:0}
-.price-eyebrow{display:block;margin-bottom:3px;color:var(--gold);font-size:11px;font-weight:700;letter-spacing:.12em}
+.price-eyebrow{display:block;margin-bottom:3px;color:var(--gold);font-size:13px;font-weight:700;letter-spacing:.1em}
 .price-builder-intro{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
 .price-group-tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:14px 0 8px}
 .price-group-tab{appearance:none;display:grid;align-content:center;gap:3px;min-width:0;min-height:68px;padding:8px 11px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);text-align:left;cursor:pointer}
 .price-group-tab[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-soft)}
 .price-group-tab-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
 .price-group-tab-head b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
-.price-group-tab-head small{flex:none;color:var(--muted);font-size:12px}
+.price-group-tab-head small{flex:none;color:var(--muted);font-size:13px}
 .price-group-tab strong{font-size:14px;font-variant-numeric:tabular-nums;line-height:1.35}
 .price-group-edit{display:flex;align-items:end;gap:8px;padding:10px 0;border-top:1px solid var(--line)}
 .price-group-edit .field{flex:1;min-width:0}
@@ -510,7 +510,7 @@ html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + var(--tabs-height) +
 }
 @media (max-width:380px){.tab{font-size:13px}.tabs .wrap{padding-inline:4px}}
 @media (max-width:359px){.phase-head{padding-left:44px}.sum .v{font-size:22px}}
-@media (max-width:430px){.tabs .wrap{grid-template-columns:repeat(7,minmax(44px,1fr));padding-inline:4px}.tab{padding:6px 0 5px;font-size:clamp(10px,2.8vw,13px)}}
+@media (max-width:430px){.tabs .wrap{grid-template-columns:repeat(7,minmax(44px,1fr));padding-inline:4px}.tab{padding:6px 0 5px;font-size:13px;overflow-wrap:normal}}
 @media (max-width:380px){.price-builder{padding:12px}.price-builder-head{display:block}.price-builder-total{text-align:left;margin-top:8px}.price-builder-total span,.price-builder-total strong{display:inline-block;margin-right:6px}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.strand i{transition:none}}
 
@@ -588,6 +588,123 @@ body{background:linear-gradient(155deg,var(--paper),var(--blush)) fixed;backgrou
 input[type=date],input[type=text],textarea,select{border-radius:4px}
 .calc,.calcval{border-radius:4px}
 @media (max-width:359px){.invitation{padding-inline:18px}.names{letter-spacing:0}.invitation .couple{margin-bottom:18px}.sum{padding-inline:10px}.sum .v{font-size:20px}.when{font-size:14px}}
+/* Price planning: the active plan leads; tools and references stay visible below it. */
+.price-builder{padding:0;border:0;background:none;display:grid;gap:16px}
+.price-builder-main{padding:16px;border:1px solid var(--gold-line);border-top:3px solid var(--gold);border-radius:5px;background:var(--surface)}
+.price-builder h3{font-size:22px;color:var(--gold)}
+.price-group-tabs{grid-template-columns:repeat(auto-fit,minmax(110px,1fr));margin:16px 0 12px}
+.price-group-tab{border-radius:4px;padding:10px;gap:6px}
+.price-group-tab-head{flex-wrap:wrap;gap:2px 8px}
+.price-group-tab-head b{white-space:normal;overflow:visible;font-size:14px}
+.price-group-tab strong{font-size:15px}
+.price-group-edit{padding:12px 0 0}
+.price-group-delete{font-size:13px;color:var(--muted)}
+.price-group-summary{border-radius:4px;padding:12px;gap:6px}
+.price-builder-main .price-group-summary>div:nth-child(2){padding-bottom:6px;margin-bottom:2px;border-bottom:1px solid var(--gold-line)}
+.price-builder-main .price-group-summary>div:nth-child(2) strong{font-family:var(--serif);font-size:21px;color:var(--gold)}
+.price-group-summary>div{display:grid;grid-template-columns:minmax(0,1fr) fit-content(45%);gap:8px}
+.price-group-summary strong{font-variant-numeric:tabular-nums;overflow-wrap:normal}
+.price-group-summary .pr-diff{justify-self:end}
+.price-builder-tools{display:grid;gap:10px;min-width:0}
+.price-builder-intro{margin:0;font-size:13px;line-height:1.75}
+.price-group-add{padding:12px 0;border-block:1px solid var(--line)}
+.price-builder-tools>.price-note,.price-builder-tools>.price-builder-empty{margin:0}
+/* These utility disclosures deliberately override the knowledge-card spacing. */
+details:is(.price-picked-details,.price-custom,.price-compare,.trash),
+.know details:is(.price-picked-details,.price-custom,.price-compare,.trash){padding:0;margin:0;border:1px solid var(--line);border-radius:5px;background:var(--surface)}
+.panel>details.trash{margin-top:24px}
+details:is(.price-picked-details,.price-custom,.price-compare,.trash)>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;min-height:48px;list-style:none;color:var(--ink);font-size:14px;font-weight:600;text-decoration:none;line-height:1.6;cursor:pointer}
+details:is(.price-picked-details,.price-custom,.price-compare,.trash)>summary::-webkit-details-marker{display:none}
+details:is(.price-picked-details,.price-custom,.price-compare,.trash)>summary::after{content:"+";flex:none;color:var(--gold);font-size:18px;font-weight:400}
+details:is(.price-picked-details,.price-custom,.price-compare,.trash)[open]>summary{border-bottom:1px solid var(--line)}
+details:is(.price-picked-details,.price-custom,.price-compare,.trash)[open]>summary::after{content:"−"}
+details:is(.price-picked-details,.price-custom,.price-compare,.trash)>:not(summary){margin:0;padding:12px}
+.price-builder .price-picked,.price-builder .price-custom-list,.know .trash-list{padding:0 12px}
+.price-picked li{grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;padding:12px 0}
+.price-picked li>span{grid-column:1/-1}
+.price-picked li>strong{text-align:left;max-width:none}
+.price-custom-item,.price-custom-add{gap:12px;grid-template-columns:minmax(0,1fr)}
+.price-custom-item>*,.price-custom-add>*{grid-column:1/-1}
+.price-custom-item .link{justify-self:end}
+.price-custom-item select,.price-custom-add select{font-size:14px;padding-inline:8px}
+.trash-list li,.know .trash-list li{padding-block:8px}
+.trash-list li:last-child,.price-picked li:last-child{border-bottom:0}
+.trash-list small{display:block}
+.trash-list button{flex:none}
+/* A checked box and gold edge mean included; neutral rows are available to add. */
+.price-pick-in,.price-pick.on .price-pick-in{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:8px 10px 12px;border:1px solid var(--line);border-radius:4px;background:var(--surface)}
+.price-pick.on .price-pick-in{border-color:var(--gold-line);border-left:3px solid var(--gold)}
+.price-pick .price-select-button{width:100%;padding:0;gap:10px;font-weight:600}
+.price-pick-amt{margin:0;text-align:left;font-size:15px;line-height:1.7}
+.price-mine{padding:10px;border:1px solid var(--gold-line);border-radius:4px;background:var(--paper);color:var(--gold);font-weight:600}
+.price-mine input{color:var(--ink);font-weight:600;border-color:var(--gold-line);background:var(--surface);font-variant-numeric:tabular-nums}
+.price-mine input::placeholder{font-weight:400}
+.price-pick-src{margin:0;font-size:13px;line-height:1.7}
+.price-extra-list .price-pick.on .price-mine{grid-row:3}
+.price-extra-list .price-pick.on .price-pick-src{grid-row:4}
+.price-extra-to{display:block;color:var(--muted)}
+.price-refs{margin:4px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+.price-refs-title{color:var(--muted);line-height:1.7}
+.price-refs-title small{display:block}
+.know .price-ref-list{border-top:0}
+.know .price-ref-list li,.know .price-ref-list li.used{grid-template-columns:minmax(0,1fr) minmax(0,auto);gap:2px 8px;padding:10px 0;border-left:0;background:none}
+.price-ref-list strong{text-align:right;font-size:14px;font-weight:500}
+.price-ref-name{font-size:13px;color:var(--muted)}
+.price-ref-list small{grid-column:1/-1;font-size:13px;line-height:1.6}
+.price-badge,.price-ref-name em{display:inline-block;padding:2px 7px;border:1px solid var(--line);border-radius:4px;background:var(--paper);color:var(--muted);font-size:13px;font-style:normal;font-weight:500;line-height:1.5;vertical-align:baseline}
+.price-badge.direct,.price-ref-name em.price-ref-base{color:var(--gold);border-color:var(--gold-line);background:var(--gold-soft)}
+.price-ref-name em:not(.price-ref-base){color:var(--chung);border-color:var(--chung);background:var(--chung-soft)}
+/* Status shape and placement stay the same for amounts, ranges, and missing values. */
+.price-state,.pr-row-diff,.pr-diff{display:inline-block;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:var(--paper);font-size:13px;font-weight:500;line-height:1.6;color:var(--muted);font-variant-numeric:tabular-nums}
+.pr-row-diff.over,.pr-diff.over{color:var(--hong);border-color:var(--hong);background:var(--surface)}
+.pr-row-diff.room,.pr-diff.room{color:var(--chung);border-color:var(--chung);background:var(--surface)}
+.pr-row-diff.even,.pr-diff.even,.pr-row-diff.mid,.pr-diff.mid{color:var(--gold);border-color:var(--gold-line);background:var(--gold-soft)}
+.plan-review{padding-inline:12px}
+.pr-body{gap:16px}
+.pr-row>summary{grid-template-columns:minmax(0,1fr);gap:8px;padding:12px}
+.pr-row-name{padding-right:24px;font-size:15px;line-height:1.7}
+.pr-row-diff{justify-self:start;text-align:left}
+.pr-row-nums{display:grid;gap:4px;grid-column:1;line-height:1.6}
+.pr-row-nums>span:not(.sr){display:grid;grid-template-columns:4.5em minmax(0,1fr);gap:8px}
+.pr-row-nums strong{text-align:right;color:var(--ink);font-weight:500;overflow-wrap:normal}
+.pr-lines li{display:grid;grid-template-columns:minmax(0,1fr);justify-content:stretch;gap:4px}
+.pr-lines strong{max-width:none;justify-self:stretch;text-align:right}
+.pr-pick>summary{flex-wrap:wrap;padding-block:10px;gap:2px 10px}
+.pr-pick>summary span{flex-basis:100%}
+.pr-sum>div{grid-template-columns:minmax(0,1fr) fit-content(45%)}
+.pr-sum .pr-diff{justify-self:end}
+.pr-row-body .detail-actions>.btn{width:100%;line-height:1.6}
+/* Backup and confirmation use the same paper, fine borders, and numeric alignment. */
+#backupSec{border:1px solid var(--gold-line);border-top:3px solid var(--gold);border-radius:4px;padding:14px 12px;gap:14px;background:var(--paper)}
+#backupSec h3{font-family:var(--serif);color:var(--gold);font-size:18px}
+#backupSec .dlg-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+#backupSec .dlg-actions:last-of-type{grid-template-columns:minmax(0,1fr)}
+#backupSec .btn{padding-inline:8px;line-height:1.6}
+#backupSec textarea{font-size:16px;min-height:110px}
+#backupSec input[type=file]{color:var(--muted);font-size:13px}
+#backupSec input[type=file]::file-selector-button{font:inherit;min-height:44px;margin-right:8px;padding:8px;border:1px solid var(--gold-line);border-radius:4px;background:var(--surface);color:var(--ink);cursor:pointer}
+.qitem .price-confirm{border-color:var(--hong);background:var(--hong-soft);padding:12px}
+.q-changes{list-style:none;padding:0;margin:12px 0;font-variant-numeric:tabular-nums}
+.q-changes li{padding:10px 0;border-block:1px solid var(--line);line-height:1.8}
+.q-changes li+li{border-top:0}
+.q-changes li>span:first-child{color:var(--ink)}
+.q-change-next{display:inline-block;white-space:nowrap;margin-inline-start:.25em}
+.q-change-arrow{color:var(--ink)}
+.q-changes strong{text-align:right;overflow-wrap:normal}
+.who.net{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-top:16px;padding:14px;border:1px solid var(--gold-line);border-radius:4px;background:var(--surface)}
+.who.net>span{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.who.net>span:last-child{padding-top:10px;border-top:1px solid var(--line)}
+.who.net b{flex:none;font-variant-numeric:tabular-nums}
+.who.net>span:last-child b{font-family:var(--serif);font-size:20px;color:var(--gold)}
+@media (max-width:380px){
+  .price-builder{padding:0}.price-builder-main{padding:12px}
+  .price-group-add{grid-template-columns:minmax(0,1fr)}
+  .price-group-add .btn{justify-self:end}
+  .pr-row-body .bedit.two{grid-template-columns:minmax(0,1fr)}
+  .price-mine{padding:8px}
+  .price-mine input{font-size:15px;padding-inline:8px}
+  #backupSec{padding-inline:10px}
+}
 </style>
 </head>
 <body>
@@ -609,7 +726,7 @@ input[type=date],input[type=text],textarea,select{border-radius:4px}
       <button class="tab" role="tab" id="tab-budget" aria-controls="panel-budget" data-tab="budget" type="button">예산</button>
       <button class="tab" role="tab" id="tab-price" aria-controls="panel-price" data-tab="price" type="button">가격 비교</button>
       <button class="tab" role="tab" id="tab-guest" aria-controls="panel-guest" data-tab="guest" type="button">하객</button>
-      <button class="tab" role="tab" id="tab-honey" aria-controls="panel-honey" data-tab="honey" type="button">신혼여행</button>
+      <button class="tab" role="tab" id="tab-honey" aria-controls="panel-honey" data-tab="honey" type="button">신혼<wbr>여행</button>
       <button class="tab" role="tab" id="tab-know" aria-controls="panel-know" data-tab="know" type="button">알아둘 것</button>
       <button class="tab" role="tab" id="tab-talk" aria-controls="panel-talk" data-tab="talk" type="button">둘이 정할 것</button>
     </div>
@@ -1810,7 +1927,7 @@ function priceExtraItemHTML(it, group){
   var on = !!group.items[it.id], own = priceOwn(group, it);
   return '<li class="price-pick'+(on ? ' on' : '')+'"><div class="price-pick-in">' +
     '<button class="price-select-button" type="button" role="checkbox" aria-checked="'+(on?'true':'false')+'" aria-label="'+esc(group.name)+'에 '+esc(it.name)+' 담기" data-act="price-toggle" data-id="'+it.id+'" data-group="'+group.id+'" data-fk="price-select-'+it.id+'"'+dis()+'><span class="price-select-icon" aria-hidden="true"></span><span>'+esc(it.name)+' 담기</span></button>' +
-    (on ? '<strong class="price-pick-amt">'+(own != null ? '내 금액 '+fmtMan(own) : '금액 미입력')+'</strong>' : '') +
+    (on ? '<strong class="price-pick-amt">'+(own != null ? '<span class="price-badge direct">내 금액</span> '+fmtMan(own) : '<span class="price-state none">금액 미입력</span>')+'</strong>' : '') +
     '<p class="price-pick-src">'+esc(it.note)+' <span class="price-extra-to">예산: '+esc(it.budget.map(budgetName).join(' · '))+'</span></p>' +
     (on ? '<label class="field price-mine">이 비교안 금액(만원)<input type="text" inputmode="numeric" value="'+(own != null ? own : '')+'" placeholder="견적이나 예상 금액" data-price-mine="'+it.id+'" data-group="'+group.id+'" data-fk="price-mine-'+it.id+'"'+dis()+'></label>' : '') +
     '</div></li>';
@@ -1860,7 +1977,7 @@ function pricePickRow(item, group, region, basis){
   if (line) {
     var own = priceOwn(group, item), hint = item.perHead ? Math.round(line.refUnit * 10000).toLocaleString('ko-KR')
       : (Math.round(line.ref.low) === Math.round(line.ref.high) ? Math.round(line.ref.low) : Math.round(line.ref.low)+'~'+Math.round(line.ref.high));
-    h += '<strong class="price-pick-amt">'+(line.mine ? '내 금액 ' : '참고 ')+esc(priceAmountText(line))+'</strong>' +
+    h += '<strong class="price-pick-amt">'+(line.mine ? '<span class="price-badge direct">내 금액</span> ' : '<span class="price-badge">참고</span> ')+esc(priceAmountText(line))+'</strong>' +
       '<label class="field price-mine">'+(item.perHead ? '이 비교안 1인 금액(원)' : '이 비교안 금액(만원)')+'<input type="text" inputmode="numeric" value="'+(own != null ? own : '')+'" placeholder="참고 '+hint+'" data-price-mine="'+item.id+'" data-group="'+group.id+'" data-fk="price-mine-'+item.id+'"'+dis()+'></label>';
     // 참고 시세는 고르는 칸이 아니라 펼쳐 보여 줘요. 금액을 비우면 지역에 맞춰 정해진 '기준' 값으로 계산해요.
     var ids = priceOptionIds(item, region, line.opt.id);
@@ -1921,24 +2038,26 @@ function pricePlanHTML(){
     return '<li><span><b>'+esc(PRICE_SECS[line.item.sec])+' · '+esc(line.item.name)+'</b><small>'+(line.mine ? '직접 넣은 금액'+(line.ref ? ' · 참고 시세 '+esc(priceRefText(line)) : '') : line.opt ? '참고 시세 · '+esc(priceOptText(line.opt, region)) : '금액을 넣어 주세요')+'</small></span><strong>'+esc(priceAmountText(line))+'</strong><button class="price-picked-remove" type="button" aria-label="'+esc(active.name)+'에서 '+esc(line.item.name)+' 빼기" data-act="'+(line.item.custom ? 'price-custom-del' : 'price-remove')+'" data-id="'+line.item.id+'" data-group="'+active.id+'" data-fk="price-remove-'+line.item.id+'"'+dis()+'>빼기</button></li>';
   }).join('');
   if (ui.openKnow['price-picked'] == null) ui.openKnow['price-picked'] = false;
-  return '<section class="price-builder" aria-labelledby="price-builder-title"><div class="price-builder-head"><div><span class="price-eyebrow">MY PRICE PLAN</span><h3 id="price-builder-title">비교안 만들기</h3>' +
-    '<p class="price-builder-intro">아래 가격표에서 항목을 담고, 받은 견적이나 예상 금액을 직접 넣으세요. 비워 둔 항목은 참고 시세로 계산해요. 참고 시세는 한국소비자원 조사의 중간값·평균이라 실제 견적은 업체마다 달라요. 부케·축가 사례처럼 가격표에 없는 비용은 아래 ‘그 밖에 드는 비용’에서 담거나 여기서 직접 추가하세요.</p></div></div>' +
+  return '<section class="price-builder" aria-labelledby="price-builder-title"><div class="price-builder-main"><div class="price-builder-head"><div><span class="price-eyebrow">MY PRICE PLAN</span><h3 id="price-builder-title">비교안 만들기</h3>' +
+    '</div></div>' +
     '<div class="price-group-tabs" role="group" aria-label="비교안 선택">'+tabs+'</div>' +
     '<div class="price-group-edit"><label class="field">비교안 이름<input type="text" value="'+esc(active.rawName)+'" maxlength="30" placeholder="'+esc(active.name)+'" data-price-group-name="'+active.id+'" data-fk="price-group-name-'+active.id+'"'+dis()+'></label>' +
     (ask ? '' : '<button class="link price-group-delete" type="button" data-act="price-group-delete-ask" data-id="'+active.id+'" data-fk="price-group-delete-'+active.id+'"'+(groups.length === 1?' disabled':'')+dis()+'>비교안 삭제</button>') + '</div>' +
     (ask ? '<div class="price-confirm" role="group" aria-label="비교안 삭제 확인"><p>‘'+esc(active.name)+'’ 비교안을 지울까요? 담은 항목도 함께 지워져요.</p><div class="detail-actions">' +
       '<button class="btn" type="button" data-act="price-group-delete-cancel" data-fk="price-group-delete-cancel">취소</button>' +
       '<button class="btn primary" type="button" data-act="price-group-delete" data-id="'+active.id+'" data-fk="price-group-delete-yes"'+dis()+'>지우기</button></div></div>' : '') +
-    '<div class="price-group-add" id="priceGroupAddForm"><label class="sr" for="priceGroupAddName">새 비교안 이름</label><input type="text" id="priceGroupAddName" maxlength="30" placeholder="예: 서울 예식안" data-fk="price-group-add-name"'+dis()+'><button class="btn" type="button" data-act="price-group-add" data-fk="price-group-add"'+dis()+'>비교안 추가</button></div>' +
     '<div class="price-group-summary"><div><span>담긴 항목</span><strong>'+chosen.length+'개</strong></div><div><span>비교안 합계</span><strong>'+fmtPriceRange(total)+'</strong></div>' +
       (chosen.length ? '<div><span>직접 넣은 금액 / 참고 시세</span><strong>'+mineN+'개 / '+(chosen.length - mineN - noPriceN)+'개</strong></div>' : '') +
-      (noPriceN ? '<div><span>금액 미입력 (합계에서 빠짐)</span><strong class="pr-diff over">'+noPriceN+'개</strong></div>' : '') + '</div>' +
+      (noPriceN ? '<div><span>금액 미입력 (합계에서 빠짐)</span><strong class="pr-diff none">'+noPriceN+'개</strong></div>' : '') + '</div>' +
+    '</div><div class="price-builder-tools">' +
+    '<p class="price-builder-intro">아래 가격표에서 항목을 담고, 받은 견적이나 예상 금액을 직접 넣으세요. 비워 둔 항목은 참고 시세로 계산해요. 참고 시세는 한국소비자원 조사의 중간값·평균이라 실제 견적은 업체마다 달라요. 부케·축가 사례처럼 가격표에 없는 비용은 아래 ‘그 밖에 드는 비용’에서 담거나 여기서 직접 추가하세요.</p>' +
+    '<div class="price-group-add" id="priceGroupAddForm"><label class="sr" for="priceGroupAddName">새 비교안 이름</label><input type="text" id="priceGroupAddName" maxlength="30" placeholder="예: 서울 예식안" data-fk="price-group-add-name"'+dis()+'><button class="btn" type="button" data-act="price-group-add" data-fk="price-group-add"'+dis()+'>비교안 추가</button></div>' +
     priceNotesHTML(active, chosen, region, 'price') + priceCustomHTML(active) +
     (chosen.length ? '<details class="price-picked-details" data-k="price-picked"'+(ui.openKnow['price-picked'] ? ' open' : '')+'><summary>담긴 항목 보기 ('+chosen.length+')</summary><ul class="price-picked">'+rowsHTML+'</ul></details>' : '<p class="price-builder-empty">아래 가격표의 항목마다 있는 ‘담기’를 누르면 이 비교안에 들어가요. 담은 뒤 받은 금액을 직접 넣으세요.</p>') +
     priceCompareHTML(groups, active.id) +
     trashHTML('price', '지운 비교안·직접 추가 항목', deletedOf((state.pricePlan || {}).groups, 'name', 'plan', '비교안')
       .concat(deletedOf((((state.pricePlan || {}).groups || {})[active.id] || {}).custom, 'name', 'pcustom', active.name+'의 직접 추가 항목').map(function(e){ e.group = active.id; return e; }))) +
-    '</section>';
+    '</div></section>';
 }
 function cmpRow(t, pre, post){
   return '<div class="cmp-row"><h4>'+t+'</h4><p class="pre"><span class="tag">신고 전</span> '+pre+'</p><p class="post"><span class="tag">신고 후</span> '+post+'</p></div>';
@@ -2247,7 +2366,7 @@ function planTargetHTML(t){
   var names = t.rows.map(function(r){ return r.name; }).join(' · ');
   var h = '<li><details class="pr-row" data-k="'+k+'"'+(open ? ' open' : '')+'><summary><span class="pr-row-name">'+esc(names)+(t.rows.some(function(r){ return r.hidden; }) ? ' <small>(예산에서 숨김)</small>' : '')+'</span>' +
     '<span class="pr-row-diff '+(d ? d.cls : 'none')+'">'+(d ? d.text : (t.priced ? '예산 미입력' : '금액 미입력'))+'</span>' +
-    '<span class="pr-row-nums">'+(t.allRef ? '참고 ' : '비교안 ')+fmtPriceRange(t.ref)+(t.priced ? '' : ' + 미입력')+' · 내 예산 '+(t.budgetDone ? fmtMan(t.mine) : (t.mine ? fmtMan(t.mine)+'(일부)' : '-'))+'</span></summary><div class="pr-row-body">';
+    '<span class="pr-row-nums"><span><span>'+(t.allRef ? '참고 ' : '비교안 ')+'</span><strong>'+fmtPriceRange(t.ref)+(t.priced ? '' : ' + 미입력')+'</strong></span><span class="sr"> · </span><span><span>내 예산 </span><strong>'+(t.budgetDone ? fmtMan(t.mine) : (t.mine ? fmtMan(t.mine)+'(일부)' : '-'))+'</strong></span></span></summary><div class="pr-row-body">';
   h += '<ul class="pr-lines">' + t.lines.map(function(l){ return '<li><span>'+esc(PRICE_SECS[l.item.sec])+' · '+esc(l.item.name)+'<small>'+(l.mine ? '직접 넣은 금액'+(l.ref ? ' · 참고 시세 '+esc(priceRefText(l)) : '') : l.opt ? '참고 시세 · '+esc(l.opt.label+' '+l.opt.value)+' · '+esc(l.opt.source) : '가격 비교 탭에서 금액을 넣어 주세요')+'</small></span><strong>'+esc(priceAmountText(l))+'</strong></li>'; }).join('') + '</ul>';
   if (t.lines.length > 1 && priceOverlaps(t.lines).length) h += '<p class="price-note">묶음 가격과 그 안에 든 항목이 함께 반영돼 시세가 겹칠 수 있어요.</p>';
   t.rows.forEach(function(r){
@@ -2291,7 +2410,7 @@ function planReviewHTML(){
     data.lines.map(function(l){
       var on = !!group.apply[l.item.id], to = l.item.budget.map(budgetName).join(' · ');
       return '<li><button class="price-select-button pr-apply" type="button" role="checkbox" aria-checked="'+(on ? 'true' : 'false')+'" data-act="b-plan-apply" data-group="'+group.id+'" data-id="'+l.item.id+'" data-fk="pr-apply-'+l.item.id+'"'+dis()+'><span class="price-select-icon" aria-hidden="true"></span>' +
-        '<span><span class="sr">예산에 반영: </span><b>'+esc(PRICE_SECS[l.item.sec])+' · '+esc(l.item.name)+'</b><small>'+esc(priceAmountText(l))+(l.mine ? ' (직접)' : l.noPrice ? '' : ' (참고)')+' → '+esc(to)+'</small></span></button></li>';
+        '<span><span class="sr">예산에 반영: </span><b>'+esc(PRICE_SECS[l.item.sec])+' · '+esc(l.item.name)+'</b><small>'+esc(priceAmountText(l))+(l.mine ? ' <span class="price-badge direct">(직접)</span>' : l.noPrice ? '' : ' <span class="price-badge">(참고)</span>')+' → '+esc(to)+'</small></span></button></li>';
     }).join('') + '</ul>' +
     (Store.readOnly ? '' : '<div class="detail-actions"><button class="btn" type="button" data-act="b-plan-apply-all" data-group="'+group.id+'" data-v="1">모두 반영</button><button class="btn" type="button" data-act="b-plan-apply-all" data-group="'+group.id+'" data-v="0">모두 빼기</button>' +
       '<button class="link" type="button" data-act="goto-price" data-group="'+group.id+'">가격 비교에서 고치기</button></div>') + '</details>';
@@ -2325,7 +2444,7 @@ function quoteApplyChanges(q){
 }
 function quoteConfirmHTML(q){
   return '<div class="price-confirm" role="group" aria-label="예산 바꾸기 확인"><p>이 견적을 넣으면 예산이 이렇게 바뀌어요.</p><ul class="q-changes">' +
-    quoteApplyChanges(q).map(function(c){ return '<li>'+esc(c)+'</li>'; }).join('') + '</ul><p class="tip">확정 금액과 낸 돈은 그대로예요.</p>' +
+    quoteApplyChanges(q).map(function(c){ var parts = c.split(' → '); return '<li><span>'+esc(parts[0])+'</span><span class="q-change-next"><span class="q-change-arrow"> → </span><strong>'+esc(parts[1])+'</strong></span></li>'; }).join('') + '</ul><p class="tip">확정 금액과 낸 돈은 그대로예요.</p>' +
     '<div class="detail-actions"><button class="btn" type="button" data-act="q-apply-cancel" data-id="'+q.id+'">취소</button><button class="btn primary" type="button" data-act="q-apply-yes" data-id="'+q.id+'">바꾸기</button></div></div>';
 }
 function quoteHTML(){
