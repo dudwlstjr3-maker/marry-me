@@ -390,6 +390,15 @@ select{width:auto;min-width:140px}
 .price-custom-head{margin:0;color:var(--ink);font-size:14px;font-weight:600}
 .price-extra-list .price-pick-in{padding-bottom:8px}
 .price-custom-item select,.price-custom-add select{width:100%;min-width:0}
+.q-changes{margin:0 0 6px;padding-left:18px;font-size:14px;line-height:1.6}
+.who.net{margin-top:6px}
+.trash{margin-top:20px}
+.trash>summary{display:flex;align-items:center;cursor:pointer;color:var(--chung);font-size:14px}
+.trash-list,.know .trash-list{list-style:none;margin:0;padding:0}
+.trash-list li,.know .trash-list li{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0;border-bottom:1px solid var(--line);font-size:14px}
+.trash-list li span{min-width:0}
+.trash-list small{color:var(--muted);font-size:13px}
+input[type=file]{width:100%;max-width:100%;min-height:44px;font-size:14px}
 /* 금액은 숫자 중간에서 줄이 나뉘지 않게(본문은 overflow-wrap:anywhere) */
 .price-pick-amt,.price-picked li strong,.price-compare-sec li strong,.pr-lines strong,.pr-row-diff,.pr-sum strong{overflow-wrap:normal}
 .pr-lines li span{flex:1 1 auto}
@@ -663,6 +672,16 @@ input[type=date],input[type=text],textarea,select{border-radius:4px}
       <input type="text" id="shareLink" aria-label="공유할 앱 링크" data-fk="shareLink" readonly>
       <div class="dlg-actions"><button class="btn" type="button" id="copyLink">복사</button><button class="btn primary" type="button" id="sendLink">보내기</button></div>
       <p class="hint">받는 사람이 우리 목록을 그대로 보려면 claude.ai에서 이 앱을 공유로 열어 두고, 받는 사람도 claude.ai에 로그인해야 해요. 같이 고치려면 수정 권한을 주세요. 로그인하지 않고 열면 빈 앱으로 보여요.</p>
+    </section>
+    <section class="share-sec" id="backupSec">
+      <h3>데이터 백업·옮기기</h3>
+      <p class="hint">입력한 내용은 이 브라우저에만 저장돼요. 파일로 저장해 두면 브라우저 기록을 지우거나 휴대폰을 바꿔도 되살릴 수 있고, 다른 기기로 옮길 수도 있어요.</p>
+      <div class="dlg-actions"><button class="btn" type="button" id="backupCopy">백업 글 복사</button><button class="btn primary" type="button" id="backupSave">파일로 저장</button></div>
+      <textarea id="backupText" aria-label="백업 글" data-fk="backupText" rows="4" readonly hidden></textarea>
+      <label class="field">백업 파일 고르기<input type="file" id="restoreFile" accept=".json,application/json,text/plain" data-fk="restoreFile"></label>
+      <textarea id="restoreText" aria-label="가져올 백업 글" data-fk="restoreText" rows="3" placeholder="백업 글을 붙여 넣어도 돼요"></textarea>
+      <div class="dlg-actions"><button class="btn" type="button" id="restoreApply">백업 가져오기</button></div>
+      <p class="hint">가져오면 백업에 든 값으로 바꿔요. 지금만 있는 항목은 지우지 않고 남겨 둬요.</p>
     </section>
     <p class="share-msg" id="shareMsg" aria-live="polite"></p>
     <div class="dlg-actions"><button class="btn" type="button" id="closeShare">닫기</button></div>
@@ -1072,6 +1091,7 @@ var ui = {
   openBudget: {},
   showHiddenBudget: false,
   priceDeleteAsk: null,
+  quoteApplyAsk: null,
   honeyMonth: Number(lsGet('wd-honey')) || 0, guestView: 'list',
   guestSide: 'all', guestQuery: '', openGuest: {}, addSide: 'groom', addGroup: '친구'
 };
@@ -1140,13 +1160,8 @@ function render(){
   document.getElementById('brand').textContent = state.title ? state.title : '우리 결혼 준비';
   renderHero(list);
   renderTabs();
-  document.getElementById('panel-timeline').innerHTML = timelineHTML(list);
-  document.getElementById('panel-budget').innerHTML = budgetHTML();
-  document.getElementById('panel-price').innerHTML = priceHTML();
-  document.getElementById('panel-guest').innerHTML = guestHTML();
-  document.getElementById('panel-honey').innerHTML = honeyHTML();
-  document.getElementById('panel-know').innerHTML = knowHTML();
-  document.getElementById('panel-talk').innerHTML = talkHTML();
+  // 보고 있는 탭만 그려요. 탭 7개를 매번 다 그리면 휴대폰에서 글자 하나 넣을 때마다 느려져요.
+  TABS.forEach(function(t){ document.getElementById('panel-'+t).innerHTML = t === ui.tab ? PANEL_HTML[t](list) : ''; });
   document.getElementById('openSettings').disabled = !Store.ready;
   lastSig = JSON.stringify(state);
 
@@ -1156,7 +1171,25 @@ function render(){
   }
 }
 
+var PANEL_HTML = {
+  timeline: function(list){ return timelineHTML(list); }, budget: function(){ return budgetHTML(); }, price: function(){ return priceHTML(); },
+  guest: function(){ return guestHTML(); }, honey: function(){ return honeyHTML(); }, know: function(){ return knowHTML(); }, talk: function(){ return talkHTML(); }
+};
 function dis(){ return (!Store.ready || Store.readOnly) ? ' disabled' : ''; }
+/* 지운 항목(deleted: true)을 탭 아래에 모아 다시 살릴 수 있게 해요. */
+function deletedOf(obj, nameKey, kind, note){
+  obj = isObj(obj) ? obj : {};
+  return Object.keys(obj).filter(function(k){ return isObj(obj[k]) && obj[k].deleted; }).map(function(k){ return {id:k, name:obj[k][nameKey] || '(이름 없음)', kind:kind, note:note || ''}; });
+}
+function trashHTML(key, title, entries){
+  if (!entries.length) return '';
+  var k = 'trash-' + key;
+  return '<details class="trash" data-k="'+k+'"'+(ui.openKnow[k] ? ' open' : '')+'><summary>'+title+' ('+entries.length+')</summary><ul class="trash-list">' +
+    entries.map(function(e){
+      return '<li><span>'+esc(e.name)+(e.note ? ' <small>'+esc(e.note)+'</small>' : '')+'</span>' +
+        (Store.readOnly ? '' : '<button class="link" type="button" data-act="restore" data-kind="'+e.kind+'" data-id="'+esc(e.id)+'"'+(e.group ? ' data-group="'+esc(e.group)+'"' : '')+' aria-label="'+esc(e.name)+' 되살리기">되살리기</button>') + '</li>';
+    }).join('') + '</ul></details>';
+}
 
 function josa(word, withB, noB){
   var c = word ? word.charCodeAt(word.length - 1) : 0;
@@ -1368,7 +1401,7 @@ function timelineHTML(list){
       '<label class="field">예약일(선택)<input type="date" id="addBook" data-fk="add-book"'+dis()+'></label>' +
       '<button class="btn primary" type="button" data-act="task-add"'+dis()+'>추가</button></div></div>';
   }
-  return h;
+  return h + trashHTML('task', '지운 할 일', deletedOf(state.custom, 'title', 'task'));
 }
 
 function regCalcHTML(key){
@@ -1903,6 +1936,8 @@ function pricePlanHTML(){
     priceNotesHTML(active, chosen, region, 'price') + priceCustomHTML(active) +
     (chosen.length ? '<details class="price-picked-details" data-k="price-picked"'+(ui.openKnow['price-picked'] ? ' open' : '')+'><summary>담긴 항목 보기 ('+chosen.length+')</summary><ul class="price-picked">'+rowsHTML+'</ul></details>' : '<p class="price-builder-empty">아래 가격표의 항목마다 있는 ‘담기’를 누르면 이 비교안에 들어가요. 담은 뒤 받은 금액을 직접 넣으세요.</p>') +
     priceCompareHTML(groups, active.id) +
+    trashHTML('price', '지운 비교안·직접 추가 항목', deletedOf((state.pricePlan || {}).groups, 'name', 'plan', '비교안')
+      .concat(deletedOf((((state.pricePlan || {}).groups || {})[active.id] || {}).custom, 'name', 'pcustom', active.name+'의 직접 추가 항목').map(function(e){ e.group = active.id; return e; }))) +
     '</section>';
 }
 function cmpRow(t, pre, post){
@@ -2106,6 +2141,8 @@ function budgetHTML(){
     '<div class="sum"><span class="k">앞으로 낼 돈</span><span class="v">'+fmtMan(dueSum)+'</span></div>' +
   '</div>';
   h += '<p class="who"><span>공동 <b>'+fmtMan(who.both)+'</b></span><span>신랑 쪽 <b>'+fmtMan(who.groom)+'</b></span><span>신부 쪽 <b>'+fmtMan(who.bride)+'</b></span><span>미정 <b>'+fmtMan(who[''])+'</b></span><span>낸 돈 <b>'+fmtMan(paidSum)+'</b></span></p>';
+  var giftSum = guestStats(guestRows()).gift, net = expSum - giftSum;
+  if (giftSum > 0) h += '<p class="who net"><span>받은 축의금 <b>'+fmtMan(giftSum)+'</b></span><span>'+(net >= 0 ? '축의금을 빼면 실제 부담 <b>'+fmtMan(net)+'</b>' : '축의금이 예상 총액보다 <b>'+fmtMan(-net)+'</b> 많아요')+'</span></p>';
   h += planReviewHTML();
   h += quoteHTML();
   var hiddenN = rows.length - vis.length;
@@ -2128,7 +2165,8 @@ function budgetHTML(){
       '<label class="sr" for="bAddPlan">예산(만원)</label><input type="text" inputmode="numeric" id="bAddPlan" placeholder="예산(만원)" data-fk="badd-plan"'+dis()+'>' +
       '<button class="btn primary" type="button" data-act="b-add"'+dis()+'>추가</button></div></div>';
   }
-  return h;
+  var bud = state.budget || {};
+  return h + trashHTML('budget', '지운 예산 항목·견적', deletedOf(bud.custom, 'name', 'bcustom', '예산 항목').concat(deletedOf(bud.quotes, 'name', 'quote', '식장 견적')));
 }
 function regionSelectHTML(id, label){
   id = id || 'bRegion';
@@ -2274,6 +2312,22 @@ function quoteRows(){
   list.sort(function(a, b){ return (b.complete - a.complete) || (a.total - b.total) || (a.created - b.created); });
   return list;
 }
+/* 견적을 예산에 넣을 때 이미 있는 금액이 바뀌는 칸만 모아요. 바뀌는 게 있으면 먼저 보여 주고 확인을 받아요. */
+function quoteApplyChanges(q){
+  var rows = {}, out = [];
+  budgetRows().forEach(function(r){ if (r.kind === 't') rows[r.id] = r; });
+  var hall = rows.b01, meal = rows.b02, extra = rows.b27, newExtra = q.extra != null ? q.extra : null;
+  if (hall.plan != null && hall.plan !== q.hall) out.push('대관료 '+fmtMan(hall.plan)+' → '+fmtMan(q.hall));
+  var curMeal = meal.heads != null && meal.unit != null ? meal.heads.toLocaleString('ko-KR')+'명 × '+meal.unit.toLocaleString('ko-KR')+'원' : (meal.plan != null ? fmtMan(meal.plan) : null);
+  if (curMeal != null && !(meal.heads === q.heads && meal.unit === q.unit)) out.push('식대 '+curMeal+' → '+q.heads.toLocaleString('ko-KR')+'명 × '+q.unit.toLocaleString('ko-KR')+'원');
+  if (extra.plan != null && extra.plan !== newExtra) out.push('식장 필수 추가 '+fmtMan(extra.plan)+' → '+(newExtra != null ? fmtMan(newExtra) : '비움'));
+  return out;
+}
+function quoteConfirmHTML(q){
+  return '<div class="price-confirm" role="group" aria-label="예산 바꾸기 확인"><p>이 견적을 넣으면 예산이 이렇게 바뀌어요.</p><ul class="q-changes">' +
+    quoteApplyChanges(q).map(function(c){ return '<li>'+esc(c)+'</li>'; }).join('') + '</ul><p class="tip">확정 금액과 낸 돈은 그대로예요.</p>' +
+    '<div class="detail-actions"><button class="btn" type="button" data-act="q-apply-cancel" data-id="'+q.id+'">취소</button><button class="btn primary" type="button" data-act="q-apply-yes" data-id="'+q.id+'">바꾸기</button></div></div>';
+}
 function quoteHTML(){
   var list = quoteRows();
   var reg = (state.budget && state.budget.region) || '전국';
@@ -2317,7 +2371,7 @@ function quoteHTML(){
           qf('unit','1인 식대(원)',q.unit,true,'예: 62000') + qf('hall','대관료(만원)',q.hall,true,'예: 300') +
           qf('extra','필수 추가(만원)',q.extra,true,'생화·도우미 등') + '</div>' +
           '<label class="field">메모<textarea rows="2" placeholder="포함 항목, 위약금 조건, 담당자 등" data-qmemo="'+q.id+'" data-fk="qmemo-'+q.id+'"'+dis()+'>'+esc(q.memo)+'</textarea></label>' +
-          (Store.readOnly ? '' : '<div class="detail-actions"><button class="btn primary" type="button" data-act="q-apply" data-id="'+q.id+'"'+(q.complete ? '' : ' disabled')+'>이 견적을 예산에 넣기</button>' +
+          (Store.readOnly ? '' : ui.quoteApplyAsk === q.id && q.complete ? quoteConfirmHTML(q) : '<div class="detail-actions"><button class="btn primary" type="button" data-act="q-apply" data-id="'+q.id+'"'+(q.complete ? '' : ' disabled')+'>이 견적을 예산에 넣기</button>' +
             '<button class="link" type="button" data-act="q-del" data-id="'+q.id+'">삭제</button></div>') +
           (q.complete ? '' : '<p class="tip">보증인원, 1인 식대, 대관료를 모두 넣어야 예산에 넣을 수 있어요.</p>') +
         '</div>';
@@ -2467,7 +2521,7 @@ function guaranteeHeads(){
 function guestHTML(){
   var sw = '<div class="months gview" role="group" aria-label="하객 화면">' +
     [['list','명단'],['gift','축의금']].map(function(x){ return '<button class="mchip" type="button" aria-pressed="'+(ui.guestView === x[0] ? 'true' : 'false')+'" data-act="g-view" data-v="'+x[0]+'">'+x[1]+'</button>'; }).join('') + '</div>';
-  return sw + (ui.guestView === 'gift' ? giftHTML() : guestListHTML());
+  return sw + (ui.guestView === 'gift' ? giftHTML() : guestListHTML()) + trashHTML('guest', '지운 하객', deletedOf(state.guests, 'name', 'guest'));
 }
 function guestSearchHTML(){ return '<input type="text" class="gsearch" id="gSearch" aria-label="하객 이름이나 메모 찾기" placeholder="이름 찾기" value="'+esc(ui.guestQuery)+'" data-fk="g-search">'; }
 function guestListHTML(){
@@ -2720,6 +2774,15 @@ document.addEventListener('click', function(e){
     commit(bPatch('c', id, {deleted: true}));
   } else if (act === 'b-show-hidden') {
     ui.showHiddenBudget = !ui.showHiddenBudget; render();
+  } else if (act === 'restore') {
+    var rp = null, rg = b.getAttribute('data-group');
+    if (kind === 'task') rp = patchItem('c', id, {deleted:false});
+    else if (kind === 'bcustom') rp = bPatch('c', id, {deleted:false});
+    else if (kind === 'quote') { rp = {budget:{quotes:{}}}; rp.budget.quotes[id] = {deleted:false}; }
+    else if (kind === 'guest') rp = gPatch(id, {deleted:false});
+    else if (kind === 'plan') { rp = {pricePlan:{groups:{}}}; rp.pricePlan.groups[id] = {deleted:false}; }
+    else if (kind === 'pcustom' && rg) { rp = {pricePlan:{groups:{}}}; rp.pricePlan.groups[rg] = {custom:{}}; rp.pricePlan.groups[rg].custom[id] = {deleted:false}; }
+    if (rp) commit(rp);
   } else if (act === 'q-open') {
     ui.openBudget['q-' + id] = !ui.openBudget['q-' + id]; render();
   } else if (act === 'q-del') {
@@ -2727,9 +2790,16 @@ document.addEventListener('click', function(e){
     var dp = {budget:{quotes:{}}}; dp.budget.quotes[id] = {deleted: true};
     if (state.budget && state.budget.pickedQuote === id) dp.budget.pickedQuote = '';
     commit(dp);
-  } else if (act === 'q-apply') {
+  } else if (act === 'q-apply-cancel') {
+    ui.quoteApplyAsk = null; render();
+    var qBack = document.querySelector('[data-act="q-apply"][data-id="'+id+'"]'); if (qBack) qBack.focus({preventScroll:true});
+  } else if (act === 'q-apply' || act === 'q-apply-yes') {
     var qq = quoteRows().filter(function(x){ return x.id === id; })[0];
-    if (qq && qq.complete) {
+    if (qq && qq.complete && act === 'q-apply' && quoteApplyChanges(qq).length) {
+      ui.quoteApplyAsk = id; render();
+      var qCancel = document.querySelector('[data-act="q-apply-cancel"]'); if (qCancel) qCancel.focus({preventScroll:true});
+    } else if (qq && qq.complete) {
+      ui.quoteApplyAsk = null;
       commit({budget:{pickedQuote: id, items:{
         b01:{plan: qq.hall},
         b02:{heads: qq.heads, unit: qq.unit},
@@ -3011,12 +3081,12 @@ document.querySelector('.tabs [role=tablist]').addEventListener('keydown', funct
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'Home' || e.key === 'End') {
     e.preventDefault();
     ui.tab = e.key === 'Home' ? order[0] : e.key === 'End' ? order[n - 1] : order[(i + (e.key === 'ArrowRight' ? 1 : n - 1)) % n];
-    lsSet('wd-tab', ui.tab); renderTabs();
+    lsSet('wd-tab', ui.tab); render();
     document.getElementById('tab-'+ui.tab).focus();
   }
 });
 Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function(b){
-  b.addEventListener('click', function(){ ui.tab = b.getAttribute('data-tab'); lsSet('wd-tab', ui.tab); renderTabs(); });
+  b.addEventListener('click', function(){ ui.tab = b.getAttribute('data-tab'); lsSet('wd-tab', ui.tab); render(); });
 });
 
 /* share (KakaoTalk via the phone's share sheet, with copy fallbacks) */
@@ -3073,10 +3143,63 @@ function sendFrom(el, isLink){
     });
   } else copyFrom(el);
 }
+/* backup: the whole saved document as JSON, restored by merging (keys are never removed) */
+function noArraysIn(v){ if (Array.isArray(v)) return false; return !v || typeof v !== 'object' || Object.keys(v).every(function(k){ return noArraysIn(v[k]); }); }
+function backupText(){ return JSON.stringify({app:'marry-me', savedAt:new Date().toISOString(), data:state}); }
+function parseBackup(text){
+  var obj; try { obj = JSON.parse(text); } catch(e){ return {error:'백업 글을 읽지 못했어요. 처음부터 끝까지 그대로 붙여 넣었는지 확인해 주세요.'}; }
+  var data = isObj(obj) && obj.app === 'marry-me' && isObj(obj.data) ? obj.data : obj;
+  if (!isObj(data) || data.v !== 1) return {error:'결혼 준비 앱의 백업이 아니에요.'};
+  if (!noArraysIn(data)) return {error:'이 앱에서 쓸 수 없는 형식이 들어 있어요.'};
+  var count = function(o){ return isObj(o) ? Object.keys(o).filter(function(k){ return isObj(o[k]) && !o[k].deleted; }).length : 0; };
+  var b = isObj(data.budget) ? data.budget : {};
+  return {data:data, savedAt:isObj(obj) && obj.savedAt ? String(obj.savedAt).slice(0,10) : '',
+    summary:'하객 '+count(data.guests)+'명 · 직접 추가한 일 '+count(data.custom)+'개 · 예산 항목 '+count(b.items)+'개 · 비교안 '+count(isObj(data.pricePlan) ? data.pricePlan.groups : null)+'개'};
+}
+var restorePending = null;
+document.getElementById('backupCopy').addEventListener('click', function(){
+  var box = document.getElementById('backupText'); box.value = backupText(); box.hidden = false; copyFrom(box);
+});
+document.getElementById('backupSave').addEventListener('click', function(){
+  var text = backupText();
+  try {
+    var url = URL.createObjectURL(new Blob([text], {type:'application/json'})), link = document.createElement('a');
+    link.href = url; link.download = 'marry-me-backup-'+ymd(today())+'.json'; link.hidden = true;
+    document.body.appendChild(link); link.click();
+    setTimeout(function(){ link.remove(); URL.revokeObjectURL(url); }, 2000);
+    shareMsg('백업 파일을 저장했어요. 파일이 보이지 않으면 ‘백업 글 복사’로 저장해 두세요.');
+  } catch(e){ shareMsg('이 화면에서는 파일 저장이 막혀 있어요. ‘백업 글 복사’를 쓰세요.'); }
+});
+document.getElementById('restoreFile').addEventListener('change', function(e){
+  var f = e.target.files && e.target.files[0];
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function(){ document.getElementById('restoreText').value = String(reader.result || ''); restorePending = null; document.getElementById('restoreApply').textContent = '백업 가져오기'; shareMsg('파일을 읽었어요. ‘백업 가져오기’를 눌러 내용을 확인하세요.'); };
+  reader.onerror = function(){ shareMsg('파일을 읽지 못했어요.'); };
+  reader.readAsText(f);
+});
+document.getElementById('restoreText').addEventListener('input', function(){ restorePending = null; document.getElementById('restoreApply').textContent = '백업 가져오기'; });
+document.getElementById('restoreApply').addEventListener('click', function(){
+  if (Store.readOnly || !Store.ready) { shareMsg('이 화면에서는 가져올 수 없어요.'); return; }
+  var btn = document.getElementById('restoreApply');
+  if (restorePending) {
+    commit(restorePending.data);
+    restorePending = null; btn.textContent = '백업 가져오기'; document.getElementById('restoreText').value = '';
+    shareMsg('백업을 가져왔어요.');
+    return;
+  }
+  var parsed = parseBackup(document.getElementById('restoreText').value.trim());
+  if (parsed.error) { shareMsg(parsed.error); return; }
+  restorePending = parsed; btn.textContent = '이대로 가져오기';
+  shareMsg((parsed.savedAt ? parsed.savedAt+'에 저장한 ' : '')+'백업이에요: '+parsed.summary+'. 한 번 더 누르면 가져와요.');
+});
 document.getElementById('openShare').addEventListener('click', function(){
   document.getElementById('shareText').value = shareSummary();
   document.getElementById('shareLink').value = appLink();
   shareMsg('');
+  restorePending = null; document.getElementById('restoreApply').textContent = '백업 가져오기';
+  document.getElementById('backupText').hidden = true;
+  ['restoreFile','restoreText','restoreApply'].forEach(function(x){ document.getElementById(x).disabled = Store.readOnly; });
   if (typeof shareDlg.showModal === 'function') shareDlg.showModal(); else shareDlg.setAttribute('open','');
 });
 document.getElementById('closeShare').addEventListener('click', function(){ if (typeof shareDlg.close === 'function') shareDlg.close(); else shareDlg.removeAttribute('open'); });
