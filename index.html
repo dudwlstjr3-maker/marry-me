@@ -732,6 +732,8 @@ details:is(.price-picked-details,.price-custom,.price-compare,.trash)>:not(summa
 .q-photo-draft p{margin:0;font-size:14px;line-height:1.6}
 .q-photo-draft .field{align-content:end}
 .q-photo-draft .field.unsure input{border-color:var(--hong);background:var(--hong-soft)}
+.q-paste>summary{display:flex;align-items:center;color:var(--chung);font-size:14px;cursor:pointer}
+.q-paste[open]{display:grid;gap:8px}
 .q-unsure{display:inline-block;margin-left:4px;padding:0 6px;border:1px solid var(--hong);border-radius:4px;color:var(--hong);font-size:13px;line-height:1.5}
 /* v26 가독성: 탭은 한 줄로 옆으로 밀어 보고, 보조 글자는 14px·더 진한 회색으로, 빈 예산 분류는 접어요. */
 :root{--muted:#5E544D;--tabs-height:50px}
@@ -1256,7 +1258,7 @@ var ui = {
   showHiddenBudget: false,
   priceDeleteAsk: null,
   quoteApplyAsk: null,
-  photo: null, photoBusy: false, photoMsg: '', photoDraft: null,
+  photo: null, photoBusy: false, photoMsg: '', photoDraft: null, photoStage: '', photoNote: '', photoText: '',
   honeyMonth: Number(lsGet('wd-honey')) || 0, guestView: 'list',
   guestSide: 'all', guestQuery: '', openGuest: {}, addSide: 'groom', addGroup: '친구'
 };
@@ -2595,11 +2597,86 @@ function quoteVerdictHTML(q, rc){
 /* 견적서 사진으로 넣기: claude.ai에서 Claude가 사진을 읽을 수 있을 때만 보여요. 사진은 저장하지 않고, 확인한 숫자만 견적으로 저장해요. */
 var photoSample = null, photoCtl = null;
 var PHOTO_FIELDS = [['name','홀 이름',false],['area','지역',false],['when','예식 일시',false],['heads','보증인원(명)',true],['unit','1인 식대(원)',true],['hall','대관료(만원)',true],['extra','필수 추가(만원)',true]];
-var QUOTE_PHOTO_PROMPT = '이 사진은 한국 웨딩홀(예식장)의 견적서나 계약서예요. 사진에 적힌 내용만 읽어서 아래 모양의 JSON 하나로만 답하세요. 추측해서 채우지 말고, 사진에 없으면 null로 두세요.\n' +
-  '{"name": 웨딩홀 이름과 홀 이름(문자열, 예: OO웨딩 그랜드홀), "area": 웨딩홀이 있는 곳(시·도와 시·군·구, 예: 서울 강남구, 경기 수원시. 주소나 상호에서 알 수 있을 때만), "when": 예식 날짜·시간(적힌 그대로), "heads": 보증인원(명, 숫자), "unit": 1인 식대(원 단위 숫자, 예: 6만 5천원은 65000), ' +
+var QUOTE_JSON_SHAPE = '{"name": 웨딩홀 이름과 홀 이름(문자열, 예: OO웨딩 그랜드홀), "area": 웨딩홀이 있는 곳(시·도와 시·군·구, 예: 서울 강남구, 경기 수원시. 주소나 상호에서 알 수 있을 때만), "when": 예식 날짜·시간(적힌 그대로), "heads": 보증인원(명, 숫자), "unit": 1인 식대(원 단위 숫자, 예: 6만 5천원은 65000), ' +
   '"hall": 대관료·예식비(만원 단위 숫자, 예: 3,000,000원은 300), "extra": 식대·대관료 말고 꼭 내야 하는 추가 비용의 합계(만원 단위 숫자, 생화 장식·본식 도우미 등, 고를 수 있는 선택 항목은 빼요), ' +
   '"extras": [{"name": 항목 이름, "amount": 만원 단위 숫자}] (extra에 넣은 항목, 없으면 []), "unsure": [흐리거나 잘려서 확실하지 않은 칸의 키 이름, 예: ["unit"]], "note": 부가세 포함 여부·할인·포함 항목처럼 알아둘 점 한 줄}\n' +
   '금액에 범위나 여러 안이 있으면 기본으로 적용될 금액을 쓰고 그 키를 unsure에 넣으세요. 숫자에는 쉼표나 단위를 붙이지 마세요.';
+function quotePrompt(hasImages, text){
+  return (hasImages ? '함께 보낸 그림은 한국 웨딩홀(예식장)의 견적서나 계약서예요(사진, 또는 PDF 쪽을 그림으로 바꾼 것).' + (text ? ' 아래 글도 같은 홀의 견적이에요.' : '')
+      : '아래 글은 한국 웨딩홀(예식장)에서 받은 견적이나 계약 내용이에요.') +
+    ' 적힌 내용만 읽어서 아래 모양의 JSON 하나로만 답하세요. 추측해서 채우지 말고, 없으면 null로 두세요.\n' + QUOTE_JSON_SHAPE +
+    (text ? '\n\n견적 글:\n"""\n' + text.slice(0, 8000) + '\n"""' : '');
+}
+/* 사진이 아닌 형식: PDF는 쪽마다 그림으로 바꾸고(pdf.js, PDF를 고를 때만 불러와요), 브라우저가 여는 다른 그림(HEIC·BMP 등)은 JPG로 바꾸고, 글 파일은 글로 보내요. */
+var PDFJS_BASE = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/', pdfjsLoad = null;
+function loadScript(src){ return new Promise(function(res, rej){ var el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = function(){ rej({code:'pdf_load'}); }; document.head.appendChild(el); }); }
+function loadPdfjs(){
+  if (window.pdfjsLib && window.pdfjsWorker) return Promise.resolve(window.pdfjsLib);
+  if (!pdfjsLoad) {
+    /* 작업용 스레드 대신 같은 화면에서 돌려요(claude.ai 보안 iframe에서도 되게). */
+    pdfjsLoad = loadScript(PDFJS_BASE + 'build/pdf.worker.min.js').then(function(){ return loadScript(PDFJS_BASE + 'build/pdf.min.js'); }).then(function(){
+      if (!window.pdfjsLib || !window.pdfjsWorker) throw {code:'pdf_load'};
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + 'build/pdf.worker.min.js';
+      return window.pdfjsLib;
+    });
+    pdfjsLoad.catch(function(){ pdfjsLoad = null; });
+  }
+  return pdfjsLoad;
+}
+function canvasJpeg(c){ return new Promise(function(res, rej){ c.toBlob(function(b){ if (b) res(b); else rej({code:'image_bad'}); }, 'image/jpeg', 0.9); }); }
+function pdfToImages(file, room){
+  return loadPdfjs().then(function(lib){
+    return file.arrayBuffer().then(function(buf){
+      return lib.getDocument({data:new Uint8Array(buf), isEvalSupported:false, cMapUrl:PDFJS_BASE + 'cmaps/', cMapPacked:true, standardFontDataUrl:PDFJS_BASE + 'standard_fonts/'}).promise;
+    }).catch(function(e){ throw {code: e && e.name === 'PasswordException' ? 'pdf_password' : (e && e.code) || 'pdf_bad'}; });
+  }).then(function(doc){
+    var n = Math.min(doc.numPages, room), out = [], i = 0;
+    function next(){
+      if (i >= n) return {images:out, pages:doc.numPages};
+      i++;
+      return doc.getPage(i).then(function(page){
+        var v1 = page.getViewport({scale:1}), vp = page.getViewport({scale:Math.min(3, 1800 / Math.max(v1.width, v1.height))});
+        var c = document.createElement('canvas'), ctx = c.getContext('2d');
+        c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height);
+        return page.render({canvasContext:ctx, viewport:vp}).promise.then(function(){ return canvasJpeg(c); });
+      }).then(function(b){ out.push(b); return next(); });
+    }
+    return next();
+  });
+}
+function imageToJpeg(file){
+  if (typeof createImageBitmap !== 'function') return Promise.reject({code:'image_bad'});
+  return createImageBitmap(file).then(function(bm){
+    var k = Math.min(1, 2400 / Math.max(bm.width, bm.height)), c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(bm.width * k)); c.height = Math.max(1, Math.round(bm.height * k));
+    c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
+    return canvasJpeg(c);
+  }, function(){ throw {code:'image_bad'}; });
+}
+function fileKind(f){
+  var t = (f.type || '').toLowerCase(), n = (f.name || '').toLowerCase();
+  if (t === 'application/pdf' || /\.pdf$/.test(n)) return 'pdf';
+  if (t.indexOf('text/') === 0 || /\.txt$/.test(n)) return 'text';
+  if (t.indexOf('image/') === 0 || /\.(heic|heif|jpe?g|png|webp|gif|bmp|tiff?|avif)$/.test(n)) return 'image';
+  return 'other';
+}
+function prepareQuoteSources(files){
+  var out = {images:[], texts:[], skipped:[], cut:0}, chain = Promise.resolve(), max = ui.photo ? ui.photo.max : 1;
+  files.forEach(function(f){
+    chain = chain.then(function(){
+      var kind = fileKind(f), room = max - out.images.length;
+      if (kind === 'text') return f.text().then(function(t){ if (t.trim()) out.texts.push(t.trim()); });
+      if (kind === 'other') { out.skipped.push(f.name || '파일'); return; }
+      if (room <= 0) { out.cut++; return; }
+      if (kind === 'pdf') { photoStage('PDF를 그림으로 바꾸는 중이에요…'); return pdfToImages(f, room).then(function(r){ out.images = out.images.concat(r.images); out.cut += r.pages - r.images.length; }); }
+      if (ui.photo.types.split(',').indexOf(f.type) >= 0 && (!ui.photo.bytes || f.size <= ui.photo.bytes)) { out.images.push(f); return; }
+      return imageToJpeg(f).then(function(b){ out.images.push(b); }, function(){ out.skipped.push(f.name || '파일'); });
+    });
+  });
+  return chain.then(function(){ return out; });
+}
+function photoStage(t){ ui.photoStage = t; var m = document.querySelector('.q-photo-msg'); if (m) m.textContent = t; }
 function photoNum(x){ var n = typeof x === 'number' ? x : typeof x === 'string' ? Number(x.replace(/[^0-9.]/g, '')) : NaN; return isFinite(n) && n > 0 ? n : null; }
 function quotePhotoDraft(v){
   if (!isObj(v)) return null;
@@ -2620,7 +2697,7 @@ function quotePhotoHTML(){
   if (Store.readOnly || !Store.ready || (!ui.photo && !ui.photoMsg)) return '';
   var h = '<div class="q-photo">', d = ui.photoDraft;
   if (d) {
-    h += '<div class="q-photo-draft" role="group" aria-labelledby="qDraftTitle"><p id="qDraftTitle"><b>사진을 읽었어요.</b> 맞는지 확인하고 저장하세요.'+(Object.keys(d.unsure).length ? ' <span class="q-unsure">확인 필요</span> 칸은 흐리거나 잘려서 다시 봐야 해요.' : '')+'</p><div class="bedit two">';
+    h += '<div class="q-photo-draft" role="group" aria-labelledby="qDraftTitle"><p id="qDraftTitle"><b>견적을 읽었어요.</b> 맞는지 확인하고 저장하세요.'+(Object.keys(d.unsure).length ? ' <span class="q-unsure">확인 필요</span> 칸은 흐리거나 잘려서 다시 봐야 해요.' : '')+'</p><div class="bedit two">';
     PHOTO_FIELDS.forEach(function(f){
       var un = !!d.unsure[f[0]], v = d[f[0]];
       h += '<label class="field'+(un ? ' unsure' : '')+'"><span>'+f[1]+(un ? ' <span class="q-unsure">확인 필요</span>' : '')+'</span><input type="text"'+(f[2] ? ' inputmode="numeric"' : ' maxlength="40"')+' value="'+esc(v == null ? '' : v)+'" data-qph="'+f[0]+'" data-fk="qph-'+f[0]+'"></label>';
@@ -2628,37 +2705,58 @@ function quotePhotoHTML(){
     h += '</div>';
     if (d.items.length) h += '<p class="tip">추가 비용으로 읽은 항목: '+esc(d.items.map(function(x){ return x.name+(x.amount != null ? ' '+fmtMan(x.amount) : ''); }).join(' · '))+'</p>';
     if (d.note) h += '<p class="tip">알아둘 점: '+esc(d.note)+'</p>';
+    if (ui.photoNote) h += '<p class="tip">'+esc(ui.photoNote)+'</p>';
     h += '<div class="detail-actions"><button class="btn" type="button" data-act="q-photo-cancel">취소</button><button class="btn primary" type="button" data-act="q-photo-save">이대로 저장</button></div></div>';
   } else if (ui.photo) {
-    h += '<div class="detail-actions">'+(ui.photoBusy ? '<button class="btn" type="button" data-act="q-photo-stop">그만 읽기</button>' : '<button class="btn primary" type="button" data-act="q-photo">견적서 사진으로 넣기</button>')+'</div>' +
-      '<input type="file" id="qPhotoFile" hidden accept="'+esc(ui.photo.types)+'"'+(ui.photo.max > 1 ? ' multiple' : '')+' aria-label="견적서 사진 고르기" data-fk="q-photo-file">' +
-      (ui.photoBusy ? '' : '<p class="tip">받은 견적서나 계약서 사진을 고르면 Claude가 웨딩홀 이름·지역과 금액을 읽어 와요. 한 번에 한 홀씩 넣고, 다른 홀은 저장한 뒤 다시 눌러요.'+(ui.photo.max > 1 ? ' 같은 홀 견적서가 여러 장이면 '+ui.photo.max+'장까지 함께 골라요.' : '')+' 저장하기 전에 확인할 수 있고, 사진은 이 앱에 남기지 않아요. 처음 한 번 허락을 묻고, 내 Claude 사용량이 조금 쓰여요.</p>');
+    h += '<div class="detail-actions">'+(ui.photoBusy ? '<button class="btn" type="button" data-act="q-photo-stop">그만 읽기</button>' : '<button class="btn primary" type="button" data-act="q-photo">견적서 사진·PDF로 넣기</button>')+'</div>' +
+      '<input type="file" id="qPhotoFile" hidden multiple accept="'+esc(ui.photo.types+',image/*,.heic,.heif,application/pdf,.pdf,text/plain,.txt')+'" aria-label="견적서 사진·PDF·글 파일 고르기" data-fk="q-photo-file">';
+    if (!ui.photoBusy) h += '<p class="tip">사진(JPG·PNG·아이폰 HEIC 등), PDF, 글 파일 모두 돼요. 한 번에 한 홀씩, 같은 홀 자료는 함께 골라요(그림 '+ui.photo.max+'장까지).</p>' +
+      '<details class="q-paste" data-k="q-paste"'+(ui.openKnow['q-paste'] ? ' open' : '')+'><summary>문자·카톡으로 받은 견적 붙여 넣기</summary>' +
+      '<label class="field">견적 글<textarea rows="4" placeholder="받은 견적 내용을 그대로 붙여 넣으세요" data-qph-text="1" data-fk="q-photo-text">'+esc(ui.photoText || '')+'</textarea></label>' +
+      '<div class="detail-actions"><button class="btn" type="button" data-act="q-photo-text">글에서 읽기</button></div></details>' +
+      '<p class="tip">저장하기 전에 확인할 수 있고, 파일은 이 앱에 남기지 않아요. 처음 한 번 허락을 묻고, 내 Claude 사용량이 조금 쓰여요.</p>';
   }
-  return h + '<p class="q-photo-msg" role="status">'+esc(ui.photoBusy ? '사진을 읽는 중이에요. 1분쯤 걸릴 수 있어요.' : ui.photoMsg || '')+'</p></div>';
+  return h + '<p class="q-photo-msg" role="status">'+esc(ui.photoBusy ? (ui.photoStage || 'Claude가 읽는 중이에요. 1분쯤 걸릴 수 있어요.') : ui.photoMsg || '')+'</p></div>';
 }
 function focusSel(sel){ var el = document.querySelector(sel); if (el) try { el.focus({preventScroll:false}); } catch(e){} }
-function readQuotePhoto(fileList){
-  var files = Array.prototype.slice.call(fileList || [], 0, (ui.photo && ui.photo.max) || 1);
-  if (!files.length || !photoSample) return;
+function readQuoteSources(fileList, pasted){
+  var files = Array.prototype.slice.call(fileList || []), typed = (pasted || '').trim();
+  if ((!files.length && !typed) || !photoSample || !ui.photo) return;
   if (photoCtl) photoCtl.abort();
-  var ctl = photoCtl = new AbortController();
-  ui.photoBusy = true; ui.photoMsg = ''; ui.photoDraft = null; render(); focusSel('[data-act="q-photo-stop"]');
-  photoSample.json(QUOTE_PHOTO_PROMPT, {images:files, signal:ctl.signal}).then(function(v){
+  var ctl = photoCtl = new AbortController(), skipped = [];
+  ui.photoBusy = true; ui.photoMsg = ''; ui.photoNote = ''; ui.photoDraft = null; ui.photoStage = files.length ? '파일을 준비하는 중이에요…' : '';
+  render(); focusSel('[data-act="q-photo-stop"]');
+  prepareQuoteSources(files).then(function(src){
+    if (ctl !== photoCtl) throw {code:'cancelled'};
+    var text = src.texts.concat(typed ? [typed] : []).join('\n\n'), notes = [];
+    skipped = src.skipped;
+    if (!src.images.length && !text) throw {code:'no_source'};
+    if (src.cut) notes.push('그림은 한 번에 '+ui.photo.max+'장까지라 나머지 '+src.cut+'장은 읽지 않았어요.');
+    if (src.skipped.length) notes.push('읽을 수 없는 파일은 뺐어요: '+src.skipped.join(', ')+'.');
+    ui.photoNote = notes.join(' ');
+    photoStage('Claude가 읽는 중이에요. 1분쯤 걸릴 수 있어요.');
+    var opts = {signal:ctl.signal}; if (src.images.length) opts.images = src.images;
+    return photoSample.json(quotePrompt(src.images.length > 0, text), opts);
+  }).then(function(v){
     if (ctl !== photoCtl) return;
-    photoCtl = null; ui.photoBusy = false;
+    photoCtl = null; ui.photoBusy = false; ui.photoStage = '';
     ui.photoDraft = quotePhotoDraft(v);
-    ui.photoMsg = ui.photoDraft ? '' : '사진에서 견적 금액을 찾지 못했어요. 더 밝게 다시 찍거나 아래에 직접 넣어 주세요.';
+    ui.photoMsg = ui.photoDraft ? '' : '견적 금액을 찾지 못했어요. 더 선명한 사진이나 PDF로 다시 넣거나 아래에 직접 넣어 주세요.';
     render(); focusSel(ui.photoDraft ? '[data-fk="qph-name"]' : '[data-act="q-photo"]');
   }, function(e){
     if (ctl !== photoCtl) return;
-    photoCtl = null; ui.photoBusy = false;
+    photoCtl = null; ui.photoBusy = false; ui.photoStage = '';
     var code = e && e.code;
     if (code === 'cancelled') ui.photoMsg = '';
-    else if (['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed','images_unavailable'].indexOf(code) >= 0) { ui.photo = null; photoSample = null; ui.photoMsg = '이 화면에서는 사진 읽기를 쓸 수 없어요. 아래에 직접 넣어 주세요.'; }
-    else if (code === 'image_rejected') ui.photoMsg = '이 사진은 읽을 수 없어요. JPG나 PNG 사진으로 다시 골라 주세요.';
+    else if (['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed','images_unavailable'].indexOf(code) >= 0) { ui.photo = null; photoSample = null; ui.photoMsg = '이 화면에서는 견적서 읽기를 쓸 수 없어요. 아래에 직접 넣어 주세요.'; }
+    else if (code === 'no_source') ui.photoMsg = '읽을 수 있는 파일이 없어요'+(skipped.length ? '('+skipped.join(', ')+')' : '')+'. 사진(JPG·PNG·HEIC 등), PDF, 글 파일을 골라 주세요. 한글·워드 문서는 PDF로 저장하거나 화면을 캡처해 넣어 주세요.';
+    else if (code === 'pdf_password') ui.photoMsg = '비밀번호가 걸린 PDF는 열 수 없어요. 화면을 캡처해서 사진으로 넣어 주세요.';
+    else if (code === 'pdf_load') ui.photoMsg = 'PDF를 여는 도구를 불러오지 못했어요. PDF 화면을 캡처해서 사진으로 넣어 주세요.';
+    else if (code === 'pdf_bad') ui.photoMsg = '이 PDF는 열 수 없어요. 화면을 캡처해서 사진으로 넣어 주세요.';
+    else if (code === 'image_rejected' || code === 'image_bad') ui.photoMsg = '이 파일은 읽을 수 없어요. 다른 사진이나 PDF로 다시 골라 주세요.';
     else if (code === 'rate_limited') ui.photoMsg = '지금은 요청이 많아요. 잠시 뒤에 다시 해 주세요.';
     else if (code === 'session_expired') ui.photoMsg = 'claude.ai에 다시 로그인한 뒤 해 주세요.';
-    else if (code === 'invalid_json' || code === 'refused' || code === 'empty_completion') ui.photoMsg = '사진에서 견적을 읽지 못했어요. 더 밝게 다시 찍거나 아래에 직접 넣어 주세요.';
+    else if (code === 'invalid_json' || code === 'refused' || code === 'empty_completion') ui.photoMsg = '견적을 읽지 못했어요. 더 선명한 사진이나 PDF로 다시 넣거나 아래에 직접 넣어 주세요.';
     else ui.photoMsg = '연결이 끊겨 읽지 못했어요. 다시 해 주세요.';
     render(); focusSel(ui.photo ? '[data-act="q-photo"]' : '#qName');
   });
@@ -2670,7 +2768,7 @@ function doQuotePhotoSave(){
   if (d.note) memo.push('알아둘 점: '+d.note);
   var p = {budget:{quotes:{}}}, n = function(v){ return v == null ? '' : v; };
   p.budget.quotes[qid] = {name:d.name.trim() || '사진으로 넣은 견적', area:d.area.trim(), when:d.when.trim(), heads:n(d.heads), unit:n(d.unit), hall:n(d.hall), extra:n(d.extra), memo:memo.join('\n'), created:Date.now()};
-  ui.photoDraft = null; ui.photoMsg = '견적을 저장했어요. 아래 목록에서 확인하세요.'; ui.openBudget['q-'+qid] = true;
+  ui.photoDraft = null; ui.photoNote = ''; ui.photoText = ''; ui.photoMsg = '견적을 저장했어요. 아래 목록에서 확인하세요.'; ui.openBudget['q-'+qid] = true;
   commit(p);
   focusSel('[data-act="q-open"][data-id="'+qid+'"]');
 }
@@ -2682,7 +2780,7 @@ function initPhoto(){
     return s.limits().then(function(lim){
       if (!lim || !lim.images) return;
       photoSample = s;
-      ui.photo = {max:Math.max(1, Math.min(lim.images.maxCount || 1, 5)), types:(lim.images.mediaTypes || ['image/jpeg','image/png']).join(',')};
+      ui.photo = {max:Math.max(1, Math.min(lim.images.maxCount || 1, 5)), bytes:lim.images.maxInputBytes || 0, types:(lim.images.mediaTypes || ['image/jpeg','image/png']).join(',')};
       if (ui.tab === 'budget') render();
     });
   }).catch(function(){});
@@ -3262,6 +3360,8 @@ document.addEventListener('input', function(e){
     }
     var qp = {budget:{quotes:{}}}; qp.budget.quotes[t.getAttribute('data-id')] = {}; qp.budget.quotes[t.getAttribute('data-id')][key] = val;
     commit(qp, {delay:600});
+  } else if (t.matches('textarea[data-qph-text]')) {
+    ui.photoText = t.value;
   } else if (t.matches('input[data-qph]')) {
     var phKey = t.getAttribute('data-qph'), phVal = t.value;
     if (!ui.photoDraft) return;
@@ -3292,7 +3392,7 @@ document.addEventListener('change', function(e){
     return;
   }
   if (t.matches && t.matches('#priceCustomBudget')) { ui.priceCustomBudget = t.value; return; }
-  if (t.matches && t.matches('#qPhotoFile')) { readQuotePhoto(t.files); return; }
+  if (t.matches && t.matches('#qPhotoFile')) { readQuoteSources(t.files); return; }
   if (t.matches && t.matches('select[data-bplan]')) {
     commit({budget:{planGroup: t.value}});
     return;
@@ -3367,6 +3467,7 @@ document.addEventListener('click', function(e){
   else if (act === 'q-add') doQuoteAdd();
   else if (act === 'q-photo') { var pf = document.getElementById('qPhotoFile'); if (pf) { pf.value = ''; pf.click(); } }
   else if (act === 'q-photo-stop') { if (photoCtl) photoCtl.abort(); }
+  else if (act === 'q-photo-text') readQuoteSources([], ui.photoText);
   else if (act === 'q-photo-cancel') { ui.photoDraft = null; ui.photoMsg = ''; render(); focusSel('[data-act="q-photo"]'); }
   else if (act === 'q-photo-save') doQuotePhotoSave();
   else if (act === 'hero-save') doHeroSave();

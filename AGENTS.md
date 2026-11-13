@@ -18,7 +18,7 @@
 ## 절대 지킬 것 (시험이 대부분 자동으로 검사한다)
 
 1. `<form>`과 submit 금지. 저장은 `<button type="button">` 클릭 핸들러, 엔터는 keydown으로 처리한다.
-2. 외부 리소스: 스크립트는 cdnjs.cloudflare.com, cdn.jsdelivr.net/npm, code.jquery.com만, 스타일은 fonts.googleapis.com만. 외부 이미지·다른 사이트 요청 금지. 새 라이브러리는 넣지 않는다.
+2. 외부 리소스: 스크립트는 cdnjs.cloudflare.com, cdn.jsdelivr.net/npm, code.jquery.com만, 스타일은 fonts.googleapis.com만. 외부 이미지·다른 사이트 요청 금지. 새 라이브러리는 넣지 않는다. 예외: 견적서 PDF를 그림으로 바꾸는 pdf.js(`pdfjs-dist@3.11.174`, jsDelivr)는 사용자가 PDF를 고를 때만 불러온다.
 3. 저장 계층(`defaultBody`부터 `ui state` 직전까지: Store, commit, flush, init)은 바꾸지 않는다. 데이터는 객체로만(배열 금지), 삭제는 `deleted: true` 표시로 한다.
 4. 고정 ID는 바꾸거나 지우지 않는다: TASKS t01~t44, BUDGET_ITEMS b01~b27, TALKS m1~m17. 새 항목은 새 ID로.
 5. 모든 input·textarea·select에 고유한 `data-fk`와 label 또는 aria-label을 붙인다.
