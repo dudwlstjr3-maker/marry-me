@@ -705,6 +705,34 @@ details:is(.price-picked-details,.price-custom,.price-compare,.trash)>:not(summa
   .price-mine input{font-size:15px;padding-inline:8px}
   #backupSec{padding-inline:10px}
 }
+/* 차액 배지는 320px에서도 한 줄로 읽혀요. */
+.pr-sum .pr-diff,.price-group-summary .pr-diff{white-space:nowrap}
+/* 예산 한눈에: 꼭 볼 숫자 네 개만 먼저, 나머지는 접어 둬요. */
+.glance{margin-top:18px;padding:14px 12px;border:1px solid var(--gold-line);border-radius:6px;background:var(--surface)}
+.glance-title{margin:0;font-family:var(--serif);font-size:19px;color:var(--gold)}
+.glance .totalrow{margin-top:10px}
+.glance .sumgrid{margin-top:14px}
+.glance .sum{background:var(--paper)}
+.glance-more{margin-top:12px;border-top:1px solid var(--line)}
+.glance-more>summary{display:flex;align-items:center;color:var(--chung);font-size:14px;cursor:pointer}
+.glance-more .who{margin-top:4px}
+/* 식장 견적: 지역 평균과의 차이를 금액 하나로 먼저 보여 줘요. */
+.q-verdict{margin:6px 0 0;font-size:14px;line-height:1.6}
+.q-verdict b{font-weight:600}
+.q-verdict b.up{color:var(--hong)}
+.q-verdict b.down{color:var(--chung)}
+.q-verdict small{display:block;color:var(--muted);font-size:13px}
+.q-avg-note{margin:8px 0 0;color:var(--muted);font-size:13px;line-height:1.6}
+/* 견적서 사진으로 넣기 */
+.q-photo{display:grid;gap:8px;margin:12px 0 4px;padding:12px;border:1px dashed var(--gold-line);border-radius:6px;background:var(--surface)}
+.q-photo .detail-actions{gap:8px}
+.q-photo-msg{margin:0;font-size:14px;line-height:1.6;color:var(--ink)}
+.q-photo-msg:empty{display:none}
+.q-photo-draft{display:grid;gap:10px;padding:12px;border:1px solid var(--gold-line);border-radius:6px;background:var(--paper)}
+.q-photo-draft p{margin:0;font-size:14px;line-height:1.6}
+.q-photo-draft .field{align-content:end}
+.q-photo-draft .field.unsure input{border-color:var(--hong);background:var(--hong-soft)}
+.q-unsure{display:inline-block;margin-left:4px;padding:0 6px;border:1px solid var(--hong);border-radius:4px;color:var(--hong);font-size:13px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -1209,6 +1237,7 @@ var ui = {
   showHiddenBudget: false,
   priceDeleteAsk: null,
   quoteApplyAsk: null,
+  photo: null, photoBusy: false, photoMsg: '', photoDraft: null,
   honeyMonth: Number(lsGet('wd-honey')) || 0, guestView: 'list',
   guestSide: 'all', guestQuery: '', openGuest: {}, addSide: 'groom', addGroup: '친구'
 };
@@ -2249,19 +2278,24 @@ function budgetHTML(){
     who[WHO.some(function(w){ return w.v === r.who; }) ? r.who : ''] += (r.expect || 0);
   });
   var left = total != null ? total - planSum : null;
-  var h = '<div class="totalrow"><label for="bTotal">총예산</label>' +
+  var giftSum = guestStats(guestRows()).gift, net = expSum - giftSum;
+  var sumBox = function(k, v){ return '<div class="sum"><span class="k">'+k+'</span>'+v+'</div>'; };
+  var h = '<section class="glance" aria-labelledby="glanceTitle"><h3 class="glance-title" id="glanceTitle">우리 예산 한눈에</h3>' +
+    '<div class="totalrow"><label for="bTotal">총예산</label>' +
     '<input type="text" inputmode="numeric" id="bTotal" value="'+(total != null ? total : '')+'" placeholder="예: 5000" data-btotal="1" data-fk="btotal"'+dis()+'><span class="unit">만원</span></div>';
+  h += '<div class="sumgrid">' +
+    sumBox('예상 총액(확정 금액 우선)', '<span class="v">'+fmtMan(expSum)+'</span>') +
+    sumBox('총예산에서 남은 돈', left == null ? '<span class="v dim">총예산을 넣으면 계산돼요</span>' : '<span class="v'+(left < 0 ? ' neg' : '')+'">'+fmtMan(left)+'</span>') +
+    sumBox('앞으로 낼 돈', '<span class="v">'+fmtMan(dueSum)+'</span>') +
+    sumBox('축의금 빼면 실제 부담', giftSum > 0 ? (net >= 0 ? '<span class="v">'+fmtMan(net)+'</span>' : '<span class="v dim">축의금이 '+fmtMan(-net)+' 더 많아요</span>') : '<span class="v dim">하객 탭에 축의금을 넣으면 계산돼요</span>') +
+  '</div>';
+  h += '<details class="glance-more" data-k="b-glance-more"'+(ui.openKnow['b-glance-more'] ? ' open' : '')+'><summary>항목별 합계·누가 내나 자세히 보기</summary>' +
+    '<p class="who"><span>항목별 예산 합계 <b>'+(anyPlan ? fmtMan(planSum) : '-')+'</b></span><span>낸 돈 <b>'+fmtMan(paidSum)+'</b></span></p>' +
+    '<p class="who"><span>공동 <b>'+fmtMan(who.both)+'</b></span><span>신랑 쪽 <b>'+fmtMan(who.groom)+'</b></span><span>신부 쪽 <b>'+fmtMan(who.bride)+'</b></span><span>미정 <b>'+fmtMan(who[''])+'</b></span></p>';
+  if (giftSum > 0) h += '<p class="who net"><span>받은 축의금 <b>'+fmtMan(giftSum)+'</b></span><span>'+(net >= 0 ? '축의금을 빼면 실제 부담 <b>'+fmtMan(net)+'</b>' : '축의금이 예상 총액보다 <b>'+fmtMan(-net)+'</b> 많아요')+'</span></p>';
+  h += '</details></section>';
   h += regionSelectHTML('bRegion', '예산 참고 지역');
   h += '<p class="basis">지역별 참고 시세와 항목별 가격은 가격 비교 탭에서 확인할 수 있어요. <button class="link" type="button" data-act="goto-price">가격 비교 탭 열기</button></p>';
-  h += '<div class="sumgrid">' +
-    '<div class="sum"><span class="k">항목별 예산 합계</span><span class="v">'+(anyPlan ? fmtMan(planSum) : '-')+'</span></div>' +
-    '<div class="sum"><span class="k">총예산에서 남은 돈</span>'+(left == null ? '<span class="v dim">총예산을 넣으면 계산돼요</span>' : '<span class="v'+(left < 0 ? ' neg' : '')+'">'+fmtMan(left)+'</span>')+'</div>' +
-    '<div class="sum"><span class="k">예상 총액(확정 금액 우선)</span><span class="v">'+fmtMan(expSum)+'</span></div>' +
-    '<div class="sum"><span class="k">앞으로 낼 돈</span><span class="v">'+fmtMan(dueSum)+'</span></div>' +
-  '</div>';
-  h += '<p class="who"><span>공동 <b>'+fmtMan(who.both)+'</b></span><span>신랑 쪽 <b>'+fmtMan(who.groom)+'</b></span><span>신부 쪽 <b>'+fmtMan(who.bride)+'</b></span><span>미정 <b>'+fmtMan(who[''])+'</b></span><span>낸 돈 <b>'+fmtMan(paidSum)+'</b></span></p>';
-  var giftSum = guestStats(guestRows()).gift, net = expSum - giftSum;
-  if (giftSum > 0) h += '<p class="who net"><span>받은 축의금 <b>'+fmtMan(giftSum)+'</b></span><span>'+(net >= 0 ? '축의금을 빼면 실제 부담 <b>'+fmtMan(net)+'</b>' : '축의금이 예상 총액보다 <b>'+fmtMan(-net)+'</b> 많아요')+'</span></p>';
   h += planReviewHTML();
   h += quoteHTML();
   var hiddenN = rows.length - vis.length;
@@ -2326,18 +2360,19 @@ function planReviewData(group){
     t.budgetDone = t.rows.length > 0 && entered.length === t.rows.length;
     t.complete = t.budgetDone && t.priced;
     sum.ref.low += t.ref.low; sum.ref.high += t.ref.high; sum.mine += t.mine; sum.entered += entered.length;
-    if (t.complete) { sum.cmpRef.low += t.ref.low; sum.cmpRef.high += t.ref.high; sum.cmpMine += t.mine; sum.compared++; } else sum.missing++;
+    if (t.complete) { sum.cmpRef.low += t.ref.low; sum.cmpRef.high += t.ref.high; sum.cmpMine += t.mine; sum.compared++; if (!t.allRef) sum.cmpOwn = true; } else sum.missing++;
   });
   targets.sort(function(a, b){ return order[a.budget[0]] - order[b.budget[0]]; });
   return {lines:lines, applied:applied, targets:targets, sum:sum};
 }
-/* 내 예산 - 참고 시세. 음수면 시세가 예산보다 높다는 뜻(초과), 양수면 여유. */
-function planDiff(mine, ref){
+/* 내 예산 - 비교안 금액. 음수면 비교안이 예산보다 높다는 뜻(초과), 양수면 여유.
+   직접 넣은 금액이 섞였으면(own) ‘시세’ 대신 ‘비교안’이라고 말해요. */
+function planDiff(mine, ref, own){
   var a = Math.round(mine - ref.high), b = Math.round(mine - ref.low);
-  if (a === 0 && b === 0) return {cls:'even', text:'시세와 같아요'};
+  if (a === 0 && b === 0) return {cls:'even', text:own ? '비교안과 같아요' : '시세와 같아요'};
   if (a >= 0) return {cls:'room', text:(a === b ? fmtMan(a) : fmtMan(a)+' ~ '+fmtMan(b))+' 여유'};
   if (b <= 0) return {cls:'over', text:(a === b ? fmtMan(-a) : fmtMan(-b)+' ~ '+fmtMan(-a))+' 초과'};
-  return {cls:'mid', text:'시세 범위 안 · 최대 '+fmtMan(-a)+' 초과'};
+  return {cls:'mid', text:(own ? '비교안' : '시세')+' 범위 안 · 최대 '+fmtMan(-a)+' 초과'};
 }
 function planImportHTML(t){
   if (Store.readOnly) return '';
@@ -2349,7 +2384,7 @@ function planImportHTML(t){
     if (!meal) return '';
     var won = Math.round(meal.unit * 10000), setHeads = r.heads == null, label;
     if (setHeads) label = meal.heads.toLocaleString('ko-KR')+'명 × '+won.toLocaleString('ko-KR')+'원 넣기'+(r.plan != null ? ' (지금 예산 '+fmtMan(r.plan)+' 대신 계산)' : '');
-    else if (r.unit === won) return '<p class="pr-keep">1인 금액이 이미 참고 시세와 같아요.</p>';
+    else if (r.unit === won) return '<p class="pr-keep">1인 금액이 이미 '+(meal.mine ? '비교안 금액과' : '참고 시세와')+' 같아요.</p>';
     else label = '1인 금액을 '+won.toLocaleString('ko-KR')+'원으로 '+(r.unit != null ? '바꾸기 (지금 '+r.unit.toLocaleString('ko-KR')+'원)' : '넣기');
     return '<div class="detail-actions"><button class="btn" type="button" data-act="b-plan-import" data-id="'+r.id+'" data-unit="'+won+'"'+(setHeads ? ' data-heads="'+meal.heads+'"' : '')+'>'+label+'</button></div>';
   }
@@ -2359,10 +2394,10 @@ function planImportHTML(t){
     if (r.plan != null && Math.round(r.plan) === n) return '';
     return '<button class="btn" type="button" data-act="b-plan-import" data-id="'+r.id+'" data-plan="'+n+'">'+(r.plan == null ? from+v[0]+fmtMan(n)+' 예산에 넣기' : '예산을 '+v[0]+fmtMan(n)+'으로 바꾸기 (지금 '+fmtMan(r.plan)+')')+'</button>';
   }).join('');
-  return btns ? '<div class="detail-actions">'+btns+'</div>' : '<p class="pr-keep">예산이 이미 참고 시세와 같아요.</p>';
+  return btns ? '<div class="detail-actions">'+btns+'</div>' : '<p class="pr-keep">예산이 이미 '+(t.allRef ? '참고 시세와' : '비교안 금액과')+' 같아요.</p>';
 }
 function planTargetHTML(t){
-  var k = 'pr-row-' + t.key, open = !!ui.openKnow[k], d = t.complete ? planDiff(t.mine, t.ref) : null;
+  var k = 'pr-row-' + t.key, open = !!ui.openKnow[k], d = t.complete ? planDiff(t.mine, t.ref, !t.allRef) : null;
   var names = t.rows.map(function(r){ return r.name; }).join(' · ');
   var h = '<li><details class="pr-row" data-k="'+k+'"'+(open ? ' open' : '')+'><summary><span class="pr-row-name">'+esc(names)+(t.rows.some(function(r){ return r.hidden; }) ? ' <small>(예산에서 숨김)</small>' : '')+'</span>' +
     '<span class="pr-row-diff '+(d ? d.cls : 'none')+'">'+(d ? d.text : (t.priced ? '예산 미입력' : '금액 미입력'))+'</span>' +
@@ -2386,7 +2421,7 @@ function planTargetHTML(t){
 function planReviewHTML(){
   var groups = priceGroups(), gid = (state.budget && state.budget.planGroup) || '', group = gid ? priceGroupById(gid, groups) : null, region = curRegion();
   if (ui.openKnow['pr-box'] == null && Store.ready) ui.openKnow['pr-box'] = !!group;
-  var data = group ? planReviewData(group) : null, s = data && data.sum, total = s && s.compared ? planDiff(s.cmpMine, s.cmpRef) : null;
+  var data = group ? planReviewData(group) : null, s = data && data.sum, total = s && s.compared ? planDiff(s.cmpMine, s.cmpRef, !!s.cmpOwn) : null;
   var lead = !group ? '가격 비교 탭에서 만든 비교안을 불러와 내 예산과 나란히 봐요.'
     : group.name+' · '+(data.lines.length ? '반영 '+data.applied.length+'/'+data.lines.length+'개'+(total ? ' · '+total.text : '') : '담긴 항목 없음');
   var h = '<details class="plan-review" data-k="pr-box"'+(ui.openKnow['pr-box'] ? ' open' : '')+'><summary><h3>비교안으로 예산 검토</h3><p class="lead">'+esc(lead)+'</p></summary><div class="pr-body">' +
@@ -2453,14 +2488,9 @@ function quoteHTML(){
   var rc = REGION_COST.filter(function(r){ return r.n === reg; })[0] || REGION_COST[0];
   var picked = state.budget && state.budget.pickedQuote;
   var cheapest = list.length && list[0].complete ? list[0].id : null;
-  function diff(v, avg, unitLabel, dec){
-    if (v == null || avg == null) return '';
-    var d = v - avg, a = Math.abs(d);
-    if (a < (dec ? 0.05 : 0.5)) return '평균과 같음';
-    return (dec ? a.toFixed(1) : Math.round(a).toLocaleString('ko-KR')) + unitLabel + (d > 0 ? ' 높음' : ' 낮음');
-  }
   var h = '<section class="qsec"><h3 class="qtitle">식장 견적 비교</h3>' +
     '<p class="tip">같은 지역 안에서도 홀마다 차이가 커요. 받은 견적을 넣으면 보증인원 × 1인 식대 + 대관료 + 필수 추가금으로 총액을 내서 싼 순서로 보여 줘요.</p>';
+  h += quotePhotoHTML();
   if (list.length) {
     h += '<ul class="blist qlist">';
     list.forEach(function(q){
@@ -2469,9 +2499,6 @@ function quoteHTML(){
       if (q.heads != null && q.unit != null) parts.push('보증 '+q.heads.toLocaleString('ko-KR')+'명 × '+q.unit.toLocaleString('ko-KR')+'원');
       if (q.hall != null) parts.push('대관료 '+fmtMan(q.hall));
       if (q.extra != null && q.extra > 0) parts.push('추가 '+fmtMan(q.extra));
-      var cmp = [];
-      var dm = diff(q.unit != null ? q.unit / 10000 : null, rc.m[1], '만원', true); if (dm) cmp.push('1인 식대 '+dm);
-      var dh = diff(q.hall, rc.h[1], '만원', false); if (dh) cmp.push('대관료 '+dh);
       h += '<li class="bitem qitem'+(picked === q.id ? ' picked' : '')+'"><div class="row">' +
         '<button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="q-open" data-id="'+q.id+'">'+esc(q.name) +
           (q.area ? '<span class="mine">'+esc(q.area)+'</span>' : '') +
@@ -2479,7 +2506,7 @@ function quoteHTML(){
           (picked === q.id ? '<span class="mine">예산에 반영됨</span>' : '') + '</button>' +
         '<span class="bamt">'+(q.complete ? fmtMan(q.total) : '<span class="none">입력 중</span>')+'</span></div>' +
         (parts.length ? '<p class="qline">'+esc(parts.join(' + '))+'</p>' : '') +
-        (cmp.length ? '<p class="preview">'+esc(reg)+' 평균보다 '+esc(cmp.join(', '))+'</p>' : '');
+        quoteVerdictHTML(q, rc);
       if (open) {
         var qf = function(key, label, val, numeric, ph){
           return '<label class="field">'+label+'<input type="text"'+(numeric ? ' inputmode="numeric"' : '')+' value="'+esc(val == null ? '' : val)+'"'+(ph ? ' placeholder="'+ph+'"' : '')+' data-qf="'+key+'" data-id="'+q.id+'" data-fk="q-'+key+'-'+q.id+'"'+dis()+'></label>';
@@ -2498,6 +2525,7 @@ function quoteHTML(){
       h += '</li>';
     });
     h += '</ul>';
+    if (list.some(function(q){ return q.hall != null || q.unit != null; })) h += '<p class="q-avg-note">평균은 한국소비자원 조사(2025년 4월~2026년 2월)의 '+esc(rc.n)+' 대관료·1인 식대 평균이에요. 지역은 위의 ‘예산 참고 지역’에서 바꿀 수 있고, 실제 가격은 날짜·시간·인원에 따라 달라요.</p>';
   }
   if (!Store.readOnly) {
     h += '<div id="qAddForm" class="qform">' +
@@ -2510,6 +2538,125 @@ function quoteHTML(){
       '<button class="btn primary" type="button" data-act="q-add"'+dis()+'>견적 추가</button></div>';
   }
   return h + '</section>';
+}
+/* 견적 하나를 지역 평균(대관료·1인 식대)과 견줘 ‘약 N만원 비싸요/싸요’ 한 줄로 말해요. */
+function quoteVerdictHTML(q, rc){
+  var avgHall = rc.h[1], avgUnit = rc.m[1] != null ? Math.round(rc.m[1] * 10000) : null, bits = [], sum = 0, both = 0;
+  var word = function(d){ return d > 0 ? '비쌈' : '쌈'; };
+  if (q.hall != null && avgHall != null) {
+    var dh = q.hall - avgHall; sum += dh; both++;
+    bits.push('대관료 '+(Math.abs(dh) < 1 ? '평균과 같음' : fmtMan(Math.abs(dh))+' '+word(dh)));
+  }
+  if (q.unit != null && avgUnit != null) {
+    var du = q.unit - avgUnit;
+    if (Math.abs(du) < 500) bits.push('1인 식대 평균과 같음');
+    else {
+      var t = '1인 식대 '+Math.abs(du).toLocaleString('ko-KR')+'원 '+word(du);
+      if (q.heads != null) { var dm = du * q.heads / 10000; sum += dm; t += '('+q.heads.toLocaleString('ko-KR')+'명이면 '+fmtMan(Math.abs(dm))+')'; }
+      bits.push(t);
+    }
+    if (q.heads != null) both++;
+  }
+  if (!bits.length) return '';
+  var r = Math.round(sum), head = both < 2 ? esc(rc.n)+' 평균과 비교'
+    : Math.abs(r) < 10 ? '<b>'+esc(rc.n)+' 평균과 비슷해요</b>'
+    : esc(rc.n)+' 평균보다 <b class="'+(r > 0 ? 'up' : 'down')+'">약 '+fmtMan(Math.abs(r))+' '+(r > 0 ? '비싸요' : '싸요')+'</b>';
+  return '<p class="q-verdict">'+head+'<small>'+esc(bits.join(' · '))+'</small></p>';
+}
+/* 견적서 사진으로 넣기: claude.ai에서 Claude가 사진을 읽을 수 있을 때만 보여요. 사진은 저장하지 않고, 확인한 숫자만 견적으로 저장해요. */
+var photoSample = null, photoCtl = null;
+var PHOTO_FIELDS = [['name','홀 이름',false],['when','예식 일시',false],['heads','보증인원(명)',true],['unit','1인 식대(원)',true],['hall','대관료(만원)',true],['extra','필수 추가(만원)',true]];
+var QUOTE_PHOTO_PROMPT = '이 사진은 한국 웨딩홀(예식장)의 견적서나 계약서예요. 사진에 적힌 내용만 읽어서 아래 모양의 JSON 하나로만 답하세요. 추측해서 채우지 말고, 사진에 없으면 null로 두세요.\n' +
+  '{"name": 웨딩홀·홀 이름(문자열), "when": 예식 날짜·시간(적힌 그대로), "heads": 보증인원(명, 숫자), "unit": 1인 식대(원 단위 숫자, 예: 6만 5천원은 65000), ' +
+  '"hall": 대관료·예식비(만원 단위 숫자, 예: 3,000,000원은 300), "extra": 식대·대관료 말고 꼭 내야 하는 추가 비용의 합계(만원 단위 숫자, 생화 장식·본식 도우미 등, 고를 수 있는 선택 항목은 빼요), ' +
+  '"extras": [{"name": 항목 이름, "amount": 만원 단위 숫자}] (extra에 넣은 항목, 없으면 []), "unsure": [흐리거나 잘려서 확실하지 않은 칸의 키 이름, 예: ["unit"]], "note": 부가세 포함 여부·할인·포함 항목처럼 알아둘 점 한 줄}\n' +
+  '금액에 범위나 여러 안이 있으면 기본으로 적용될 금액을 쓰고 그 키를 unsure에 넣으세요. 숫자에는 쉼표나 단위를 붙이지 마세요.';
+function photoNum(x){ var n = typeof x === 'number' ? x : typeof x === 'string' ? Number(x.replace(/[^0-9.]/g, '')) : NaN; return isFinite(n) && n > 0 ? n : null; }
+function quotePhotoDraft(v){
+  if (!isObj(v)) return null;
+  var txt = function(x, n){ return typeof x === 'string' ? x.trim().slice(0, n) : ''; };
+  var d = {name:txt(v.name, 40), when:txt(v.when, 40), heads:photoNum(v.heads), unit:photoNum(v.unit), hall:photoNum(v.hall), extra:photoNum(v.extra), unsure:{}, items:[], note:txt(v.note, 120)};
+  if (Array.isArray(v.unsure)) v.unsure.forEach(function(k){ if (typeof k === 'string') d.unsure[k] = true; });
+  if (Array.isArray(v.extras)) d.items = v.extras.filter(isObj).slice(0, 12).map(function(x){ var a = photoNum(x.amount); return {name:txt(x.name, 30), amount:a == null ? null : Math.round(a)}; }).filter(function(x){ return x.name; });
+  if (d.extra == null && d.items.some(function(x){ return x.amount != null; })) d.extra = d.items.reduce(function(s, x){ return s + (x.amount || 0); }, 0);
+  /* 단위를 잘못 읽은 듯한 값은 고쳐 넣고 ‘확인 필요’로 표시해요. */
+  if (d.unit != null && d.unit < 100) { d.unit *= 10000; d.unsure.unit = true; }
+  if (d.unit != null && (d.unit < 10000 || d.unit > 500000)) d.unsure.unit = true;
+  ['hall','extra'].forEach(function(k){ if (d[k] != null && d[k] >= 100000) { d[k] /= 10000; d.unsure[k] = true; } });
+  if (d.heads != null && d.heads > 2000) d.unsure.heads = true;
+  ['heads','unit','hall','extra'].forEach(function(k){ if (d[k] != null) d[k] = Math.round(d[k]); });
+  return (d.heads == null && d.unit == null && d.hall == null && d.extra == null) ? null : d;
+}
+function quotePhotoHTML(){
+  if (Store.readOnly || !Store.ready || (!ui.photo && !ui.photoMsg)) return '';
+  var h = '<div class="q-photo">', d = ui.photoDraft;
+  if (d) {
+    h += '<div class="q-photo-draft" role="group" aria-labelledby="qDraftTitle"><p id="qDraftTitle"><b>사진을 읽었어요.</b> 맞는지 확인하고 저장하세요.'+(Object.keys(d.unsure).length ? ' <span class="q-unsure">확인 필요</span> 칸은 흐리거나 잘려서 다시 봐야 해요.' : '')+'</p><div class="bedit two">';
+    PHOTO_FIELDS.forEach(function(f){
+      var un = !!d.unsure[f[0]], v = d[f[0]];
+      h += '<label class="field'+(un ? ' unsure' : '')+'"><span>'+f[1]+(un ? ' <span class="q-unsure">확인 필요</span>' : '')+'</span><input type="text"'+(f[2] ? ' inputmode="numeric"' : ' maxlength="40"')+' value="'+esc(v == null ? '' : v)+'" data-qph="'+f[0]+'" data-fk="qph-'+f[0]+'"></label>';
+    });
+    h += '</div>';
+    if (d.items.length) h += '<p class="tip">추가 비용으로 읽은 항목: '+esc(d.items.map(function(x){ return x.name+(x.amount != null ? ' '+fmtMan(x.amount) : ''); }).join(' · '))+'</p>';
+    if (d.note) h += '<p class="tip">알아둘 점: '+esc(d.note)+'</p>';
+    h += '<div class="detail-actions"><button class="btn" type="button" data-act="q-photo-cancel">취소</button><button class="btn primary" type="button" data-act="q-photo-save">이대로 저장</button></div></div>';
+  } else if (ui.photo) {
+    h += '<div class="detail-actions">'+(ui.photoBusy ? '<button class="btn" type="button" data-act="q-photo-stop">그만 읽기</button>' : '<button class="btn primary" type="button" data-act="q-photo">견적서 사진으로 넣기</button>')+'</div>' +
+      '<input type="file" id="qPhotoFile" hidden accept="'+esc(ui.photo.types)+'"'+(ui.photo.max > 1 ? ' multiple' : '')+' aria-label="견적서 사진 고르기" data-fk="q-photo-file">' +
+      (ui.photoBusy ? '' : '<p class="tip">받은 견적서나 계약서 사진을 고르면 Claude가 금액을 읽어 와요. 저장하기 전에 확인할 수 있고, 사진은 이 앱에 남기지 않아요. 처음 한 번 허락을 묻고, 내 Claude 사용량이 조금 쓰여요.'+(ui.photo.max > 1 ? ' 여러 장이면 '+ui.photo.max+'장까지 한 번에 골라요.' : '')+'</p>');
+  }
+  return h + '<p class="q-photo-msg" role="status">'+esc(ui.photoBusy ? '사진을 읽는 중이에요. 1분쯤 걸릴 수 있어요.' : ui.photoMsg || '')+'</p></div>';
+}
+function focusSel(sel){ var el = document.querySelector(sel); if (el) try { el.focus({preventScroll:false}); } catch(e){} }
+function readQuotePhoto(fileList){
+  var files = Array.prototype.slice.call(fileList || [], 0, (ui.photo && ui.photo.max) || 1);
+  if (!files.length || !photoSample) return;
+  if (photoCtl) photoCtl.abort();
+  var ctl = photoCtl = new AbortController();
+  ui.photoBusy = true; ui.photoMsg = ''; ui.photoDraft = null; render(); focusSel('[data-act="q-photo-stop"]');
+  photoSample.json(QUOTE_PHOTO_PROMPT, {images:files, signal:ctl.signal}).then(function(v){
+    if (ctl !== photoCtl) return;
+    photoCtl = null; ui.photoBusy = false;
+    ui.photoDraft = quotePhotoDraft(v);
+    ui.photoMsg = ui.photoDraft ? '' : '사진에서 견적 금액을 찾지 못했어요. 더 밝게 다시 찍거나 아래에 직접 넣어 주세요.';
+    render(); focusSel(ui.photoDraft ? '[data-fk="qph-name"]' : '[data-act="q-photo"]');
+  }, function(e){
+    if (ctl !== photoCtl) return;
+    photoCtl = null; ui.photoBusy = false;
+    var code = e && e.code;
+    if (code === 'cancelled') ui.photoMsg = '';
+    else if (['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed','images_unavailable'].indexOf(code) >= 0) { ui.photo = null; photoSample = null; ui.photoMsg = '이 화면에서는 사진 읽기를 쓸 수 없어요. 아래에 직접 넣어 주세요.'; }
+    else if (code === 'image_rejected') ui.photoMsg = '이 사진은 읽을 수 없어요. JPG나 PNG 사진으로 다시 골라 주세요.';
+    else if (code === 'rate_limited') ui.photoMsg = '지금은 요청이 많아요. 잠시 뒤에 다시 해 주세요.';
+    else if (code === 'session_expired') ui.photoMsg = 'claude.ai에 다시 로그인한 뒤 해 주세요.';
+    else if (code === 'invalid_json' || code === 'refused' || code === 'empty_completion') ui.photoMsg = '사진에서 견적을 읽지 못했어요. 더 밝게 다시 찍거나 아래에 직접 넣어 주세요.';
+    else ui.photoMsg = '연결이 끊겨 읽지 못했어요. 다시 해 주세요.';
+    render(); focusSel(ui.photo ? '[data-act="q-photo"]' : '#qName');
+  });
+}
+function doQuotePhotoSave(){
+  var d = ui.photoDraft; if (!d) return;
+  var qid = 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2,6), memo = [];
+  if (d.items.length) memo.push('사진에서 읽은 추가 비용: '+d.items.map(function(x){ return x.name+(x.amount != null ? ' '+fmtMan(x.amount) : ''); }).join(', '));
+  if (d.note) memo.push('알아둘 점: '+d.note);
+  var p = {budget:{quotes:{}}}, n = function(v){ return v == null ? '' : v; };
+  p.budget.quotes[qid] = {name:d.name.trim() || '사진으로 넣은 견적', area:'', when:d.when.trim(), heads:n(d.heads), unit:n(d.unit), hall:n(d.hall), extra:n(d.extra), memo:memo.join('\n'), created:Date.now()};
+  ui.photoDraft = null; ui.photoMsg = '견적을 저장했어요. 아래 목록에서 확인하세요.'; ui.openBudget['q-'+qid] = true;
+  commit(p);
+  focusSel('[data-act="q-open"][data-id="'+qid+'"]');
+}
+function initPhoto(){
+  var cl = window.claude;
+  if (!cl || typeof cl.use !== 'function') return;
+  Promise.resolve(cl.use('sample')).then(function(s){
+    if (typeof s !== 'function' || typeof s.json !== 'function' || typeof s.limits !== 'function') return;
+    return s.limits().then(function(lim){
+      if (!lim || !lim.images) return;
+      photoSample = s;
+      ui.photo = {max:Math.max(1, Math.min(lim.images.maxCount || 1, 5)), types:(lim.images.mediaTypes || ['image/jpeg','image/png']).join(',')};
+      if (ui.tab === 'budget') render();
+    });
+  }).catch(function(){});
 }
 var SDM_REF = {
   b05: {v:137, t:'스튜디오 전국 중간값 137만원(2026년 2월)', sec:'pt-studio'},
@@ -3086,6 +3233,11 @@ document.addEventListener('input', function(e){
     }
     var qp = {budget:{quotes:{}}}; qp.budget.quotes[t.getAttribute('data-id')] = {}; qp.budget.quotes[t.getAttribute('data-id')][key] = val;
     commit(qp, {delay:600});
+  } else if (t.matches('input[data-qph]')) {
+    var phKey = t.getAttribute('data-qph'), phVal = t.value;
+    if (!ui.photoDraft) return;
+    if (['heads','unit','hall','extra'].indexOf(phKey) >= 0) { var phD = phVal.replace(/[^0-9]/g, ''); if (phD !== phVal) t.value = phD; phVal = phD === '' ? null : Number(phD); }
+    ui.photoDraft[phKey] = phVal;
   } else if (t.matches('textarea[data-qmemo]')) {
     var mp = {budget:{quotes:{}}}; mp.budget.quotes[t.getAttribute('data-qmemo')] = {memo: t.value};
     commit(mp, {render:false, delay:700});
@@ -3111,6 +3263,7 @@ document.addEventListener('change', function(e){
     return;
   }
   if (t.matches && t.matches('#priceCustomBudget')) { ui.priceCustomBudget = t.value; return; }
+  if (t.matches && t.matches('#qPhotoFile')) { readQuotePhoto(t.files); return; }
   if (t.matches && t.matches('select[data-bplan]')) {
     commit({budget:{planGroup: t.value}});
     return;
@@ -3183,6 +3336,10 @@ document.addEventListener('click', function(e){
   else if (act === 'task-add') doTaskAdd();
   else if (act === 'b-add') doBudgetAdd();
   else if (act === 'q-add') doQuoteAdd();
+  else if (act === 'q-photo') { var pf = document.getElementById('qPhotoFile'); if (pf) { pf.value = ''; pf.click(); } }
+  else if (act === 'q-photo-stop') { if (photoCtl) photoCtl.abort(); }
+  else if (act === 'q-photo-cancel') { ui.photoDraft = null; ui.photoMsg = ''; render(); focusSel('[data-act="q-photo"]'); }
+  else if (act === 'q-photo-save') doQuotePhotoSave();
   else if (act === 'hero-save') doHeroSave();
 });
 /* Enter in a one-line field runs that row's button */
@@ -3360,6 +3517,7 @@ document.getElementById('saveSettings').addEventListener('click', function(){
 
 render();
 init();
+initPhoto();
 })();
 </script>
 </body>
