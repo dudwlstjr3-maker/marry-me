@@ -1,0 +1,2 @@
+# Windows 실행 폴더는 CRLF·BOM을 그대로 둬요(cmd·메모장·Windows PowerShell용).
+launcher/* -text whitespace=cr-at-eol
