@@ -30,7 +30,7 @@ function priceBudgetSeed(){
  const browser=await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||(fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined)});
  fs.mkdirSync('docs/screenshots',{recursive:true});
  let count=0;
- const beforeHTML=stage==='before'?execFileSync('git',['show','main:index.html'],{encoding:'utf8'}):null;
+ const beforeHTML=stage==='before'?execFileSync('git',['show',(process.env.SCREENSHOT_BEFORE_REF||'main')+':index.html'],{encoding:'utf8'}):null;
  async function newPage(colorScheme){
   const page=await browser.newPage({baseURL:'http://127.0.0.1:4173',viewport:{width:390,height:844},colorScheme,locale:'ko-KR',timezoneId:'Asia/Seoul'});
   if(beforeHTML) await page.route('**/index.html',r=>r.fulfill({status:200,contentType:'text/html',body:beforeHTML}));
@@ -69,6 +69,8 @@ function priceBudgetSeed(){
   await detail.locator('#tab-budget').click();
   await shot('budget-plan',detail.locator('.plan-review'));
   await shot('budget-plan-rows',detail.locator('.pr-list'));
+  await detail.locator('details[data-k="pr-row-b27"] > summary').click();
+  await shot('budget-plan-expanded',detail.locator('details[data-k="pr-row-b27"]'));
   await shot('budget-net',detail.locator('.sumgrid'));
   await detail.locator('[data-act="q-open"][data-id="q1"]').click();
   await detail.locator('[data-act="q-apply"][data-id="q1"]').click();

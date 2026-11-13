@@ -602,7 +602,7 @@ input[type=date],input[type=text],textarea,select{border-radius:4px}
 .price-group-summary{border-radius:4px;padding:12px;gap:6px}
 .price-builder-main .price-group-summary>div:nth-child(2){padding-bottom:6px;margin-bottom:2px;border-bottom:1px solid var(--gold-line)}
 .price-builder-main .price-group-summary>div:nth-child(2) strong{font-family:var(--serif);font-size:21px;color:var(--gold)}
-.price-group-summary>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.price-group-summary>div{display:grid;grid-template-columns:minmax(0,1fr) fit-content(45%);gap:8px}
 .price-group-summary strong{font-variant-numeric:tabular-nums;overflow-wrap:normal}
 .price-group-summary .pr-diff{justify-self:end}
 .price-builder-tools{display:grid;gap:10px;min-width:0}
@@ -647,10 +647,10 @@ details:is(.price-picked-details,.price-custom,.price-compare,.trash)>:not(summa
 .price-refs-title{color:var(--muted);line-height:1.7}
 .price-refs-title small{display:block}
 .know .price-ref-list{border-top:0}
-.know .price-ref-list li,.know .price-ref-list li.used{grid-template-columns:minmax(0,1fr);gap:4px;padding:10px 0;border-left:0;background:none}
-.price-ref-list strong{text-align:left;font-size:14px;font-weight:500}
+.know .price-ref-list li,.know .price-ref-list li.used{grid-template-columns:minmax(0,1fr) minmax(0,auto);gap:2px 8px;padding:10px 0;border-left:0;background:none}
+.price-ref-list strong{text-align:right;font-size:14px;font-weight:500}
 .price-ref-name{font-size:13px;color:var(--muted)}
-.price-ref-list small{font-size:13px;line-height:1.6}
+.price-ref-list small{grid-column:1/-1;font-size:13px;line-height:1.6}
 .price-badge,.price-ref-name em{display:inline-block;padding:2px 7px;border:1px solid var(--line);border-radius:4px;background:var(--paper);color:var(--muted);font-size:13px;font-style:normal;font-weight:500;line-height:1.5;vertical-align:baseline}
 .price-badge.direct,.price-ref-name em.price-ref-base{color:var(--gold);border-color:var(--gold-line);background:var(--gold-soft)}
 .price-ref-name em:not(.price-ref-base){color:var(--chung);border-color:var(--chung);background:var(--chung-soft)}
@@ -667,11 +667,11 @@ details:is(.price-picked-details,.price-custom,.price-compare,.trash)>:not(summa
 .pr-row-nums{display:grid;gap:4px;grid-column:1;line-height:1.6}
 .pr-row-nums>span:not(.sr){display:grid;grid-template-columns:4.5em minmax(0,1fr);gap:8px}
 .pr-row-nums strong{text-align:right;color:var(--ink);font-weight:500;overflow-wrap:normal}
-.pr-lines li{display:grid;gap:4px}
-.pr-lines strong{max-width:none;text-align:right}
+.pr-lines li{display:grid;grid-template-columns:minmax(0,1fr);justify-content:stretch;gap:4px}
+.pr-lines strong{max-width:none;justify-self:stretch;text-align:right}
 .pr-pick>summary{flex-wrap:wrap;padding-block:10px;gap:2px 10px}
 .pr-pick>summary span{flex-basis:100%}
-.pr-sum>div{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.pr-sum>div{grid-template-columns:minmax(0,1fr) fit-content(45%)}
 .pr-sum .pr-diff{justify-self:end}
 .pr-row-body .detail-actions>.btn{width:100%;line-height:1.6}
 /* Backup and confirmation use the same paper, fine borders, and numeric alignment. */
@@ -683,12 +683,13 @@ details:is(.price-picked-details,.price-custom,.price-compare,.trash)>:not(summa
 #backupSec textarea{font-size:16px;min-height:110px}
 #backupSec input[type=file]{color:var(--muted);font-size:13px}
 #backupSec input[type=file]::file-selector-button{font:inherit;min-height:44px;margin-right:8px;padding:8px;border:1px solid var(--gold-line);border-radius:4px;background:var(--surface);color:var(--ink);cursor:pointer}
-.qitem .price-confirm{border-color:var(--gold-line);background:var(--paper);padding:12px}
+.qitem .price-confirm{border-color:var(--hong);background:var(--hong-soft);padding:12px}
 .q-changes{list-style:none;padding:0;margin:12px 0;font-variant-numeric:tabular-nums}
-.q-changes li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;padding:10px 0;border-block:1px solid var(--line)}
+.q-changes li{padding:10px 0;border-block:1px solid var(--line);line-height:1.8}
 .q-changes li+li{border-top:0}
-.q-changes li>span:first-child{grid-column:1/-1;color:var(--muted)}
-.q-change-arrow{color:var(--gold)}
+.q-changes li>span:first-child{color:var(--ink)}
+.q-change-next{display:inline-block;white-space:nowrap;margin-inline-start:.25em}
+.q-change-arrow{color:var(--ink)}
 .q-changes strong{text-align:right;overflow-wrap:normal}
 .who.net{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-top:16px;padding:14px;border:1px solid var(--gold-line);border-radius:4px;background:var(--surface)}
 .who.net>span{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
@@ -2443,7 +2444,7 @@ function quoteApplyChanges(q){
 }
 function quoteConfirmHTML(q){
   return '<div class="price-confirm" role="group" aria-label="예산 바꾸기 확인"><p>이 견적을 넣으면 예산이 이렇게 바뀌어요.</p><ul class="q-changes">' +
-    quoteApplyChanges(q).map(function(c){ var parts = c.split(' → '); return '<li><span>'+esc(parts[0])+'</span><span class="q-change-arrow"> → </span><strong>'+esc(parts[1])+'</strong></li>'; }).join('') + '</ul><p class="tip">확정 금액과 낸 돈은 그대로예요.</p>' +
+    quoteApplyChanges(q).map(function(c){ var parts = c.split(' → '); return '<li><span>'+esc(parts[0])+'</span><span class="q-change-next"><span class="q-change-arrow"> → </span><strong>'+esc(parts[1])+'</strong></span></li>'; }).join('') + '</ul><p class="tip">확정 금액과 낸 돈은 그대로예요.</p>' +
     '<div class="detail-actions"><button class="btn" type="button" data-act="q-apply-cancel" data-id="'+q.id+'">취소</button><button class="btn primary" type="button" data-act="q-apply-yes" data-id="'+q.id+'">바꾸기</button></div></div>';
 }
 function quoteHTML(){
