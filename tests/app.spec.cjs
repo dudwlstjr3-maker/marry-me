@@ -270,6 +270,9 @@ test('my own amounts replace the reference price in plans and in the budget revi
  expect((await stored(app)).budget.items.b01).toEqual({plan:350,paid:100});
  await row.locator('[data-act="b-plan-import"]').click();
  await expect.poll(async()=> (await stored(app))?.budget?.items?.b01).toEqual({plan:520,paid:100});
+ // A budget equal to my own amount is not called a market price.
+ await expect(row.locator('.pr-row-diff')).toHaveText('비교안과 같아요');
+ await expect(row.locator('.pr-keep').filter({hasText:'예산이 이미'})).toHaveText('예산이 이미 비교안 금액과 같아요.');
  // Clearing my amount falls back to the reference price.
  await app.locator('#tab-price').click();await rent.fill('');
  await expect(pickRow(app,'hall-rent-1').locator('.price-pick-amt')).toHaveText('참고 710만원');
@@ -620,4 +623,85 @@ test('standalone website keeps saved data after reload and shares its own URL',a
  await expect(page.locator('.when')).toContainText('2027년 5월 8일');
  await page.locator('#openShare').click();
  await expect(page.locator('#shareLink')).toHaveValue(page.url());
+});
+
+test('budget opens with four key numbers and folds the breakdown',async({page})=>{
+ const {app,errors}=await openApp(page);await app.locator('#tab-budget').click();
+ const glance=app.locator('.glance');
+ // SEED: 350 + 187 × 62,000원 = 1,509.4만원, 100만원 paid, 30만원 in gifts, 5,000만원 total.
+ await expect(glance.locator('.sum .k')).toHaveText(['예상 총액(확정 금액 우선)','총예산에서 남은 돈','앞으로 낼 돈','축의금 빼면 실제 부담']);
+ await expect(glance.locator('.sum .v')).toHaveText(['1,509만원','3,491만원','1,409만원','1,479만원']);
+ await expect(glance.locator('#bTotal')).toHaveValue('5000');
+ const more=glance.locator('details[data-k="b-glance-more"]');
+ await expect(more).not.toHaveAttribute('open','');await expect(more.locator('.who').first()).toBeHidden();
+ await more.locator('summary').click();await expect(more.locator('.who').first()).toHaveText('항목별 예산 합계 1,509만원낸 돈 100만원');
+ // The fold stays open while typing a new total.
+ await glance.locator('#bTotal').fill('4000');await expect(glance.locator('.sum .v').nth(1)).toHaveText('2,491만원');
+ await expect(more).toHaveAttribute('open','');await expect(glance.locator('#bTotal')).toBeFocused();
+ await expect(app.locator('[data-act="q-photo"]')).toHaveCount(0);
+ expect(errors).toEqual([]);
+});
+
+test('each quote says in one line how far it is from the regional average',async({page})=>{
+ const seed=structuredClone(SEED);seed.budget.region='서울 강남';
+ // 서울 강남 average: 대관료 710만원, 1인 식대 8.7만원.
+ seed.budget.quotes={qa:{name:'봄날 웨딩홀',heads:200,unit:85000,hall:800,extra:40,created:1},qb:{name:'가을 웨딩홀',heads:200,unit:87000,hall:715,created:2},qc:{name:'식대만 받은 곳',unit:80000,created:3}};
+ const {app,errors}=await openApp(page,seed);await app.locator('#tab-budget').click();
+ const item=name=>app.locator('.qitem').filter({hasText:name});
+ await expect(item('봄날').locator('.q-verdict')).toHaveText('서울 강남 평균보다 약 50만원 비싸요대관료 90만원 비쌈 · 1인 식대 2,000원 쌈(200명이면 40만원)');
+ await expect(item('봄날').locator('.q-verdict b')).toHaveClass('up');
+ await expect(item('가을').locator('.q-verdict')).toHaveText('서울 강남 평균과 비슷해요대관료 5만원 비쌈 · 1인 식대 평균과 같음');
+ await expect(item('식대만').locator('.q-verdict')).toHaveText('서울 강남 평균과 비교1인 식대 7,000원 쌈');
+ await expect(app.locator('.q-avg-note')).toContainText('서울 강남 대관료·1인 식대 평균');
+ // 부산 average: 대관료 120만원, 1인 식대 4.7만원 → 680 + 3.8만원 × 200명 = 1,440만원.
+ await app.locator('#bRegion').selectOption('부산');
+ await expect(item('봄날').locator('.q-verdict b')).toHaveText('약 1,440만원 비싸요');
+ expect(errors).toEqual([]);
+});
+
+test('a quote photo is read by Claude, checked, edited and saved without storing the picture',async({page})=>{
+ await page.addInitScript(()=>{
+  if(window.top===window)return;
+  window.__photo=[];
+  const sample=()=>Promise.reject({code:'invalid_request',message:'text calls are not used'});
+  sample.limits=()=>Promise.resolve({maxPromptBytes:262144,images:{maxCount:2,maxInputBytes:20e6,mediaTypes:['image/jpeg','image/png']}});
+  sample.json=(prompt,opts)=>{window.__photo.push({prompt,count:opts.images.length,signal:!!opts.signal});
+   if(window.__photo.length>1)return Promise.reject({code:'not_granted',message:'declined'});
+   return new Promise(r=>setTimeout(()=>r({name:'봄날 웨딩홀',when:'2027-05-08 12:30',heads:'200',unit:65000,hall:3000000,extra:null,extras:[{name:'생화 장식',amount:300},{name:'본식 도우미',amount:30}],unsure:['unit'],note:'부가세 별도'}),300));};
+  window.claude={use:name=>Promise.resolve(name==='sample'?sample:null)};
+ });
+ const {app,errors}=await openApp(page);await app.locator('#tab-budget').click();
+ const btn=app.locator('[data-act="q-photo"]');await expect(btn).toHaveText('견적서 사진으로 넣기');
+ await expect(app.locator('#qPhotoFile')).toHaveAttribute('accept','image/jpeg,image/png');
+ await expect(app.locator('#qPhotoFile')).toHaveAttribute('multiple','');
+ const png={name:'quote.png',mimeType:'image/png',buffer:Buffer.from('89504e470d0a1a0a','hex')};
+ await app.locator('#qPhotoFile').setInputFiles([png,png]);
+ await expect(app.locator('[data-act="q-photo-stop"]')).toBeFocused();
+ await expect(app.locator('.q-photo-msg')).toHaveText('사진을 읽는 중이에요. 1분쯤 걸릴 수 있어요.');
+ const draft=app.locator('.q-photo-draft');await expect(draft).toBeVisible();
+ const call=(await app.locator('body').evaluate(()=>window.__photo))[0];
+ expect(call.count).toBe(2);expect(call.signal).toBe(true);expect(call.prompt).toContain('JSON');
+ await expect(app.locator('[data-fk="qph-name"]')).toBeFocused();
+ const val=k=>app.locator(`[data-fk="qph-${k}"]`);
+ await expect(val('name')).toHaveValue('봄날 웨딩홀');await expect(val('heads')).toHaveValue('200');
+ await expect(val('unit')).toHaveValue('65000');await expect(val('hall')).toHaveValue('300');await expect(val('extra')).toHaveValue('330');
+ // Unclear or unit-corrected values are marked for a second look, also for screen readers.
+ await expect(app.getByRole('textbox',{name:'1인 식대(원) 확인 필요'})).toHaveCount(1);
+ await expect(app.getByRole('textbox',{name:'대관료(만원) 확인 필요'})).toHaveCount(1);
+ await expect(draft).toContainText('추가 비용으로 읽은 항목: 생화 장식 300만원 · 본식 도우미 30만원');
+ expect((await stored(app)).budget.quotes).toBeUndefined();
+ await val('unit').fill('66,000');await expect(val('unit')).toHaveValue('66000');
+ await app.locator('[data-act="q-photo-save"]').click();
+ await expect.poll(async()=>Object.values((await stored(app)).budget.quotes||{}).length).toBe(1);
+ const q=Object.values((await stored(app)).budget.quotes)[0];
+ expect(q).toMatchObject({name:'봄날 웨딩홀',when:'2027-05-08 12:30',heads:200,unit:66000,hall:300,extra:330,memo:'사진에서 읽은 추가 비용: 생화 장식 300만원, 본식 도우미 30만원\n알아둘 점: 부가세 별도'});
+ expect(JSON.stringify(q)).not.toContain('png');
+ await expect(app.locator('.q-photo-msg')).toHaveText('견적을 저장했어요. 아래 목록에서 확인하세요.');
+ await expect(app.locator('[data-act="q-open"]').filter({hasText:'봄날 웨딩홀'})).toBeFocused();
+ await expect(app.locator('[data-fk^="q-unit-"]')).toHaveValue('66000');
+ // Declining Claude hides the photo button for this view and points to typing.
+ await app.locator('#qPhotoFile').setInputFiles(png);
+ await expect(app.locator('.q-photo-msg')).toHaveText('이 화면에서는 사진 읽기를 쓸 수 없어요. 아래에 직접 넣어 주세요.');
+ await expect(btn).toHaveCount(0);await expect(app.locator('#qName')).toBeFocused();
+ expect(noArrays(await stored(app))).toBe(true);expect(errors).toEqual([]);
 });
