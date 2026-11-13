@@ -672,7 +672,7 @@ test('a quote photo is read by Claude, checked, edited and saved without storing
   sample.limits=()=>Promise.resolve({maxPromptBytes:262144,images:{maxCount:2,maxInputBytes:20e6,mediaTypes:['image/jpeg','image/png']}});
   sample.json=(prompt,opts)=>{window.__photo.push({prompt,count:opts.images.length,signal:!!opts.signal});
    if(window.__photo.length>1)return Promise.reject({code:'not_granted',message:'declined'});
-   return new Promise(r=>setTimeout(()=>r({name:'봄날 웨딩홀',when:'2027-05-08 12:30',heads:'200',unit:65000,hall:3000000,extra:null,extras:[{name:'생화 장식',amount:300},{name:'본식 도우미',amount:30}],unsure:['unit'],note:'부가세 별도'}),300));};
+   return new Promise(r=>setTimeout(()=>r({name:'봄날 웨딩홀',area:'서울 강남구',when:'2027-05-08 12:30',heads:'200',unit:65000,hall:3000000,extra:null,extras:[{name:'생화 장식',amount:300},{name:'본식 도우미',amount:30}],unsure:['unit'],note:'부가세 별도'}),300));};
   window.claude={use:name=>Promise.resolve(name==='sample'?sample:null)};
  });
  const {app,errors}=await openApp(page);await app.locator('#tab-budget').click();
@@ -688,7 +688,7 @@ test('a quote photo is read by Claude, checked, edited and saved without storing
  expect(call.count).toBe(2);expect(call.signal).toBe(true);expect(call.prompt).toContain('JSON');
  await expect(app.locator('[data-fk="qph-name"]')).toBeFocused();
  const val=k=>app.locator(`[data-fk="qph-${k}"]`);
- await expect(val('name')).toHaveValue('봄날 웨딩홀');await expect(val('heads')).toHaveValue('200');
+ await expect(val('name')).toHaveValue('봄날 웨딩홀');await expect(val('area')).toHaveValue('서울 강남구');await expect(val('heads')).toHaveValue('200');
  await expect(val('unit')).toHaveValue('65000');await expect(val('hall')).toHaveValue('300');await expect(val('extra')).toHaveValue('330');
  // Unclear or unit-corrected values are marked for a second look, also for screen readers.
  await expect(app.getByRole('textbox',{name:'1인 식대(원) 확인 필요'})).toHaveCount(1);
@@ -699,10 +699,11 @@ test('a quote photo is read by Claude, checked, edited and saved without storing
  await app.locator('[data-act="q-photo-save"]').click();
  await expect.poll(async()=>Object.values((await stored(app)).budget.quotes||{}).length).toBe(1);
  const q=Object.values((await stored(app)).budget.quotes)[0];
- expect(q).toMatchObject({name:'봄날 웨딩홀',when:'2027-05-08 12:30',heads:200,unit:66000,hall:300,extra:330,memo:'사진에서 읽은 추가 비용: 생화 장식 300만원, 본식 도우미 30만원\n알아둘 점: 부가세 별도'});
+ expect(q).toMatchObject({name:'봄날 웨딩홀',area:'서울 강남구',when:'2027-05-08 12:30',heads:200,unit:66000,hall:300,extra:330,memo:'사진에서 읽은 추가 비용: 생화 장식 300만원, 본식 도우미 30만원\n알아둘 점: 부가세 별도'});
  expect(JSON.stringify(q)).not.toContain('png');
  await expect(app.locator('.q-photo-msg')).toHaveText('견적을 저장했어요. 아래 목록에서 확인하세요.');
  await expect(app.locator('[data-act="q-open"]').filter({hasText:'봄날 웨딩홀'})).toBeFocused();
+ await expect(app.locator('[data-act="q-open"]').filter({hasText:'봄날 웨딩홀'})).toContainText('서울 강남구');
  await expect(app.locator('[data-fk^="q-unit-"]')).toHaveValue('66000');
  // Declining Claude hides the photo button for this view and points to typing.
  await app.locator('#qPhotoFile').setInputFiles(png);
