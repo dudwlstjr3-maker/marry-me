@@ -42,6 +42,27 @@ function priceBudgetSeed(){
   await page.screenshot({path:`docs/screenshots/${stage}-${colorScheme}-${name}.png`,animations:'disabled'});count++;
  }
  for(const colorScheme of ['light','dark']) {
+  // Scoped mobile comparison keeps the earlier, cross-tab screenshot set intact.
+  if(process.argv[3]==='price'){
+   for(const [name,seed] of [['empty',SEED],['populated',priceBudgetSeed()]]){
+    const page=await newPage(colorScheme);const {app,errors}=await openApp(page,seed);
+    await app.locator('#tab-price').click();await app.locator('body').evaluate(()=>document.fonts.ready);
+    const height=await app.locator('#panel-price').evaluate(el=>Math.ceil(el.getBoundingClientRect().height));
+    console.log(`${stage} ${colorScheme} ${name}: ${height}px`);
+    // Expand the sandbox viewport so an element capture includes the entire panel.
+    await page.locator('#app').evaluate(el=>{el.style.height=el.contentDocument.documentElement.scrollHeight+'px';el.contentWindow.scrollTo(0,0);});
+    await app.locator('#panel-price').screenshot({path:`docs/screenshots/${stage}-${colorScheme}-price-mobile-${name}.png`,animations:'disabled'});count++;
+    if(errors.length)throw new Error(errors.join('\n'));await page.close();
+   }
+   const page=await newPage(colorScheme);const {app,errors}=await openApp(page,priceBudgetSeed());
+   await app.locator('#tab-price').click();
+   await app.locator('details[data-k="k13"],details[data-k="pt-hall"]').evaluateAll(els=>els.forEach(el=>el.open=true));
+   await capture(page,app,colorScheme,'price-mobile-pick',app.locator('tr.price-pick').filter({has:app.locator('[data-act="price-toggle"][data-id="hall-rent-1"]')}));
+   await app.locator('details[data-k="k14"],details[data-k="px-flower"]').evaluateAll(els=>els.forEach(el=>el.open=true));
+   await capture(page,app,colorScheme,'price-mobile-extra',app.locator('details[data-k="px-flower"]'));
+   if(errors.length)throw new Error(errors.join('\n'));await page.close();continue;
+  }
+
   const page=await newPage(colorScheme);
   const {app,errors}=await openApp(page);
   await capture(page,app,colorScheme,'hero');
