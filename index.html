@@ -770,6 +770,41 @@ body{line-height:1.65}
 /* 예산 항목: 총비용 → 예약금·납부일 → 잔금·잔금일 */
 .bpay>:first-child{grid-column:1/-1}
 .bpay input[type=date]{min-width:0;width:100%}
+/* 가격 비교: 예산 분류와 같은 접기 행, 진행 순서와 같은 44px 터치 영역. */
+#panel-price .price-builder{gap:10px;margin-block:14px 18px}
+#panel-price .price-builder-main{padding:12px}
+#panel-price .price-group-tabs{margin-block:10px;gap:6px}
+#panel-price .price-group-tab{min-height:44px;padding:6px 8px;gap:2px}
+#panel-price .price-group-edit{padding-top:8px}
+#panel-price .price-group-summary{margin-top:10px;padding:8px;gap:4px}
+#panel-price .price-builder-tools{gap:0}
+#panel-price .price-group-add{padding-block:8px;border-top:0}
+#panel-price .price-builder-tools>.price-note,
+#panel-price .price-builder-tools>.price-builder-empty{margin-block:8px}
+#panel-price .know details{padding:0;margin:0;border:0;border-radius:0;background:none}
+#panel-price .know details>summary{box-sizing:border-box;padding:8px 0;min-height:44px;line-height:1.45;border-bottom:1px solid var(--line);color:var(--ink)}
+#panel-price .know details>summary::after{color:var(--muted)}
+#panel-price .know .price-category{margin-top:14px}
+#panel-price .know .price-category>summary{min-height:56px;display:flex;align-items:center}
+#panel-price .price-category>summary h3{width:100%;margin:0;color:var(--gold);font-size:19px;line-height:1.45}
+#panel-price .price-category>.body{padding:8px 0 12px}
+#panel-price .price-category>.body>.lead{margin:0 0 8px}
+#panel-price .pt-accordion>summary h4{font-size:16px;line-height:1.45;gap:8px}
+#panel-price .pt-accordion>summary h4 small{margin-left:auto;text-align:right;flex:none}
+#panel-price .pt-content{padding-bottom:12px}
+#panel-price details:is(.price-picked-details,.price-custom,.price-compare,.trash)>:not(summary){padding:8px 0}
+#panel-price .price-picked li{padding-block:6px}
+#panel-price .price-pick-in{gap:6px;padding:4px 8px 8px}
+#panel-price .price-pick:not(.on) .price-pick-in{padding-block:0}
+#panel-price .price-mine{padding:8px}
+#panel-price .price-refs{padding-top:8px;margin-top:0}
+#panel-price .price-ref-list li{padding-block:6px}
+#panel-price :is(.price-eyebrow,.price-group-tab-head small,.price-group-delete,
+.price-group-summary span,.price-picked li,.price-picked li small,.price-picked-remove,
+.price-builder-empty,.price-builder-intro,.price-pick-src,.price-refs-title,.price-refs-title small,
+.price-ref-name,.price-ref-list small,.price-ref-name em,.price-refs-note,.price-note,
+.price-compare-sec li,.price-compare-sec small,.pt-sec small,.price-badge,.price-state,.pr-diff,
+.trash-list small,.refline,.price-source,.rtable thead th,.rtable th[scope=row] small){font-size:14px}
 </style>
 </head>
 <body>
@@ -2015,7 +2050,7 @@ function priceExtraHTML(){
     body += '<details class="pt-accordion" data-k="'+k+'"'+(ui.openKnow[k] ? ' open' : '')+'><summary><h4 class="pt-sec" id="'+k+'" tabindex="-1">'+esc(g.name)+' <small>'+(n ? n+'/'+items.length+'개 담김' : items.length+'개')+'</small></h4></summary><div class="pt-content"><ul class="price-extra-list">' +
       items.map(function(it){ return priceExtraItemHTML(it, active); }).join('') + '</ul></div></details>';
   });
-  return card('k14', '그 밖에 드는 비용', '가격표에 없는데 따로 드는 비용이에요. 필요한 것만 담고 받은 견적이나 예상 금액을 넣으세요. 이 항목들은 참고 시세가 없어요.', body);
+  return card('k14', '그 밖에 드는 비용', '가격표에 없는데 따로 드는 비용이에요. 필요한 것만 담고 받은 견적이나 예상 금액을 넣으세요. 이 항목들은 참고 시세가 없어요.', body, null, true);
 }
 /* 묶음 가격(계약금·패키지·전체 비용)과 그 안에 든 개별 항목을 함께 담으면 합계가 겹쳐요. */
 function priceOverlaps(lines){
@@ -2125,7 +2160,6 @@ function pricePlanHTML(){
       (chosen.length ? '<div><span>직접 넣은 금액 / 참고 시세</span><strong>'+mineN+'개 / '+(chosen.length - mineN - noPriceN)+'개</strong></div>' : '') +
       (noPriceN ? '<div><span>금액 미입력 (합계에서 빠짐)</span><strong class="pr-diff none">'+noPriceN+'개</strong></div>' : '') + '</div>' +
     '</div><div class="price-builder-tools">' +
-    '<p class="price-builder-intro">아래 가격표에서 항목을 담고, 받은 견적이나 예상 금액을 직접 넣으세요. 비워 둔 항목은 참고 시세로 계산해요. 참고 시세는 한국소비자원 조사의 중간값·평균이라 실제 견적은 업체마다 달라요. 부케·축가 사례처럼 가격표에 없는 비용은 아래 ‘그 밖에 드는 비용’에서 담거나 여기서 직접 추가하세요.</p>' +
     '<div class="price-group-add" id="priceGroupAddForm"><label class="sr" for="priceGroupAddName">새 비교안 이름</label><input type="text" id="priceGroupAddName" maxlength="30" placeholder="예: 서울 예식안" data-fk="price-group-add-name"'+dis()+'><button class="btn" type="button" data-act="price-group-add" data-fk="price-group-add"'+dis()+'>비교안 추가</button></div>' +
     priceNotesHTML(active, chosen, region, 'price') + priceCustomHTML(active) +
     (chosen.length ? '<details class="price-picked-details" data-k="price-picked"'+(ui.openKnow['price-picked'] ? ' open' : '')+'><summary>담긴 항목 보기 ('+chosen.length+')</summary><ul class="price-picked">'+rowsHTML+'</ul></details>' : '<p class="price-builder-empty">아래 가격표의 항목마다 있는 ‘담기’를 누르면 이 비교안에 들어가요. 담은 뒤 받은 금액을 직접 넣으세요.</p>') +
@@ -2137,10 +2171,10 @@ function pricePlanHTML(){
 function cmpRow(t, pre, post){
   return '<div class="cmp-row"><h4>'+t+'</h4><p class="pre"><span class="tag">신고 전</span> '+pre+'</p><p class="post"><span class="tag">신고 후</span> '+post+'</p></div>';
 }
-function card(id, title, lead, body, links){
+function card(id, title, lead, body, links, compact){
   var open = !!ui.openKnow[id];
-  return '<details data-k="'+id+'"'+(open?' open':'')+'><summary><h3>'+title+'</h3><p class="lead">'+lead+'</p></summary>' +
-    '<div class="body">'+body+(links ? '<div class="srcs">'+links+'</div>' : '')+'</div></details>';
+  return '<details'+(compact ? ' class="price-category"' : '')+' data-k="'+id+'"'+(open?' open':'')+'><summary><h3>'+title+'</h3>'+(compact ? '' : '<p class="lead">'+lead+'</p>')+'</summary>' +
+    '<div class="body">'+(compact ? '<p class="lead">'+lead+'</p>' : '')+body+(links ? '<div class="srcs">'+links+'</div>' : '')+'</div></details>';
 }
 function a(href, text){ return '<a href="'+href+'" target="_blank" rel="noopener noreferrer">'+text+'</a>'; }
 
@@ -2223,8 +2257,9 @@ function knowHTML(){
 
 function priceHTML(){
   var h = '<p class="basis">필요한 항목을 눌러 가격과 해당 지역 시세를 확인하세요.</p>' + regionSelectHTML('priceRegion', '가격 비교 지역') + '<div class="know">';
-  if (ui.openKnow.k13 == null) ui.openKnow.k13 = true;
+  if (ui.openKnow.k13 == null) ui.openKnow.k13 = priceGroupLines(activePriceGroup()).some(function(l){ return !l.noPrice; });
   var priceBody = ptSec('pt-read', '읽는 법') +
+    '<p class="price-builder-intro">아래 가격표에서 항목을 담고, 받은 견적이나 예상 금액을 직접 넣으세요. 비워 둔 항목은 참고 시세로 계산해요. 참고 시세는 한국소비자원 조사의 중간값·평균이라 실제 견적은 업체마다 달라요. 부케·축가 사례처럼 가격표에 없는 비용은 아래 ‘그 밖에 드는 비용’에서 담거나 여기서 직접 추가하세요.</p>' +
     '<ul><li><b>중간값</b>: 가격을 줄 세웠을 때 가운데 값이에요. 비싼 업체 몇 곳에 덜 흔들려서 이 표는 대부분 중간값이에요.</li>' +
     '<li><b>평균</b>: 비싼 업체가 섞이면 중간값보다 높게 나와요. 평균인 줄은 \'평균\'이라고 따로 적었어요.</li>' +
     '<li>모두 한국소비자원 조사값이고, 조사 시점이 항목마다 달라요. 같은 항목에 시점이 다른 값이 있으면 최신 값을 위에 두었어요.</li>' +
@@ -2270,14 +2305,14 @@ function priceHTML(){
     '<li>공정위는 2024년 11월 사진 파일 구입비·드레스 피팅비·얼리스타트비를 기본 서비스에 포함하라고 했지만, 2025년 9월 조사에서도 20곳 중 19곳이 따로 받았어요. 따로라면 금액을 계약서에 적게 하세요.</li></ul>' + ptEnd();
   h += pricePlanHTML() + card('k13', '항목별 가격 비교표',
     '공개된 결혼 가격을 항목별로 모았어요. 받은 견적이 어디쯤인지 같은 항목끼리 비교하세요.',
-    priceBody, a('https://www.price.go.kr','참가격 업체별 가격·예상 견적'));
+    priceBody, a('https://www.price.go.kr','참가격 업체별 가격·예상 견적'), true);
   h += priceExtraHTML();
   h += card('k11', '견적서 밖에서 나오는 돈',
     '기본 견적에 없다가 계약 뒤에 붙는 항목이 많아요. 아래 항목이 포함인지 별도인지 계약 전에 물어보세요.',
     '<ul><li>식장: 생화 꽃장식, 본식 촬영, 본식 도우미, 폐백, 주류·음료, 부가세 포함 여부, 외부 촬영 업체를 쓸 때 반입료.</li>' +
     '<li>스드메: 원본 사진 구매, 앨범 페이지 추가, 드레스 도우미, 드레스 투어·피팅비, 메이크업 이른 시간 추가금이나 담당자 지정비.</li>' +
     '<li>앨범 페이지 추가, 드레스 도우미, 본식 촬영은 10명 중 6~7명이 쓰는 사실상 필수 항목이에요.</li>' +
-    '<li>식대가 오르면 차액을 내야 하는지, 보증인원을 줄일 수 있는 마감일이 언제인지도 계약서에서 확인하세요.</li></ul>');
+    '<li>식대가 오르면 차액을 내야 하는지, 보증인원을 줄일 수 있는 마감일이 언제인지도 계약서에서 확인하세요.</li></ul>', null, true);
   return h + '</div>';
 }
 

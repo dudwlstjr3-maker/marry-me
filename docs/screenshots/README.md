@@ -1,3 +1,21 @@
+# 가격 비교 모바일 접기 전후 비교
+
+- 기준: 최신 main `9cd80ab`, 변경 후: `design/price-mobile-collapse`.
+- 폭 390px, Chromium, 라이트·다크. 빈 비교안은 `SEED`, 담긴 비교안은 기존 `priceBudgetSeed()`를 전후 동일하게 사용한다.
+- 전체 패널 높이: 빈 비교안 **2,075 → 904px (56% 감소)**, 항목 9개가 담긴 비교안 **2,447 → 1,722px (30% 감소)**. 두 테마가 같다. 사용자 데이터·열어 둔 분류에 따라 실제 길이는 달라진다.
+- 전체 패널 두 장은 보안 iframe 높이를 늘려 내용 전체를 캡처한다. 나머지 두 장은 390 × 844px에서 담은 항목의 직접 금액·펼친 참고 시세, 금액 미입력 항목을 확인한다.
+- 같은 고정 시각·오프라인 대체 글꼴을 사용하며 Google Fonts 설정 자체는 바꾸지 않았다.
+- 재현: `node tests/server.cjs` 실행 후 `SCREENSHOT_BEFORE_REF=9cd80ab npm run screenshots -- before price`, `npm run screenshots -- after price`. 마지막 `price` 인자는 이번 범위만 촬영해 이전 화면 기록을 보존한다.
+
+| 화면 | 라이트 전 | 라이트 후 | 다크 전 | 다크 후 |
+| --- | --- | --- | --- | --- |
+| 빈 비교안: 전체 가격 비교 탭 | [전](before-light-price-mobile-empty.png) | [후](after-light-price-mobile-empty.png) | [전](before-dark-price-mobile-empty.png) | [후](after-dark-price-mobile-empty.png) |
+| 담긴 비교안: 전체 가격 비교 탭 | [전](before-light-price-mobile-populated.png) | [후](after-light-price-mobile-populated.png) | [전](before-dark-price-mobile-populated.png) | [후](after-dark-price-mobile-populated.png) |
+| 직접 금액·참고 시세를 펼친 항목 | [전](before-light-price-mobile-pick.png) | [후](after-light-price-mobile-pick.png) | [전](before-dark-price-mobile-pick.png) | [후](after-dark-price-mobile-pick.png) |
+| 그 밖에 드는 비용: 입력·미입력 항목 | [전](before-light-price-mobile-extra.png) | [후](after-light-price-mobile-extra.png) | [전](before-dark-price-mobile-extra.png) | [후](after-dark-price-mobile-extra.png) |
+
+---
+
 # 가격 비교·예산 UI 전후 비교
 
 - 기준: PR #10 직전 커밋 `e16ca52`, 변경 후: `design/price-budget-ui`.
