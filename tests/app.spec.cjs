@@ -114,7 +114,8 @@ const pickRow=(app,id)=>app.locator('tr.price-pick').filter({has:app.locator(`[d
 const openSection=async(app,id)=>{
  const d=app.locator(`#panel-price details[data-k="${id}"]`);
  const parents=await d.evaluate(el=>{const keys=[];for(let p=el.parentElement;p;p=p.parentElement)if(p.matches('details[data-k]'))keys.unshift(p.dataset.k);return keys;});
- for(const key of [...parents,id]){const section=app.locator(`#panel-price details[data-k="${key}"]`);if(!(await section.evaluate(e=>e.open)))await section.locator(':scope > summary').click();}
+ for(const key of parents){const section=app.locator(`#panel-price details[data-k="${key}"]`);if(!(await section.evaluate(e=>e.open)))await section.locator(':scope > summary').click();}
+ if(!(await d.evaluate(e=>e.open)))await d.locator('summary').click();
 };
 const planTotal=app=>app.locator('.price-builder .price-group-summary strong').nth(1);
 const PLAN_SEED=()=>{const seed=structuredClone(SEED);seed.budget.region='서울 강남';seed.budget.items.b05={plan:140,actual:145,paid:50};
@@ -439,6 +440,7 @@ test('claude.ai shared storage: loads, saves patches and follows the partner’s
  await expect(app.locator('.names')).toContainText('준호');await expect(app.locator('#status')).not.toHaveText('이 기기에만 저장돼요');
  await app.locator('#tab-price').click();
  const toggle=app.locator('[data-act="price-toggle"][data-id="hall-rent-1"]');
+ await app.locator('#panel-price details[data-k="k13"] > summary').click();
  await app.locator('#panel-price details[data-k="pt-hall"] > summary').click();await toggle.click();
  await expect.poll(()=>app.locator('body').evaluate(()=>window.__writes.length)).toBeGreaterThan(0);
  const writes=await app.locator('body').evaluate(()=>window.__writes);
