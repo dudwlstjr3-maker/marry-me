@@ -450,7 +450,10 @@ test('legacy price data is read into the new plans and everything survives a rel
  await page.reload();await expect(app.locator('#status')).toHaveText('이 기기에만 저장돼요');
  await expect(app.locator('#tab-budget')).toHaveAttribute('aria-selected','true');
  await expect(app.locator('#bPlanGroup')).toHaveValue('default');
- await expect(app.locator('details[data-k="pr-box"]')).toHaveJSProperty('open',true);
+ // The review starts folded after a reload; its title line still names the plan and how many items are reflected.
+ await expect(app.locator('details[data-k="pr-box"]')).toHaveJSProperty('open',false);
+ await expect(app.locator('details[data-k="pr-box"] .lead')).toContainText('반영 1/');
+ await app.locator('details[data-k="pr-box"] > summary').click();
  await expect(app.locator('details[data-k="pr-row-b05"] .pr-row-nums')).toHaveText('참고 132만원 · 내 예산 128만원');
  await expect(app.locator('details[data-k="pr-row-b05"] .pr-row-diff')).toHaveText('4만원 초과');
  const saved=await stored(app);
@@ -473,7 +476,9 @@ test('plan review and item picks fit 320–430px with labels, 44px targets and A
   const audit=await app.locator('body').evaluate(()=>{
    const visible=e=>!!e.getClientRects().length&&!e.closest('[hidden]')&&getComputedStyle(e).visibility!=='hidden';
    const controls=[...document.querySelectorAll('input,textarea,select')].filter(visible);const keys=controls.map(e=>e.dataset.fk);
-   const wide=[...document.querySelectorAll('body *')].filter(visible).filter(e=>{const r=e.getBoundingClientRect();return r.width&&(r.right>innerWidth+0.5||r.left<-0.5);}).map(e=>e.className||e.tagName);
+   const inScroller=e=>{for(let n=e.parentElement;n;n=n.parentElement){if(['auto','scroll'].includes(getComputedStyle(n).overflowX))return true;}return false;};
+   // Items inside a sideways-scrolling strip (the tab bar) are reachable by scrolling, so they are not cut off.
+   const wide=[...document.querySelectorAll('body *')].filter(visible).filter(e=>!inScroller(e)).filter(e=>{const r=e.getBoundingClientRect();return r.width&&(r.right>innerWidth+0.5||r.left<-0.5);}).map(e=>e.className||e.tagName);
    const small=[...document.querySelectorAll('button:not(.knot),input,select,summary,a')].filter(visible).map(e=>({t:e.textContent.slice(0,30),r:e.getBoundingClientRect()})).filter(x=>x.r.width<43.9||x.r.height<43.9).map(x=>x.t);
    function rgba(s){return s.match(/[\d.]+/g).map(Number)}
    function blend(a,b){const alpha=a[3]??1;return a.slice(0,3).map((x,i)=>x*alpha+b[i]*(1-alpha))}
@@ -667,23 +672,23 @@ test('a quote photo is read by Claude, checked, edited and saved without storing
   sample.limits=()=>Promise.resolve({maxPromptBytes:262144,images:{maxCount:2,maxInputBytes:20e6,mediaTypes:['image/jpeg','image/png']}});
   sample.json=(prompt,opts)=>{window.__photo.push({prompt,count:opts.images.length,signal:!!opts.signal});
    if(window.__photo.length>1)return Promise.reject({code:'not_granted',message:'declined'});
-   return new Promise(r=>setTimeout(()=>r({name:'봄날 웨딩홀',when:'2027-05-08 12:30',heads:'200',unit:65000,hall:3000000,extra:null,extras:[{name:'생화 장식',amount:300},{name:'본식 도우미',amount:30}],unsure:['unit'],note:'부가세 별도'}),300));};
+   return new Promise(r=>setTimeout(()=>r({name:'봄날 웨딩홀',area:'서울 강남구',when:'2027-05-08 12:30',heads:'200',unit:65000,hall:3000000,extra:null,extras:[{name:'생화 장식',amount:300},{name:'본식 도우미',amount:30}],unsure:['unit'],note:'부가세 별도'}),300));};
   window.claude={use:name=>Promise.resolve(name==='sample'?sample:null)};
  });
  const {app,errors}=await openApp(page);await app.locator('#tab-budget').click();
- const btn=app.locator('[data-act="q-photo"]');await expect(btn).toHaveText('견적서 사진으로 넣기');
- await expect(app.locator('#qPhotoFile')).toHaveAttribute('accept','image/jpeg,image/png');
+ const btn=app.locator('[data-act="q-photo"]');await expect(btn).toHaveText('견적서 사진·PDF로 넣기');
+ await expect(app.locator('#qPhotoFile')).toHaveAttribute('accept','image/jpeg,image/png,image/*,.heic,.heif,application/pdf,.pdf,text/plain,.txt');
  await expect(app.locator('#qPhotoFile')).toHaveAttribute('multiple','');
  const png={name:'quote.png',mimeType:'image/png',buffer:Buffer.from('89504e470d0a1a0a','hex')};
  await app.locator('#qPhotoFile').setInputFiles([png,png]);
  await expect(app.locator('[data-act="q-photo-stop"]')).toBeFocused();
- await expect(app.locator('.q-photo-msg')).toHaveText('사진을 읽는 중이에요. 1분쯤 걸릴 수 있어요.');
+ await expect(app.locator('.q-photo-msg')).toHaveText('Claude가 읽는 중이에요. 1분쯤 걸릴 수 있어요.');
  const draft=app.locator('.q-photo-draft');await expect(draft).toBeVisible();
  const call=(await app.locator('body').evaluate(()=>window.__photo))[0];
  expect(call.count).toBe(2);expect(call.signal).toBe(true);expect(call.prompt).toContain('JSON');
  await expect(app.locator('[data-fk="qph-name"]')).toBeFocused();
  const val=k=>app.locator(`[data-fk="qph-${k}"]`);
- await expect(val('name')).toHaveValue('봄날 웨딩홀');await expect(val('heads')).toHaveValue('200');
+ await expect(val('name')).toHaveValue('봄날 웨딩홀');await expect(val('area')).toHaveValue('서울 강남구');await expect(val('heads')).toHaveValue('200');
  await expect(val('unit')).toHaveValue('65000');await expect(val('hall')).toHaveValue('300');await expect(val('extra')).toHaveValue('330');
  // Unclear or unit-corrected values are marked for a second look, also for screen readers.
  await expect(app.getByRole('textbox',{name:'1인 식대(원) 확인 필요'})).toHaveCount(1);
@@ -694,14 +699,84 @@ test('a quote photo is read by Claude, checked, edited and saved without storing
  await app.locator('[data-act="q-photo-save"]').click();
  await expect.poll(async()=>Object.values((await stored(app)).budget.quotes||{}).length).toBe(1);
  const q=Object.values((await stored(app)).budget.quotes)[0];
- expect(q).toMatchObject({name:'봄날 웨딩홀',when:'2027-05-08 12:30',heads:200,unit:66000,hall:300,extra:330,memo:'사진에서 읽은 추가 비용: 생화 장식 300만원, 본식 도우미 30만원\n알아둘 점: 부가세 별도'});
+ expect(q).toMatchObject({name:'봄날 웨딩홀',area:'서울 강남구',when:'2027-05-08 12:30',heads:200,unit:66000,hall:300,extra:330,memo:'사진에서 읽은 추가 비용: 생화 장식 300만원, 본식 도우미 30만원\n알아둘 점: 부가세 별도'});
  expect(JSON.stringify(q)).not.toContain('png');
  await expect(app.locator('.q-photo-msg')).toHaveText('견적을 저장했어요. 아래 목록에서 확인하세요.');
  await expect(app.locator('[data-act="q-open"]').filter({hasText:'봄날 웨딩홀'})).toBeFocused();
+ await expect(app.locator('[data-act="q-open"]').filter({hasText:'봄날 웨딩홀'})).toContainText('서울 강남구');
  await expect(app.locator('[data-fk^="q-unit-"]')).toHaveValue('66000');
  // Declining Claude hides the photo button for this view and points to typing.
  await app.locator('#qPhotoFile').setInputFiles(png);
- await expect(app.locator('.q-photo-msg')).toHaveText('이 화면에서는 사진 읽기를 쓸 수 없어요. 아래에 직접 넣어 주세요.');
+ await expect(app.locator('.q-photo-msg')).toHaveText('이 화면에서는 견적서 읽기를 쓸 수 없어요. 아래에 직접 넣어 주세요.');
  await expect(btn).toHaveCount(0);await expect(app.locator('#qName')).toBeFocused();
  expect(noArrays(await stored(app))).toBe(true);expect(errors).toEqual([]);
+});
+
+test('tabs stay on one line and scroll to the open tab; empty budget groups start folded',async({page})=>{
+ const {app,errors}=await openApp(page);
+ const tabs=await app.locator('.tab').evaluateAll(els=>els.map(e=>({h:e.getBoundingClientRect().height,lines:Math.round(e.getBoundingClientRect().height/parseFloat(getComputedStyle(e).lineHeight))})));
+ expect(tabs.every(t=>t.h>=44&&t.h<=52)).toBe(true);
+ const inView=id=>app.locator('.tabs [role=tablist]').evaluate((w,id)=>{const a=document.getElementById(id).getBoundingClientRect(),r=w.getBoundingClientRect();return a.left>=r.left-1&&a.right<=r.right+1;},id);
+ await app.locator('#tab-talk').click();expect(await inView('tab-talk')).toBe(true);
+ await app.locator('#tab-timeline').click();expect(await inView('tab-timeline')).toBe(true);
+ await app.locator('#tab-budget').click();
+ // SEED has amounts only under 예식.
+ await expect(app.locator('details[data-k="bcat-wed"]')).toHaveJSProperty('open',true);
+ await expect(app.locator('details[data-k="bcat-wed"] > summary .meta')).toHaveText('1,509만원5개 중 2개 입력');
+ await expect(app.locator('details[data-k="bcat-sdm"]')).toHaveJSProperty('open',false);
+ await expect(app.locator('details[data-k="bcat-sdm"] > summary .meta')).toHaveText('입력 전4개 중 0개 입력');
+ await expect(app.locator('details[data-k="pr-box"]')).toHaveJSProperty('open',false);
+ await app.locator('details[data-k="bcat-sdm"] > summary').click();
+ await app.locator('[data-act="b-open"][data-id="b06"]').click();
+ const dress=app.locator('[data-fk="b-plan-b06"]');await dress.fill('180');
+ await expect.poll(async()=> (await stored(app))?.budget?.items?.b06?.plan).toBe(180);
+ await expect(app.locator('details[data-k="bcat-sdm"]')).toHaveJSProperty('open',true);await expect(dress).toBeFocused();
+ expect(errors).toEqual([]);
+});
+
+test('quote PDFs, other picture formats, text files and pasted text are read as well',async({page})=>{
+ // pdf.js is loaded from jsDelivr only when a PDF is picked; the test serves a stand-in that draws each page.
+ const base='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/';
+ await page.route(base+'pdf.worker.min.js',r=>r.fulfill({status:200,contentType:'text/javascript',body:'window.pdfjsWorker={WorkerMessageHandler:{}};'}));
+ await page.route(base+'pdf.min.js',r=>r.fulfill({status:200,contentType:'text/javascript',body:"window.pdfjsLib={GlobalWorkerOptions:{},getDocument:function(o){window.__pdfOpts=o;var locked=o.data[0]===88;return{promise:locked?Promise.reject({name:'PasswordException'}):Promise.resolve({numPages:3,getPage:function(n){return Promise.resolve({getViewport:function(v){return{width:600*v.scale,height:800*v.scale};},render:function(r){r.canvasContext.fillStyle='#000';r.canvasContext.fillRect(10,10,50,50);return{promise:Promise.resolve()};}});}})};}};"}));
+ await page.addInitScript(()=>{
+  if(window.top===window)return;
+  window.__photo=[];
+  const sample=()=>Promise.reject({code:'invalid_request'});
+  sample.limits=()=>Promise.resolve({images:{maxCount:2,maxInputBytes:20e6,mediaTypes:['image/jpeg','image/png']}});
+  sample.json=(prompt,opts)=>{window.__photo.push({prompt,count:opts.images?opts.images.length:0,types:opts.images?[...opts.images].map(b=>b.type):[]});
+   return Promise.resolve({name:'가을 웨딩홀',area:'경기 수원시',heads:200,unit:65000,hall:300,extras:[],unsure:[]});};
+  window.claude={use:name=>Promise.resolve(name==='sample'?sample:null)};
+ });
+ const {app,errors}=await openApp(page);await app.locator('#tab-budget').click();
+ const calls=()=>app.locator('body').evaluate(()=>window.__photo);
+ const file=(name,mimeType,buffer)=>({name,mimeType,buffer:Buffer.isBuffer(buffer)?buffer:Buffer.from(buffer)});
+ // An unreadable HEIC is skipped, a 3-page PDF fills the two picture slots, and a text file goes along as text.
+ await app.locator('#qPhotoFile').setInputFiles([file('photo.heic','image/heic','not a picture'),file('quote.pdf','application/pdf','%PDF-1.4'),file('memo.txt','text/plain','꽃장식 300만원 포함')]);
+ const draft=app.locator('.q-photo-draft');await expect(draft).toBeVisible();
+ let c=(await calls())[0];expect(c.count).toBe(2);expect(c.types).toEqual(['image/jpeg','image/jpeg']);expect(c.prompt).toContain('꽃장식 300만원 포함');expect(c.prompt).toContain('PDF');
+ expect(await app.locator('body').evaluate(()=>({eval:window.__pdfOpts.isEvalSupported,cmap:window.__pdfOpts.cMapUrl}))).toEqual({eval:false,cmap:'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/'});
+ await expect(draft).toContainText('그림은 한 번에 2장까지라 나머지 1장은 읽지 않았어요. 읽을 수 없는 파일은 뺐어요: photo.heic.');
+ await expect(app.locator('[data-fk="qph-area"]')).toHaveValue('경기 수원시');
+ await app.locator('[data-act="q-photo-cancel"]').click();
+ // A picture type Claude does not take directly (BMP) is turned into JPEG first.
+ const bmp=Buffer.from('424D3A0000000000000036000000280000000100000001000000010018000000000004000000130B0000130B00000000000000000000FFFFFF00','hex');
+ await app.locator('#qPhotoFile').setInputFiles(file('scan.bmp','image/bmp',bmp));await expect(draft).toBeVisible();
+ c=(await calls())[1];expect(c.count).toBe(1);expect(c.types).toEqual(['image/jpeg']);
+ await app.locator('[data-act="q-photo-cancel"]').click();
+ // Text from a message is pasted and read without any picture.
+ await app.locator('details[data-k="q-paste"] > summary').click();
+ await app.locator('[data-fk="q-photo-text"]').fill('대관료 300만원, 식대 6만5천원, 보증 200명');
+ await app.locator('[data-act="q-photo-text"]').click();await expect(draft).toBeVisible();
+ c=(await calls())[2];expect(c.count).toBe(0);expect(c.prompt).toContain('아래 글은');expect(c.prompt).toContain('대관료 300만원, 식대 6만5천원, 보증 200명');
+ await app.locator('[data-act="q-photo-save"]').click();
+ await expect.poll(async()=>Object.values((await stored(app)).budget.quotes||{}).length).toBe(1);
+ expect(Object.values((await stored(app)).budget.quotes)[0]).toMatchObject({name:'가을 웨딩홀',area:'경기 수원시',heads:200,unit:65000,hall:300});
+ await expect(app.locator('[data-fk="q-photo-text"]')).toHaveValue('');
+ // A locked PDF and a file nobody can read get a clear next step instead of a silent failure.
+ await app.locator('#qPhotoFile').setInputFiles(file('locked.pdf','application/pdf','X-locked'));
+ await expect(app.locator('.q-photo-msg')).toHaveText('비밀번호가 걸린 PDF는 열 수 없어요. 화면을 캡처해서 사진으로 넣어 주세요.');
+ await app.locator('#qPhotoFile').setInputFiles(file('계약서.hwp','application/x-hwp','HWP'));
+ await expect(app.locator('.q-photo-msg')).toHaveText('읽을 수 있는 파일이 없어요(계약서.hwp). 사진(JPG·PNG·HEIC 등), PDF, 글 파일을 골라 주세요. 한글·워드 문서는 PDF로 저장하거나 화면을 캡처해 넣어 주세요.');
+ expect((await calls()).length).toBe(3);expect(noArrays(await stored(app))).toBe(true);expect(errors).toEqual([]);
 });
