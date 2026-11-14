@@ -2309,14 +2309,15 @@ function budgetRows(){
   rows.forEach(function(r){
     r.expect = r.actual != null ? r.actual : r.plan;
     /* 총비용 = 예약금 + 잔금. 예전에 넣은 ‘낸 돈’은 예약금으로 봐요. 낸 돈 = 예약금 (+ 잔금을 냈으면 잔금). */
-    r.depositShown = r.deposit != null ? r.deposit : r.paidOld;
+    r.depositShown = r.hasDeposit ? r.deposit : r.paidOld;
     r.balance = r.expect != null ? Math.max(r.expect - (r.depositShown || 0), 0) : null;
     r.paid = (r.depositShown != null || r.balancePaid) ? (r.depositShown || 0) + (r.balancePaid && r.balance ? r.balance : 0) : null;
   });
   return rows;
 }
 function payFields(row, s){
-  row.paidOld = row.paid; row.deposit = num(s.deposit);
+  /* 저장된 칸이 있는지(빈 값 포함)를 따로 기억해요. 지운 예약금이 예전 ‘낸 돈’으로 되살아나지 않게, 지운 총비용 칸이 다른 칸으로 바뀌지 않게요. */
+  row.paidOld = row.paid; row.deposit = num(s.deposit); row.hasDeposit = s.deposit != null; row.hasActual = s.actual != null;
   row.depositDate = parseYMD(s.depositDate) ? s.depositDate : ''; row.balanceDate = parseYMD(s.balanceDate) ? s.balanceDate : ''; row.balancePaid = !!s.balancePaid;
   return row;
 }
@@ -2865,9 +2866,9 @@ function budgetItemHTML(r){
     }
     /* 총비용을 먼저 적고 예약금을 넣으면 잔금은 저절로 나와요. 예전에 넣은 확정 금액이 있으면 그 칸을 총비용으로 고쳐요. */
     var dt = function(key, label, val){ return '<label class="field">'+label+'<input type="date" value="'+esc(val || '')+'" data-bdate="'+key+'" data-bkind="'+r.kind+'" data-id="'+r.id+'" data-fk="b-'+key+'-'+r.id+'"'+dis()+'></label>'; };
-    var totalField = r.calc && r.actual == null
+    var totalField = r.calc && !r.hasActual
       ? '<div class="field">총비용(만원)<div class="calcval">'+fmtMan(r.plan)+'</div></div>'
-      : f(r.actual != null ? 'actual' : 'plan', '총비용(만원)', r.expect);
+      : '<label class="field">총비용(만원)<input type="text" inputmode="numeric" value="'+((r.calc ? r.actual : r.expect) != null ? (r.calc ? r.actual : r.expect) : '')+'" data-btotal-item="1" data-bkind="'+r.kind+'" data-id="'+r.id+'" data-fk="b-total-'+r.id+'"'+dis()+'></label>';
     h += '<div class="detail">' + perHead + '<div class="bedit two bpay">' + totalField +
       f('deposit','예약금(만원)', r.depositShown) + dt('depositDate','예약금 납부일', r.depositDate) +
       '<div class="field">잔금(만원)<div class="calcval">'+(r.balance != null ? fmtMan(r.balance) : '-')+'</div></div>' + dt('balanceDate','잔금일', r.balanceDate) + '</div>' +
@@ -3356,6 +3357,12 @@ document.addEventListener('input', function(e){
     if (digits !== t.value) t.value = digits;
     var o = {}; o[t.getAttribute('data-bnum')] = digits === '' ? '' : Number(digits);
     commit(bPatch(t.getAttribute('data-bkind'), t.getAttribute('data-id'), o), {delay:600});
+  } else if (t.matches('input[data-btotal-item]')) {
+    /* 총비용 칸은 늘 같은 칸으로 남아요. 예전 ‘확정’ 금액이 있던 항목은 처음 고칠 때 총비용으로 옮겨요(식대처럼 인원×금액으로 계산하는 항목은 확정 칸을 그대로 고쳐요). */
+    var td = t.value.replace(/[^0-9]/g, ''); if (td !== t.value) t.value = td;
+    var tv = td === '' ? '' : Number(td), tid = t.getAttribute('data-id'), trow = budgetRows().filter(function(x){ return x.id === tid; })[0];
+    var tp = trow && trow.calc ? {actual: tv} : (trow && trow.hasActual ? {plan: tv, actual: ''} : {plan: tv});
+    commit(bPatch(t.getAttribute('data-bkind'), tid, tp), {delay:600});
   } else if (t.matches('input[data-btotal]')) {
     var dg = t.value.replace(/[^0-9]/g, '');
     if (dg !== t.value) t.value = dg;
