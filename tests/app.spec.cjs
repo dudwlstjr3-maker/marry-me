@@ -639,7 +639,7 @@ test('budget opens with four key numbers and folds the breakdown',async({page})=
  await expect(glance.locator('#bTotal')).toHaveValue('5000');
  const more=glance.locator('details[data-k="b-glance-more"]');
  await expect(more).not.toHaveAttribute('open','');await expect(more.locator('.who').first()).toBeHidden();
- await more.locator('summary').click();await expect(more.locator('.who').first()).toHaveText('항목별 예산 합계 1,509만원낸 돈 100만원');
+ await more.locator('summary').click();await expect(more.locator('.who').first()).toHaveText('항목별 총비용 합계 1,509만원낸 돈 100만원');
  // The fold stays open while typing a new total.
  await glance.locator('#bTotal').fill('4000');await expect(glance.locator('.sum .v').nth(1)).toHaveText('2,491만원');
  await expect(more).toHaveAttribute('open','');await expect(glance.locator('#bTotal')).toBeFocused();
@@ -779,4 +779,30 @@ test('quote PDFs, other picture formats, text files and pasted text are read as 
  await app.locator('#qPhotoFile').setInputFiles(file('계약서.hwp','application/x-hwp','HWP'));
  await expect(app.locator('.q-photo-msg')).toHaveText('읽을 수 있는 파일이 없어요(계약서.hwp). 사진(JPG·PNG·HEIC 등), PDF, 글 파일을 골라 주세요. 한글·워드 문서는 PDF로 저장하거나 화면을 캡처해 넣어 주세요.');
  expect((await calls()).length).toBe(3);expect(noArrays(await stored(app))).toBe(true);expect(errors).toEqual([]);
+});
+
+test('each budget item is a total cost split into a deposit and a balance with their dates',async({page})=>{
+ const {app,errors}=await openApp(page);await app.locator('#tab-budget').click();
+ // SEED b01: 350만원 with 100만원 already paid; the old paid amount reads as the deposit.
+ await app.locator('[data-act="b-open"][data-id="b01"]').click();
+ await expect(app.locator('[data-fk="b-plan-b01"]')).toHaveValue('350');
+ await expect(app.locator('[data-fk="b-deposit-b01"]')).toHaveValue('100');
+ const item=id=>app.locator(`[data-act="b-open"][data-id="${id}"]`).locator('xpath=ancestor::li[1]');
+ await expect(item('b01').locator('.bpay .calcval')).toHaveText('250만원');
+ await expect(app.locator('[data-fk="b-actual-b01"],[data-fk="b-paid-b01"]')).toHaveCount(0);
+ // A new item: write the total first, then the deposit and both dates.
+ await app.locator('details[data-k="bcat-sdm"] > summary').click();await app.locator('[data-act="b-open"][data-id="b06"]').click();
+ await app.locator('[data-fk="b-plan-b06"]').fill('200');await app.locator('[data-fk="b-deposit-b06"]').fill('50');
+ await app.locator('[data-fk="b-depositDate-b06"]').fill('2026-11-01');await app.locator('[data-fk="b-balanceDate-b06"]').fill('2027-04-01');
+ await expect.poll(async()=> (await stored(app))?.budget?.items?.b06).toEqual({plan:200,deposit:50,depositDate:'2026-11-01',balanceDate:'2027-04-01'});
+ await expect(item('b06').locator('.bpay .calcval')).toHaveText('150만원');
+ await expect(item('b06').locator('.bamt')).toHaveText('200만원잔금 150만원 · 2027.4.1(목)');
+ // Paid so far = deposits; still to pay = the rest. 1,509 + 200 = 1,709; 100 + 50 paid.
+ await expect(app.locator('.glance .sum .v').first()).toHaveText('1,709만원');
+ await expect(app.locator('.glance .sum .v').nth(2)).toHaveText('1,559만원');
+ await item('b06').locator('[data-act="b-balance-paid"]').click();
+ await expect.poll(async()=> (await stored(app))?.budget?.items?.b06?.balancePaid).toBe(true);
+ await expect(item('b06').locator('.bamt small')).toHaveText('다 냈어요');
+ await expect(app.locator('.glance .sum .v').nth(2)).toHaveText('1,409만원');
+ expect(noArrays(await stored(app))).toBe(true);expect(errors).toEqual([]);
 });

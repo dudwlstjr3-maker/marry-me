@@ -767,6 +767,9 @@ body{line-height:1.65}
 .due .rel{font-size:13px}
 .task .preview,.task .tdates{margin:0 0 6px;font-size:13px}
 .today-mark{padding-block:5px}
+/* 예산 항목: 총비용 → 예약금·납부일 → 잔금·잔금일 */
+.bpay>:first-child{grid-column:1/-1}
+.bpay input[type=date]{min-width:0;width:100%}
 </style>
 </head>
 <body>
@@ -2290,7 +2293,7 @@ function budgetRows(){
   var b = state.budget || {}, it = b.items || {}, cu = b.custom || {}, rows = [];
   BUDGET_ITEMS.forEach(function(t, i){
     var s = it[t.id] || {};
-    var row = {kind:'t', id:t.id, cat:t.cat, name:t.name, plan:num(s.plan), actual:num(s.actual), paid:num(s.paid), who:s.who || '', memo:s.memo || '', hidden:!!s.hidden, order:i};
+    var row = payFields({kind:'t', id:t.id, cat:t.cat, name:t.name, plan:num(s.plan), actual:num(s.actual), paid:num(s.paid), who:s.who || '', memo:s.memo || '', hidden:!!s.hidden, order:i}, s);
     if (t.perHead) {
       row.perHead = true; row.heads = num(s.heads); row.unit = num(s.unit);
       if (row.heads != null && row.unit != null) { row.plan = row.heads * row.unit / 10000; row.calc = true; }
@@ -2301,10 +2304,21 @@ function budgetRows(){
     var c = cu[id];
     if (!isObj(c) || c.deleted) return;
     var cat = BUDGET_CATS.some(function(x){ return x.id === c.cat; }) ? c.cat : 'etc';
-    rows.push({kind:'c', id:id, cat:cat, name:c.name || '(이름 없음)', plan:num(c.plan), actual:num(c.actual), paid:num(c.paid), who:c.who || '', memo:c.memo || '', hidden:false, order:1000 + (c.created || 0)/1e13});
+    rows.push(payFields({kind:'c', id:id, cat:cat, name:c.name || '(이름 없음)', plan:num(c.plan), actual:num(c.actual), paid:num(c.paid), who:c.who || '', memo:c.memo || '', hidden:false, order:1000 + (c.created || 0)/1e13}, c));
   });
-  rows.forEach(function(r){ r.expect = r.actual != null ? r.actual : r.plan; });
+  rows.forEach(function(r){
+    r.expect = r.actual != null ? r.actual : r.plan;
+    /* 총비용 = 예약금 + 잔금. 예전에 넣은 ‘낸 돈’은 예약금으로 봐요. 낸 돈 = 예약금 (+ 잔금을 냈으면 잔금). */
+    r.depositShown = r.deposit != null ? r.deposit : r.paidOld;
+    r.balance = r.expect != null ? Math.max(r.expect - (r.depositShown || 0), 0) : null;
+    r.paid = (r.depositShown != null || r.balancePaid) ? (r.depositShown || 0) + (r.balancePaid && r.balance ? r.balance : 0) : null;
+  });
   return rows;
+}
+function payFields(row, s){
+  row.paidOld = row.paid; row.deposit = num(s.deposit);
+  row.depositDate = parseYMD(s.depositDate) ? s.depositDate : ''; row.balanceDate = parseYMD(s.balanceDate) ? s.balanceDate : ''; row.balancePaid = !!s.balancePaid;
+  return row;
 }
 function bPatch(kind, id, obj){
   var p = {budget:{}}; p.budget[kind === 'c' ? 'custom' : 'items'] = {}; p.budget[kind === 'c' ? 'custom' : 'items'][id] = obj; return p;
@@ -2333,7 +2347,7 @@ function budgetHTML(){
     sumBox('축의금 빼면 실제 부담', giftSum > 0 ? (net >= 0 ? '<span class="v">'+fmtMan(net)+'</span>' : '<span class="v dim">축의금이 '+fmtMan(-net)+' 더 많아요</span>') : '<span class="v dim">하객 탭에 축의금을 넣으면 계산돼요</span>') +
   '</div>';
   h += '<details class="glance-more" data-k="b-glance-more"'+(ui.openKnow['b-glance-more'] ? ' open' : '')+'><summary>항목별 합계·누가 내나 자세히 보기</summary>' +
-    '<p class="who"><span>항목별 예산 합계 <b>'+(anyPlan ? fmtMan(planSum) : '-')+'</b></span><span>낸 돈 <b>'+fmtMan(paidSum)+'</b></span></p>' +
+    '<p class="who"><span>항목별 총비용 합계 <b>'+(anyPlan ? fmtMan(planSum) : '-')+'</b></span><span>낸 돈 <b>'+fmtMan(paidSum)+'</b></span></p>' +
     '<p class="who"><span>공동 <b>'+fmtMan(who.both)+'</b></span><span>신랑 쪽 <b>'+fmtMan(who.groom)+'</b></span><span>신부 쪽 <b>'+fmtMan(who.bride)+'</b></span><span>미정 <b>'+fmtMan(who[''])+'</b></span></p>';
   if (giftSum > 0) h += '<p class="who net"><span>받은 축의금 <b>'+fmtMan(giftSum)+'</b></span><span>'+(net >= 0 ? '축의금을 빼면 실제 부담 <b>'+fmtMan(net)+'</b>' : '축의금이 예상 총액보다 <b>'+fmtMan(-net)+'</b> 많아요')+'</span></p>';
   h += '</details></section>';
@@ -2362,7 +2376,7 @@ function budgetHTML(){
     h += '<div class="badd"><h3>항목 추가</h3><div id="bAddForm" class="addrow">' +
       '<label class="sr" for="bAddCat">분류</label><select id="bAddCat" data-fk="bAddCat"'+dis()+'>' + BUDGET_CATS.map(function(c){ return '<option value="'+c.id+'">'+esc(c.name)+'</option>'; }).join('') + '</select>' +
       '<label class="sr" for="bAddName">항목</label><input class="nm" type="text" id="bAddName" maxlength="40" placeholder="예: 부케" data-fk="badd-name"'+dis()+'>' +
-      '<label class="sr" for="bAddPlan">예산(만원)</label><input type="text" inputmode="numeric" id="bAddPlan" placeholder="예산(만원)" data-fk="badd-plan"'+dis()+'>' +
+      '<label class="sr" for="bAddPlan">총비용(만원)</label><input type="text" inputmode="numeric" id="bAddPlan" placeholder="총비용(만원)" data-fk="badd-plan"'+dis()+'>' +
       '<button class="btn primary" type="button" data-act="b-add"'+dis()+'>추가</button></div></div>';
   }
   var bud = state.budget || {};
@@ -2830,10 +2844,10 @@ function budgetItemHTML(r){
   else {
     var sub = '';
     if (r.actual != null && r.plan != null && r.actual > r.plan) sub = '<small class="over">예산보다 '+fmtMan(r.actual - r.plan)+' 많음</small>';
-    else if (r.paid != null && r.paid > 0) sub = '<small>낸 돈 '+fmtMan(r.paid)+'</small>';
+    else if (r.balancePaid) sub = '<small>다 냈어요</small>';
+    else if (r.depositShown != null && r.depositShown > 0) sub = '<small>잔금 '+fmtMan(r.balance)+(r.balanceDate ? ' · '+esc(fmtTiny(parseYMD(r.balanceDate), today().getFullYear())) : '')+'</small>';
     else if (r.calc && r.actual == null) sub = '<small>'+r.heads.toLocaleString('ko-KR')+'명 × '+r.unit.toLocaleString('ko-KR')+'원</small>';
-    else if (r.actual == null) sub = '<small>예산</small>';
-    else sub = '<small>확정</small>';
+    else sub = '<small>총비용</small>';
     right = '<span class="bamt">'+fmtMan(r.expect)+sub+'</span>';
   }
   var h = '<li class="bitem"><div class="row"><button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="b-open" data-id="'+r.id+'">'+esc(r.name)+(r.kind === 'c' ? '<span class="mine">직접 추가</span>' : '')+(r.hidden ? '<span class="mine">숨김</span>' : '')+'</button>'+right+'</div>';
@@ -2846,15 +2860,20 @@ function budgetItemHTML(r){
     if (r.perHead) {
       perHead = '<div class="bedit two">' + f('heads','인원(명)',r.heads) + f('unit','1인 금액(원)',r.unit) + '</div>' +
         '<p class="tip">'+(r.calc
-          ? r.heads.toLocaleString('ko-KR')+'명 × '+r.unit.toLocaleString('ko-KR')+'원 = <b>'+Math.round(r.heads * r.unit).toLocaleString('ko-KR')+'원</b>. 예산에 자동으로 들어가요.'
-          : '인원과 1인 금액을 넣으면 예산이 자동으로 계산돼요. 계약 기준인 보증인원을 넣으세요(하객이 덜 와도 보증인원만큼 내요).')+'</p>';
+          ? r.heads.toLocaleString('ko-KR')+'명 × '+r.unit.toLocaleString('ko-KR')+'원 = <b>'+Math.round(r.heads * r.unit).toLocaleString('ko-KR')+'원</b>. 총비용에 자동으로 들어가요.'
+          : '인원과 1인 금액을 넣으면 총비용이 자동으로 계산돼요. 계약 기준인 보증인원을 넣으세요(하객이 덜 와도 보증인원만큼 내요).')+'</p>';
     }
-    var planField = r.calc
-      ? '<div class="field">예산(만원)<div class="calcval">'+fmtMan(r.plan)+'</div></div>'
-      : f('plan','예산(만원)',r.plan);
-    h += '<div class="detail">' + perHead + '<div class="bedit">' + planField + f('actual','확정(만원)',r.actual) + f('paid','낸 돈(만원)',r.paid) + '</div>' +
+    /* 총비용을 먼저 적고 예약금을 넣으면 잔금은 저절로 나와요. 예전에 넣은 확정 금액이 있으면 그 칸을 총비용으로 고쳐요. */
+    var dt = function(key, label, val){ return '<label class="field">'+label+'<input type="date" value="'+esc(val || '')+'" data-bdate="'+key+'" data-bkind="'+r.kind+'" data-id="'+r.id+'" data-fk="b-'+key+'-'+r.id+'"'+dis()+'></label>'; };
+    var totalField = r.calc && r.actual == null
+      ? '<div class="field">총비용(만원)<div class="calcval">'+fmtMan(r.plan)+'</div></div>'
+      : f(r.actual != null ? 'actual' : 'plan', '총비용(만원)', r.expect);
+    h += '<div class="detail">' + perHead + '<div class="bedit two bpay">' + totalField +
+      f('deposit','예약금(만원)', r.depositShown) + dt('depositDate','예약금 납부일', r.depositDate) +
+      '<div class="field">잔금(만원)<div class="calcval">'+(r.balance != null ? fmtMan(r.balance) : '-')+'</div></div>' + dt('balanceDate','잔금일', r.balanceDate) + '</div>' +
+      (r.balance > 0 || r.balancePaid ? '<div class="tools"><button class="toggle" type="button" aria-pressed="'+(r.balancePaid ? 'true' : 'false')+'" data-act="b-balance-paid" data-kind="'+r.kind+'" data-id="'+r.id+'"'+dis()+'>잔금 냈어요</button></div>' : '') +
       '<label class="field">누가 내나<select data-bwho="1" data-fk="b-who-'+r.id+'" data-bkind="'+r.kind+'" data-id="'+r.id+'"'+dis()+'>' + WHO.map(function(w){ return '<option value="'+w.v+'"'+(w.v === r.who ? ' selected' : '')+'>'+w.t+'</option>'; }).join('') + '</select></label>' +
-      '<label class="field">메모<textarea rows="2" placeholder="업체, 계약일, 잔금일 등" data-bmemo="'+r.kind+'" data-id="'+r.id+'" data-fk="bmemo-'+r.id+'"'+dis()+'>'+esc(r.memo)+'</textarea></label>' +
+      '<label class="field">메모<textarea rows="2" placeholder="업체, 계약 조건, 연락처 등" data-bmemo="'+r.kind+'" data-id="'+r.id+'" data-fk="bmemo-'+r.id+'"'+dis()+'>'+esc(r.memo)+'</textarea></label>' +
       (Store.readOnly ? '' : '<div class="detail-actions">' + (r.kind === 't'
         ? '<button class="link" type="button" data-act="b-hide" data-id="'+r.id+'">'+(r.hidden ? '다시 보이기' : '우리는 안 함(숨기기)')+'</button>'
         : '<button class="link" type="button" data-act="b-delete" data-id="'+r.id+'">삭제</button>') + '</div>') +
@@ -3408,6 +3427,11 @@ document.addEventListener('change', function(e){
   }
   if (t.matches && t.matches('#priceCustomBudget')) { ui.priceCustomBudget = t.value; return; }
   if (t.matches && t.matches('#qPhotoFile')) { readQuoteSources(t.files); return; }
+  if (t.matches && t.matches('input[data-bdate]')) {
+    if (t.value && !parseYMD(t.value)) return;
+    var bd = {}; bd[t.getAttribute('data-bdate')] = t.value; commit(bPatch(t.getAttribute('data-bkind'), t.getAttribute('data-id'), bd));
+    return;
+  }
   if (t.matches && t.matches('select[data-bplan]')) {
     commit({budget:{planGroup: t.value}});
     return;
@@ -3483,6 +3507,7 @@ document.addEventListener('click', function(e){
   else if (act === 'q-photo') { var pf = document.getElementById('qPhotoFile'); if (pf) { pf.value = ''; pf.click(); } }
   else if (act === 'q-photo-stop') { if (photoCtl) photoCtl.abort(); }
   else if (act === 'q-photo-text') readQuoteSources([], ui.photoText);
+  else if (act === 'b-balance-paid') { var bpId = b.getAttribute('data-id'), bpRow = budgetRows().filter(function(x){ return x.id === bpId; })[0]; commit(bPatch(b.getAttribute('data-kind'), bpId, {balancePaid: !(bpRow && bpRow.balancePaid)})); }
   else if (act === 'q-photo-cancel') { ui.photoDraft = null; ui.photoMsg = ''; render(); focusSel('[data-act="q-photo"]'); }
   else if (act === 'q-photo-save') doQuotePhotoSave();
   else if (act === 'hero-save') doHeroSave();

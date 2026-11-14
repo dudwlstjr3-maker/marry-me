@@ -48,6 +48,7 @@
 - 저장 로직은 `Store`, `commit`, `flush`, `init`에 있어요. claude.ai에서는 `window.claude.use('db')`의 `plan/main` 문서를, 그 밖에서는 localStorage `wedding-plan-v1`을 써요. 데이터는 객체로만 저장하고(배열 금지), 삭제는 키를 지우지 않고 `deleted: true`로 표시해요.
 - 고정 ID는 바꾸거나 지우지 마세요: `TASKS` t01~t44, `BUDGET_ITEMS` b01~b27, `TALKS` m1~m17. 저장된 체크·메모·금액이 ID에 묶여 있어요. 새 항목은 새 ID로 추가하세요.
 - 가격 비교의 비교안은 `PRICE_ITEMS`의 항목·선택지 id와 `PRICE_TABLES`의 행 ID(그룹-순번)로 저장돼요(`pricePlan.groups`). 이 id를 바꾸거나 표의 행 순서를 바꾸지 말고, 새 행은 표 끝에 추가하세요. ‘그 밖에 드는 비용’ 항목(`PRICE_EXTRA_GROUPS`, `x-` id)도 같은 규칙이에요. 직접 넣은 금액은 각 비교안의 `amounts`(만원)와 `units`(식대 1인 금액, 원)에, 직접 추가한 항목은 `custom`(삭제는 `deleted: true`)에, 예산 탭에서 고른 비교안은 `budget.planGroup`에, 항목별 반영 여부는 각 비교안의 `apply`에 들어가요.
+- 예산 항목은 총비용 = 예약금 + 잔금으로 적어요. 총비용은 지금처럼 `budget.items[id].plan`(예전에 ‘확정’을 넣은 항목은 `actual`), 예약금은 `deposit`(만원)과 `depositDate`, 잔금일은 `balanceDate`(`YYYY-MM-DD`), 잔금을 냈는지는 `balancePaid`에 들어가요. 잔금은 총비용 − 예약금으로 계산하고, 예전에 넣은 ‘낸 돈’(`paid`)은 예약금이 비어 있으면 예약금으로 보여 줘요(저장값은 지우지 않아요).
 - 식장 견적의 ‘견적서 사진으로 넣기’는 claude.ai 아티팩트의 `sample` 기능(이미지 허용)을 써요. 아티팩트에 `capabilities: {db:{}, user:{}, sample:{images:true}}`로 올려야 버튼이 보이고, 그 밖의 곳에서는 숨겨져요. 사진은 저장하지 않고, 확인한 숫자만 기존 견적 형식(`budget.quotes`)으로 저장해요. JPG·PNG 말고도 브라우저가 여는 그림(아이폰 HEIC·BMP 등)은 JPG로 바꿔 보내고, PDF는 pdf.js(`pdfjs-dist@3.11.174`, jsDelivr)를 PDF를 고를 때만 불러와 쪽마다 그림으로 바꿔요. 글 파일(.txt)과 붙여 넣은 문자·카톡 견적은 글로 읽어요. 한글(HWP)·워드 문서는 PDF로 저장하거나 캡처해서 넣어야 해요.
 - 입력칸(input, textarea, select)에는 고유한 `data-fk`를 붙이세요. 화면을 다시 그릴 때 입력 중인 칸의 커서를 지키는 데 써요.
 - 색은 `:root`의 CSS 변수로만 쓰고, 다크 모드와 휴대폰 안전 영역 처리를 유지하세요.
