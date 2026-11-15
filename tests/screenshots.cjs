@@ -39,9 +39,25 @@ function priceBudgetSeed(){
  async function capture(page,app,colorScheme,name,target){
   await app.locator('body').evaluate(()=>document.fonts.ready);
   if(target) await target.evaluate(el=>window.scrollTo({top:window.scrollY+el.getBoundingClientRect().top-document.querySelector('.tabs').getBoundingClientRect().height-12,behavior:'instant'}));
+  await page.mouse.move(0,0);
   await page.screenshot({path:`docs/screenshots/${stage}-${colorScheme}-${name}.png`,animations:'disabled'});count++;
  }
  for(const colorScheme of ['light','dark']) {
+  // Input/disclosure styling, without overwriting earlier design comparisons.
+  if(process.argv[3]==='controls'){
+   const page=await newPage(colorScheme);const {app,errors}=await openApp(page,priceBudgetSeed());
+   await app.locator('#tab-price').click();
+   const category=app.locator('details[data-k="k13"]');
+   await category.evaluate(el=>el.open=false);
+   await capture(page,app,colorScheme,'price-controls-closed',app.locator('.price-builder-tools'));
+   await app.locator('details[data-k="k13"],details[data-k="pt-hall"]').evaluateAll(els=>els.forEach(el=>el.open=true));
+   await capture(page,app,colorScheme,'price-controls-open',category);
+   const input=app.locator('[data-price-mine="hall-rent-1"]');await input.focus();
+   await capture(page,app,colorScheme,'price-controls-input',input.locator('..'));
+   await app.locator('details[data-k="price-custom"] > summary').click();
+   await capture(page,app,colorScheme,'price-controls-custom',app.locator('details[data-k="price-custom"]'));
+   if(errors.length)throw new Error(errors.join('\n'));await page.close();continue;
+  }
   // Scoped mobile comparison keeps the earlier, cross-tab screenshot set intact.
   if(process.argv[3]==='price'){
    for(const [name,seed] of [['empty',SEED],['populated',priceBudgetSeed()]]){

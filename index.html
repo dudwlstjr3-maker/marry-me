@@ -838,6 +838,96 @@ body{line-height:1.65}
 .due-note{border-left:3px solid var(--hong);padding-left:10px}
 /* 지역 표의 최신 값 줄 */
 .rtable tr.latest th,.rtable tr.latest td{background:var(--gold-soft)}
+/* 가격 비교: 접기 제목·펼친 내용·직접 금액을 서로 다른 면으로 구분해요. */
+#panel-price .price-builder-tools{gap:8px}
+#panel-price .know details{border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+#panel-price .know details+details{margin-top:8px}
+#panel-price .know details>summary{padding:10px 12px;min-height:48px;border-bottom:0;border-radius:5px;background:var(--paper);cursor:pointer}
+#panel-price .know details[open]{border-color:var(--gold-line)}
+#panel-price .know details[open]>summary{border-bottom:1px solid var(--gold-line);border-radius:5px 5px 0 0;background:var(--gold-soft)}
+#panel-price .know .price-category{margin-top:14px;border-color:var(--gold-line)}
+#panel-price .know .price-category>summary{min-height:56px;background:var(--gold-soft)}
+#panel-price .price-category>.body{padding:10px 6px}
+#panel-price .pt-content{padding:8px 6px 12px}
+#panel-price details:is(.price-picked-details,.price-custom,.price-compare,.trash)>:not(summary){padding:10px 8px}
+#panel-price .know details>summary:focus-visible{outline-offset:2px}
+@media (hover:hover){
+  #panel-price .know details>summary:hover{background:var(--gold-soft);box-shadow:inset 3px 0 var(--gold)}
+}
+#panel-price .know details>summary:active{box-shadow:inset 3px 0 var(--gold)}
+#panel-price .price-pick-in{border-color:var(--gold-line)}
+#panel-price .price-pick.on .price-pick-in{padding-top:6px}
+#panel-price .price-mine{padding:10px 8px;border-color:var(--gold);background:var(--gold-soft)}
+#panel-price :is(input,select,textarea){border-color:var(--gold-line);background:var(--surface)}
+#panel-price .price-mine input{min-height:48px;border:2px solid var(--gold);font-size:16px;background:var(--surface)}
+#panel-price :is(input,select,textarea):focus{border-color:var(--focus);outline:2px solid var(--focus);outline-offset:2px}
+#panel-price .price-mine:focus-within{border-color:var(--focus)}
+#panel-price .price-refs{margin-top:4px;padding:8px;border:1px solid var(--line);border-radius:4px;background:var(--paper)}
+#panel-price .price-pick-src{padding-top:6px;border-top:1px solid var(--line)}
+
+/* v28 — 펼친 줄은 색과 테두리로 구분하고, 여닫는 자리는 화살표와 닫기 단추로 알려 줘요. */
+:root{--open-head:#F1E8D8;--open-bg:#F8F2E6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--open-head:#283048;--open-bg:#1E2A42}}
+:root[data-theme="dark"]{--open-head:#283048;--open-bg:#1E2A42}
+/* 줄의 화살표: 접혀 있으면 아래, 펼치면 위 */
+.chev,.close-row::before{content:"";flex:none;box-sizing:border-box;width:10px;height:10px;margin-inline:4px 3px;align-self:center;border:solid var(--gold);border-width:0 2px 2px 0;transform:translateY(-3px) rotate(45deg);transition:transform .15s ease}
+.is-open>.row>.chev,.is-open>.t-row>.chev,.close-row::before{transform:translateY(2px) rotate(-135deg)}
+@media (prefers-reduced-motion:reduce){.chev{transition:none}}
+/* 접는 묶음의 화살표 단추: +/− 글자 대신 네모 안의 화살표 */
+.bcat>summary::after,.shootcl>summary::after,.know summary h3::after,.pt-accordion summary h4::after,.plan-review>summary h3::after,
+.pr-pick>summary::after,.pr-row>summary::after,details:is(.price-picked-details,.price-custom,.price-compare,.trash)>summary::after{
+  content:"";flex:none;box-sizing:border-box;width:28px;height:28px;margin:0;align-self:center;justify-self:end;border:1px solid var(--gold-line);border-radius:6px;font-size:0;
+  background:
+    linear-gradient(to top right,transparent calc(50% - 1.6px),var(--gold) calc(50% - 1px),var(--gold) calc(50% + 1px),transparent calc(50% + 1.6px)) 6px 10px/7px 7px no-repeat,
+    linear-gradient(to bottom right,transparent calc(50% - 1.6px),var(--gold) calc(50% - 1px),var(--gold) calc(50% + 1px),transparent calc(50% + 1.6px)) 13px 10px/7px 7px no-repeat,
+    var(--surface)}
+.bcat[open]>summary::after,.shootcl[open]>summary::after,.know details[open]>summary h3::after,.pt-accordion[open]>summary h4::after,.plan-review[open]>summary h3::after,
+.pr-pick[open]>summary::after,.pr-row[open]>summary::after,details:is(.price-picked-details,.price-custom,.price-compare,.trash)[open]>summary::after{
+  content:"";border-color:var(--gold);
+  background:
+    linear-gradient(to bottom right,transparent calc(50% - 1.6px),var(--gold) calc(50% - 1px),var(--gold) calc(50% + 1px),transparent calc(50% + 1.6px)) 6px 9px/7px 7px no-repeat,
+    linear-gradient(to top right,transparent calc(50% - 1.6px),var(--gold) calc(50% - 1px),var(--gold) calc(50% + 1px),transparent calc(50% + 1.6px)) 13px 9px/7px 7px no-repeat,
+    var(--surface)}
+.pr-pick>summary::after,.pr-row>summary::after{top:8px;right:8px}
+.pr-pick>summary{padding-right:44px}
+/* 줄 어디를 눌러도 열려요 */
+.t-title[aria-expanded]~*{cursor:pointer}
+.t-title[aria-expanded]{scroll-margin-top:calc(env(safe-area-inset-top,0px) + var(--tabs-height) + 72px)}
+/* 펼친 줄: 머리띠 + 색 있는 상자 + 왼쪽 금색 줄 */
+.bitem.is-open,.titem.is-open{margin-inline:-8px;padding-block:10px;border-bottom-color:transparent}
+.task.is-open{padding-block:8px}
+.is-open>.row,.is-open>.t-row{align-items:center;padding:4px 10px;border:1px solid var(--gold-line);border-left:4px solid var(--gold);border-radius:8px 8px 0 0;background:var(--open-head)}
+.is-open>.row .t-title,.is-open>.t-row{font-weight:600}
+.is-open>.row~*,.is-open>.t-row~*{margin:0;padding:10px 12px 0;border:solid var(--gold-line);border-width:0 1px 0 4px;border-left-color:var(--gold);background:var(--open-bg)}
+.is-open>:last-child{padding-bottom:12px;border-bottom-width:1px;border-radius:0 0 8px 8px}
+.t-row>:first-child{flex:1;min-width:0}
+.is-open>.detail{gap:12px}
+@media (max-width:360px){.is-open>.row~*,.is-open>.t-row~*{padding-inline:10px}.is-open>.row,.is-open>.t-row{padding-inline:8px}}
+.is-open .detail .field{color:var(--ink)}
+.is-open .detail :is(input[type=text],input[type=date],textarea,select){border-color:var(--gold-line);background:var(--surface)}
+.is-open .calcval{border:1px dashed var(--chung);background:var(--chung-soft);color:var(--chung)}
+.is-open .subtasks,.is-open .shootcl{border-color:var(--gold-line)}
+/* 펼친 상자 안의 묶음 제목 */
+.fhead{display:flex;align-items:center;gap:8px;margin:0;color:var(--gold);font-size:13px;font-weight:600;line-height:1.5}
+.fhead::after{content:"";flex:1;height:1px;background:var(--gold-line)}
+.fhead:not(:first-child){margin-top:6px}
+/* 펼친 상자 맨 아래의 닫기 */
+.close-row{appearance:none;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:44px;margin-top:2px;padding:8px 12px;border:1px solid var(--gold-line);border-radius:6px;background:var(--surface);color:var(--gold);font-size:14px;font-weight:600;line-height:1.3;cursor:pointer}
+.close-row::before{border-color:currentColor;margin:0}
+/* 접는 묶음의 머리: 눌리는 띠로 보이게, 펼치면 색이 들어가요 */
+.bcat>summary.bcat-head{grid-template-columns:minmax(0,1fr) auto 28px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.bcat[open]>summary.bcat-head,.shootcl[open]>summary{border-color:var(--gold-line);background:var(--open-head)}
+.shootcl>summary{margin-inline:-12px;padding-inline:12px;border-radius:5px}
+.shootcl[open]>summary{border-bottom:1px solid var(--gold-line);border-radius:5px 5px 0 0}
+.know details[open]:not(.pt-accordion,.trash,.price-custom,.price-compare,.price-picked-details){border-color:var(--gold-line);border-left:4px solid var(--gold)}
+.pt-accordion>summary{padding-inline:8px;border-radius:6px}
+.pt-accordion[open]>summary{background:var(--open-head)}
+.pr-pick[open],.pr-row[open]{border-color:var(--gold-line)}
+.pr-pick[open]>summary,.pr-row[open]>summary{border-radius:5px 5px 0 0;background:var(--open-head)}
+details:is(.price-picked-details,.price-custom,.price-compare,.trash)[open]{border-color:var(--gold-line)}
+details:is(.price-picked-details,.price-custom,.price-compare,.trash)[open]>summary{border-bottom-color:var(--gold-line);background:var(--open-head)}
+.glance-more>summary::after,.q-paste>summary::after{content:"";flex:none;box-sizing:border-box;width:9px;height:9px;margin-left:8px;border:solid var(--chung);border-width:0 2px 2px 0;transform:translateY(-3px) rotate(45deg)}
+.glance-more[open]>summary::after,.q-paste[open]>summary::after{transform:translateY(2px) rotate(-135deg)}
 </style>
 </head>
 <body>
@@ -1550,6 +1640,10 @@ function renderTabs(){
   }
 }
 
+/* 열고 닫는 줄: 오른쪽 화살표, 펼친 상자 맨 아래의 닫기 단추, 펼친 상자 안의 묶음 제목 */
+var CHEV = '<span class="chev" aria-hidden="true"></span>';
+var CLOSE_ROW = '<button class="close-row" type="button" data-act="close-row">닫기</button>';
+function fhead(t){ return '<p class="fhead">'+t+'</p>'; }
 /* 진행 순서 목록용 짧은 날짜: 올해면 10.10(토), 다른 해면 2027.1.8(금) */
 function fmtTiny(d, refYear){ return (d.getFullYear() !== refYear ? d.getFullYear()+'.' : '')+(d.getMonth()+1)+'.'+d.getDate()+'('+WD[d.getDay()]+')'; }
 function dueHTML(it, wd, t0){
@@ -1648,10 +1742,10 @@ function taskHTML(it, wd, t0){
   var late = !it.done && !it.catchup && it.due && diffDays(it.due, t0) < 0;
   var open = !!ui.open[it.id];
   var progress = taskProgress(it);
-  var cls = 'task' + (it.done ? ' done' : '') + (late ? ' overdue' : '') + (it.catchup && !it.done ? ' catchup' : '') + (it.wedding ? ' wedding' : '');
+  var cls = 'task' + (it.done ? ' done' : '') + (late ? ' overdue' : '') + (it.catchup && !it.done ? ' catchup' : '') + (it.wedding ? ' wedding' : '') + (open ? ' is-open' : '');
   var h = '<li class="'+cls+'">' +
     '<button class="knot" type="button" role="checkbox" aria-checked="'+(it.done?'true':'false')+'" aria-label="완료 표시: '+esc(it.title)+'" data-act="toggle" data-fk="task-check-'+it.id+'" data-kind="'+it.kind+'" data-id="'+it.id+'"'+dis()+'>'+CHECK+'</button>' +
-    '<div class="row"><button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="open" data-fk="task-open-'+it.id+'" data-id="'+it.id+'">'+esc(it.title)+(it.kind==='c' ? '<span class="mine">직접 추가</span>' : '')+(progress.total > 1 && progress.done > 0 && progress.done < progress.total ? '<span class="sub-progress">'+progress.done+'/'+progress.total+'</span>' : '')+'</button>' + dueHTML(it, wd, t0) + '</div>';
+    '<div class="row"><button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="open" data-fk="task-open-'+it.id+'" data-id="'+it.id+'">'+esc(it.title)+(it.kind==='c' ? '<span class="mine">직접 추가</span>' : '')+(progress.total > 1 && progress.done > 0 && progress.done < progress.total ? '<span class="sub-progress">'+progress.done+'/'+progress.total+'</span>' : '')+'</button>' + dueHTML(it, wd, t0) + CHEV + '</div>';
   var dl = [];
   if (it.book) dl.push('<span><b>예약</b> '+esc(fmtShort(it.book, t0.getFullYear()))+'</span>');
   var cc = it.kind === 't' ? checkCount(it.id, taskState('t', it.id).checks) : null;
@@ -1678,7 +1772,7 @@ function taskHTML(it, wd, t0){
         (it.kind === 't'
           ? '<button class="link" type="button" data-act="hide" data-id="'+it.id+'">'+(it.hidden ? '다시 보이기' : '목록에서 숨기기')+'</button>'
           : '<button class="link" type="button" data-act="delete" data-id="'+it.id+'">삭제</button>') +
-      '</div>') +
+      '</div>') + CLOSE_ROW +
     '</div>';
   }
   return h + '</li>';
@@ -2722,12 +2816,12 @@ function quoteHTML(){
       if (q.heads != null && q.unit != null) parts.push('보증 '+q.heads.toLocaleString('ko-KR')+'명 × '+q.unit.toLocaleString('ko-KR')+'원');
       if (q.hall != null) parts.push('대관료 '+fmtMan(q.hall));
       if (q.extra != null && q.extra > 0) parts.push('추가 '+fmtMan(q.extra));
-      h += '<li class="bitem qitem'+(picked === q.id ? ' picked' : '')+'"><div class="row">' +
+      h += '<li class="bitem qitem'+(picked === q.id ? ' picked' : '')+(open ? ' is-open' : '')+'"><div class="row">' +
         '<button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="q-open" data-id="'+q.id+'">'+esc(q.name) +
           (q.area ? '<span class="mine">'+esc(q.area)+'</span>' : '') +
           (q.id === cheapest && list.length > 1 ? '<span class="mine best">가장 쌈</span>' : '') +
           (picked === q.id ? '<span class="mine">예산에 반영됨</span>' : '') + '</button>' +
-        '<span class="bamt">'+(q.complete ? fmtMan(q.total) : '<span class="none">입력 중</span>')+'</span></div>' +
+        '<span class="bamt">'+(q.complete ? fmtMan(q.total) : '<span class="none">입력 중</span>')+'</span>'+CHEV+'</div>' +
         (parts.length ? '<p class="qline">'+esc(parts.join(' + '))+'</p>' : '') +
         quoteVerdictHTML(q, rc);
       if (open) {
@@ -2742,7 +2836,7 @@ function quoteHTML(){
           '<label class="field">메모<textarea rows="2" placeholder="포함 항목, 위약금 조건, 담당자 등" data-qmemo="'+q.id+'" data-fk="qmemo-'+q.id+'"'+dis()+'>'+esc(q.memo)+'</textarea></label>' +
           (Store.readOnly ? '' : ui.quoteApplyAsk === q.id && q.complete ? quoteConfirmHTML(q) : '<div class="detail-actions"><button class="btn primary" type="button" data-act="q-apply" data-id="'+q.id+'"'+(q.complete ? '' : ' disabled')+'>이 견적을 예산에 넣기</button>' +
             '<button class="link" type="button" data-act="q-del" data-id="'+q.id+'">삭제</button></div>') +
-          (q.complete ? '' : '<p class="tip">보증인원, 1인 식대, 대관료를 모두 넣어야 예산에 넣을 수 있어요.</p>') +
+          (q.complete ? '' : '<p class="tip">보증인원, 1인 식대, 대관료를 모두 넣어야 예산에 넣을 수 있어요.</p>') + CLOSE_ROW +
         '</div>';
       }
       h += '</li>';
@@ -3046,7 +3140,7 @@ function budgetItemHTML(r){
     else sub = '<small>총비용</small>';
     right = '<span class="bamt">'+fmtMan(r.expect)+sub+'</span>';
   }
-  var h = '<li class="bitem"><div class="row"><button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="b-open" data-id="'+r.id+'">'+esc(r.name)+(r.kind === 'c' ? '<span class="mine">직접 추가</span>' : '')+(r.hidden ? '<span class="mine">숨김</span>' : '')+'</button>'+right+'</div>';
+  var h = '<li class="bitem'+(open ? ' is-open' : '')+'"><div class="row"><button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="b-open" data-id="'+r.id+'">'+esc(r.name)+(r.kind === 'c' ? '<span class="mine">직접 추가</span>' : '')+(r.hidden ? '<span class="mine">숨김</span>' : '')+'</button>'+right+CHEV+'</div>';
   h += budgetRefHTML(r);
   if (!open && r.memo) h += '<p class="preview">'+esc(r.memo)+'</p>';
   if (open) {
@@ -3064,15 +3158,15 @@ function budgetItemHTML(r){
     var totalField = r.calc && !r.hasActual
       ? '<div class="field">총비용(만원)<div class="calcval">'+fmtMan(r.plan)+'</div></div>'
       : '<label class="field">총비용(만원)<input type="text" inputmode="numeric" value="'+((r.calc ? r.actual : r.expect) != null ? (r.calc ? r.actual : r.expect) : '')+'" data-btotal-item="1" data-bkind="'+r.kind+'" data-id="'+r.id+'" data-fk="b-total-'+r.id+'"'+dis()+'></label>';
-    h += '<div class="detail">' + perHead + '<div class="bedit two bpay">' + totalField +
+    h += '<div class="detail">' + fhead('금액과 날짜') + perHead + '<div class="bedit two bpay">' + totalField +
       f('deposit','예약금(만원)', r.depositShown) + dt('depositDate','예약금 납부일', r.depositDate) +
       '<div class="field">잔금(만원)<div class="calcval">'+(r.balance != null ? fmtMan(r.balance) : '-')+'</div></div>' + dt('balanceDate','잔금일', r.balanceDate) + '</div>' +
       (r.balance > 0 || r.balancePaid ? '<div class="tools"><button class="toggle" type="button" aria-pressed="'+(r.balancePaid ? 'true' : 'false')+'" data-act="b-balance-paid" data-kind="'+r.kind+'" data-id="'+r.id+'"'+dis()+'>잔금 냈어요</button></div>' : '') +
-      '<label class="field">누가 내나<select data-bwho="1" data-fk="b-who-'+r.id+'" data-bkind="'+r.kind+'" data-id="'+r.id+'"'+dis()+'>' + WHO.map(function(w){ return '<option value="'+w.v+'"'+(w.v === r.who ? ' selected' : '')+'>'+w.t+'</option>'; }).join('') + '</select></label>' +
+      fhead('그 밖') + '<label class="field">누가 내나<select data-bwho="1" data-fk="b-who-'+r.id+'" data-bkind="'+r.kind+'" data-id="'+r.id+'"'+dis()+'>' + WHO.map(function(w){ return '<option value="'+w.v+'"'+(w.v === r.who ? ' selected' : '')+'>'+w.t+'</option>'; }).join('') + '</select></label>' +
       '<label class="field">메모<textarea rows="2" placeholder="업체, 계약 조건, 연락처 등" data-bmemo="'+r.kind+'" data-id="'+r.id+'" data-fk="bmemo-'+r.id+'"'+dis()+'>'+esc(r.memo)+'</textarea></label>' +
       (Store.readOnly ? '' : '<div class="detail-actions">' + (r.kind === 't'
         ? '<button class="link" type="button" data-act="b-hide" data-id="'+r.id+'">'+(r.hidden ? '다시 보이기' : '우리는 안 함(숨기기)')+'</button>'
-        : '<button class="link" type="button" data-act="b-delete" data-id="'+r.id+'">삭제</button>') + '</div>') +
+        : '<button class="link" type="button" data-act="b-delete" data-id="'+r.id+'">삭제</button>') + '</div>') + CLOSE_ROW +
     '</div>';
   }
   return h + '</li>';
@@ -3270,8 +3364,8 @@ function gSel(key, list, val, r, cls, what){
 }
 function guestItemHTML(r){
   var open = !!ui.openGuest[r.id];
-  var h = '<li class="bitem gitem"><div class="row"><button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="g-open" data-id="'+r.id+'">'+esc(r.name)+(r.count > 1 ? '<span class="mine">'+r.count+'명</span>' : '')+'</button>' +
-    '<span class="bamt">'+(r.gift != null ? fmtMan(r.gift) : '')+'</span></div>' +
+  var h = '<li class="bitem gitem'+(open ? ' is-open' : '')+'"><div class="row"><button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="g-open" data-id="'+r.id+'">'+esc(r.name)+(r.count > 1 ? '<span class="mine">'+r.count+'명</span>' : '')+'</button>' +
+    '<span class="bamt">'+(r.gift != null ? fmtMan(r.gift) : '')+'</span>'+CHEV+'</div>' +
     '<p class="gtags">' +
       gSel('invite', G_INVITE, r.invite, r, r.invite ? ' on' : '', '청첩장') +
       gSel('attend', G_ATTEND, r.attend, r, r.attend === 'yes' ? ' on' : (r.attend === 'no' ? ' off' : ''), '참석') +
@@ -3287,7 +3381,7 @@ function guestItemHTML(r){
       '<label class="field">청첩장'+sel('invite',G_INVITE,r.invite)+'</label>' + '<label class="field">참석'+sel('attend',G_ATTEND,r.attend)+'</label>' +
       txt('gift','축의금(만원)',r.gift,true,'예: 10') + '</div>' +
       '<label class="field">메모<textarea rows="2" placeholder="연락처, 관계, 답례 등" data-gmemo="'+r.id+'" data-fk="gmemo-'+r.id+'"'+dis()+'>'+esc(r.memo)+'</textarea></label>' +
-      (Store.readOnly ? '' : '<div class="detail-actions"><button class="link" type="button" data-act="g-del" data-id="'+r.id+'">삭제</button></div>') +
+      (Store.readOnly ? '' : '<div class="detail-actions"><button class="link" type="button" data-act="g-del" data-id="'+r.id+'">삭제</button></div>') + CLOSE_ROW +
     '</div>';
   }
   return h + '</li>';
@@ -3320,11 +3414,11 @@ function talkHTML(){
       var s = (state.talks && state.talks[it.id]) || {};
       var open = !!ui.openTalk[it.id];
       var memo = s.memo || '';
-      h += '<li class="titem">' +
+      h += '<li class="titem'+(open ? ' is-open' : '')+'">' +
         '<button class="t-title t-row" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="talk-open" data-id="'+it.id+'"><span>'+esc(it.t)+'</span>' +
-        (!memo && !open ? '<span class="t-state">눌러서 작성</span>' : '') + '</button>';
+        (!memo && !open ? '<span class="t-state">눌러서 작성</span>' : '') + CHEV + '</button>';
       if (!open && memo) h += '<p class="preview">'+esc(memo)+'</p>';
-      if (open) h += '<div class="detail"><p class="tip">'+esc(it.h)+'</p><label class="field">정한 내용<textarea rows="3" placeholder="예: 생활비는 공동 통장, 각자 월 OO만원" data-talk-memo="'+it.id+'" data-fk="talk-'+it.id+'"'+dis()+'>'+esc(memo)+'</textarea></label></div>';
+      if (open) h += '<div class="detail"><p class="tip">'+esc(it.h)+'</p><label class="field">정한 내용<textarea rows="3" placeholder="예: 생활비는 공동 통장, 각자 월 OO만원" data-talk-memo="'+it.id+'" data-fk="talk-'+it.id+'"'+dis()+'>'+esc(memo)+'</textarea></label>'+CLOSE_ROW+'</div>';
       h += '</li>';
     });
     h += '</ul></section>';
@@ -3343,9 +3437,20 @@ function patchItem(kind, id, obj){
 
 document.addEventListener('click', function(e){
   var b = e.target.closest('[data-act]');
+  /* 줄의 이름 말고 금액·화살표 쪽을 눌러도 열리고 닫혀요. */
+  if (!b) { var rowHit = e.target.closest('.row'); if (rowHit && !e.target.closest('a,button,input,select,textarea,label')) b = rowHit.querySelector('.t-title[aria-expanded]'); }
   if (!b || b.disabled) return;
   var act = b.getAttribute('data-act'), id = b.getAttribute('data-id'), kind = b.getAttribute('data-kind');
-  if (act === 'toggle') {
+  if (act === 'close-row') {
+    /* 펼친 상자 맨 아래의 닫기: 그 줄의 제목 단추를 대신 누르고, 접힌 줄이 보이게 옮겨요. */
+    var crLi = b.closest('li'), crTitle = crLi && crLi.querySelector('.t-title[aria-expanded]');
+    if (crTitle) {
+      var crSel = '[data-act="'+crTitle.getAttribute('data-act')+'"][data-id="'+crTitle.getAttribute('data-id')+'"]';
+      crTitle.click();
+      var crBack = document.querySelector(crSel);
+      if (crBack) { crBack.scrollIntoView({block:'nearest'}); try { crBack.focus({preventScroll:true}); } catch(e8){} }
+    }
+  } else if (act === 'toggle') {
     var cur = taskState(kind, id), taskDetails = kind === 't' ? (TASK_DETAILS[id] || []) : [];
     if (taskDetails.length) {
       var nextDone = b.getAttribute('aria-checked') !== 'true', groupPatch = {tasks:{}};
@@ -3546,6 +3651,11 @@ document.addEventListener('toggle', function(e){
   var d = e.target;
   if (d && d.tagName === 'DETAILS' && d.hasAttribute('data-k')) ui.openKnow[d.getAttribute('data-k')] = d.open;
 }, true);
+/* toggle 이벤트는 조금 늦게 와요. 그 사이에 화면을 다시 그리면 방금 연 묶음이 도로 접히므로, 누르는 순간에 먼저 적어 둬요. */
+document.addEventListener('click', function(e){
+  var sm = e.target.closest && e.target.closest('summary'), d = sm && sm.parentElement;
+  if (d && d.tagName === 'DETAILS' && d.hasAttribute('data-k') && !e.target.closest('a,button,input,select,textarea,label')) ui.openKnow[d.getAttribute('data-k')] = !d.open;
+});
 
 document.addEventListener('input', function(e){
   var t = e.target;
