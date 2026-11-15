@@ -872,3 +872,44 @@ test('price tab names hall+SDM costs for what they are, uses checked regional fi
  await expect(app.locator('#panel-price .region-note').first()).toContainText('강원(스튜디오)·대전(드레스)');
  expect(errors).toEqual([]);
 });
+
+test('upcoming balances are gathered by date in the budget, the timeline and the shared summary',async({page})=>{
+ const seed=structuredClone(SEED);
+ // 2026-10-06: studio balance was due 9/30, dress balance is due 10/20, makeup has no balance date.
+ Object.assign(seed.budget.items,{b05:{plan:150,deposit:30,balanceDate:'2026-09-30'},b06:{plan:200,deposit:50,balanceDate:'2026-10-20'},b07:{plan:80,deposit:20}});
+ const {app,errors}=await openApp(page,seed);
+ await expect(app.locator('.due-note')).toHaveText('지난 잔금 1건 포함, 30일 안에 낼 잔금 2건: 9.30(수) 스튜디오 촬영 120만원 외 1건 예산에서 보기');
+ await app.locator('.due-note [data-act="b-go"]').click();
+ await expect(app.locator('#tab-budget')).toHaveAttribute('aria-selected','true');
+ await expect(app.locator('[data-act="b-open"][data-id="b05"]')).toHaveAttribute('aria-expanded','true');
+ const items=app.locator('.glance .due-list li');
+ await expect(items).toHaveCount(2);
+ await expect(items.nth(0)).toHaveClass('late');await expect(items.nth(0)).toHaveText('9.30(수)6일 지남스튜디오 촬영120만원');
+ await expect(items.nth(1)).toHaveText('10.20(화)14일 남음드레스150만원');
+ // b01 (old paid amount) and b07 have a balance but no date yet.
+ await expect(app.locator('.glance .due-list .tip')).toHaveText('잔금일을 안 넣은 항목 2개는 날짜를 넣으면 여기에 모여요.');
+ await items.nth(1).locator('button').click();await expect(app.locator('[data-act="b-open"][data-id="b06"]')).toHaveAttribute('aria-expanded','true');
+ await app.locator('[data-act="b-open"][data-id="b06"]').locator('xpath=ancestor::li[1]').locator('[data-act="b-balance-paid"]').click();
+ await expect(items).toHaveCount(1);
+ await app.locator('#openShare').click();
+ await expect(app.locator('#shareText')).toHaveValue(/다가오는 잔금: 9\.30\(수\) 스튜디오 촬영 120만원/);
+ expect(errors).toEqual([]);
+});
+
+test('inside claude.ai the backup file is saved through the app download prompt',async({page})=>{
+ await page.addInitScript(()=>{
+  if(window.top===window)return;
+  window.__saved=[];
+  const downloads={save:r=>{window.__saved.push(r);return window.__saved.length>1?Promise.reject({code:'declined'}):Promise.resolve({});}};
+  window.claude={use:name=>Promise.resolve(name==='downloads'?downloads:null)};
+ });
+ const {app,errors}=await openApp(page);
+ await app.locator('#openShare').click();await app.locator('#backupSave').scrollIntoViewIfNeeded();
+ await app.locator('#backupSave').click();
+ await expect(app.locator('#shareMsg')).toHaveText('백업 파일을 저장했어요.');
+ const saved=await app.locator('body').evaluate(async()=>{const r=window.__saved[0];return {name:r.filename,body:JSON.parse(await r.data.text())};});
+ expect(saved.name).toBe('marry-me-backup-2026-10-06.json');expect(saved.body.app).toBe('marry-me');expect(saved.body.data.groom).toBe('준호');
+ await app.locator('#backupSave').click();
+ await expect(app.locator('#shareMsg')).toHaveText('저장을 취소했어요.');
+ expect(errors).toEqual([]);
+});

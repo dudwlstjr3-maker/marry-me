@@ -814,6 +814,18 @@ body{line-height:1.65}
 .rcap.cap-base,.rcap.cap-extra{padding-left:10px;border-left:4px solid var(--gold)}
 .rcap.cap-extra{border-left-color:var(--hong)}
 .region-note{margin-top:6px}
+/* 다가오는 잔금 */
+.due-list{margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}
+.due-list h4{margin:0 0 4px;font-size:15px;color:var(--ink)}
+.due-list ul{list-style:none;margin:0;padding:0}
+.due-list li button{appearance:none;display:grid;grid-template-columns:6.4em minmax(0,1fr) auto;align-items:baseline;gap:4px 10px;width:100%;min-height:44px;padding:8px 0;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);text-align:left;cursor:pointer;font-size:15px}
+.due-list li:last-child button{border-bottom:0}
+.due-list .when{font-variant-numeric:tabular-nums;white-space:nowrap}
+.due-list .when small{display:block;font-size:13px;color:var(--muted)}
+.due-list .what{min-width:0}
+.due-list strong{font-variant-numeric:tabular-nums;white-space:nowrap}
+.due-list li.late .when,.due-list li.late .when small,.due-list li.late strong{color:var(--hong)}
+.due-note{border-left:3px solid var(--hong);padding-left:10px}
 </style>
 </head>
 <body>
@@ -1599,7 +1611,7 @@ function timelineHTML(list){
     var progress = taskProgress(i);
     return total + progress.total - progress.done;
   }, 0);
-  var h = (catchN ? '<p class="lead-note">결혼식까지 남은 기간보다 앞선 일 '+catchN+'개는 ‘지금 챙기기’로 표시했어요. 이미 끝낸 일은 체크하고, 필요 없는 일은 열어서 숨기세요.</p>' : '') +
+  var h = upcomingNoteHTML() + (catchN ? '<p class="lead-note">결혼식까지 남은 기간보다 앞선 일 '+catchN+'개는 ‘지금 챙기기’로 표시했어요. 이미 끝낸 일은 체크하고, 필요 없는 일은 열어서 숨기세요.</p>' : '') +
     '<div class="tools">' +
     '<button class="toggle" type="button" aria-pressed="'+(ui.hideDone?'true':'false')+'" data-act="hide-done" data-fk="hide-done">완료한 일 숨기기</button>' +
     (hiddenCount ? '<button class="toggle" type="button" aria-pressed="'+(ui.showHidden?'true':'false')+'" data-act="show-hidden">숨긴 일 보기 ('+hiddenCount+')</button>' : '') +
@@ -2401,6 +2413,7 @@ function budgetHTML(){
     sumBox('앞으로 낼 돈', '<span class="v">'+fmtMan(dueSum)+'</span>') +
     sumBox('축의금 빼면 실제 부담', giftSum > 0 ? (net >= 0 ? '<span class="v">'+fmtMan(net)+'</span>' : '<span class="v dim">축의금이 '+fmtMan(-net)+' 더 많아요</span>') : '<span class="v dim">하객 탭에 축의금을 넣으면 계산돼요</span>') +
   '</div>';
+  h += upcomingHTML();
   h += '<details class="glance-more" data-k="b-glance-more"'+(ui.openKnow['b-glance-more'] ? ' open' : '')+'><summary>항목별 합계·누가 내나 자세히 보기</summary>' +
     '<p class="who"><span>항목별 총비용 합계 <b>'+(anyPlan ? fmtMan(planSum) : '-')+'</b></span><span>낸 돈 <b>'+fmtMan(paidSum)+'</b></span></p>' +
     '<p class="who"><span>공동 <b>'+fmtMan(who.both)+'</b></span><span>신랑 쪽 <b>'+fmtMan(who.groom)+'</b></span><span>신부 쪽 <b>'+fmtMan(who.bride)+'</b></span><span>미정 <b>'+fmtMan(who[''])+'</b></span></p>';
@@ -2855,6 +2868,39 @@ function doQuotePhotoSave(){
   ui.photoDraft = null; ui.photoNote = ''; ui.photoText = ''; ui.photoMsg = '견적을 저장했어요. 아래 목록에서 확인하세요.'; ui.openBudget['q-'+qid] = true;
   commit(p);
   focusSel('[data-act="q-open"][data-id="'+qid+'"]');
+}
+/* 다가오는 잔금: 잔금일을 넣은 항목 중 아직 안 낸 잔금을 날짜순으로 모아요. */
+function upcomingBalances(){
+  var t0 = today();
+  return budgetRows().filter(function(r){ return !r.hidden && !r.balancePaid && r.balance > 0 && r.balanceDate; })
+    .map(function(r){ var d = parseYMD(r.balanceDate); return {r:r, d:d, days:diffDays(d, t0)}; })
+    .sort(function(a, b){ return a.d - b.d; });
+}
+function dueLabel(days){ return days < 0 ? (-days)+'일 지남' : days === 0 ? '오늘' : days+'일 남음'; }
+function upcomingHTML(){
+  var list = upcomingBalances(), y = today().getFullYear();
+  var noDate = budgetRows().filter(function(r){ return !r.hidden && !r.balancePaid && r.balance > 0 && r.depositShown != null && !r.balanceDate; }).length;
+  if (!list.length && !noDate) return '';
+  var h = '<div class="due-list"><h4>다가오는 잔금</h4>';
+  if (list.length) h += '<ul>' + list.slice(0, 5).map(function(x){
+    return '<li'+(x.days < 0 ? ' class="late"' : '')+'><button type="button" data-act="b-go" data-id="'+esc(x.r.id)+'" data-cat="'+esc(x.r.cat)+'"><span class="when">'+esc(fmtTiny(x.d, y))+'<small>'+dueLabel(x.days)+'</small></span><span class="what">'+esc(x.r.name)+'</span><strong>'+fmtMan(x.r.balance)+'</strong></button></li>';
+  }).join('') + '</ul>' + (list.length > 5 ? '<p class="tip">그 밖에 '+(list.length - 5)+'건 더 있어요.</p>' : '');
+  if (noDate) h += '<p class="tip">잔금일을 안 넣은 항목 '+noDate+'개는 날짜를 넣으면 여기에 모여요.</p>';
+  return h + '</div>';
+}
+function upcomingNoteHTML(){
+  var soon = upcomingBalances().filter(function(x){ return x.days <= 30; });
+  if (!soon.length) return '';
+  var f = soon[0], late = soon.filter(function(x){ return x.days < 0; }).length;
+  return '<p class="lead-note due-note">'+(late ? '지난 잔금 '+late+'건 포함, ' : '')+'30일 안에 낼 잔금 '+soon.length+'건: '+esc(fmtTiny(f.d, today().getFullYear()))+' '+esc(f.r.name)+' '+fmtMan(f.r.balance)+(soon.length > 1 ? ' 외 '+(soon.length - 1)+'건' : '')+
+    ' <button class="link" type="button" data-act="b-go" data-id="'+esc(f.r.id)+'" data-cat="'+esc(f.r.cat)+'">예산에서 보기</button></p>';
+}
+/* 백업 파일 저장: claude.ai 앱 안에서는 앱의 저장 기능(확인 창)을 써요. */
+var dlApi = null;
+function initDownloads(){
+  var cl = window.claude;
+  if (!cl || typeof cl.use !== 'function') return;
+  Promise.resolve(cl.use('downloads')).then(function(d){ if (d && typeof d.save === 'function') dlApi = d; }).catch(function(){});
 }
 function initPhoto(){
   var cl = window.claude;
@@ -3568,6 +3614,11 @@ document.addEventListener('click', function(e){
   else if (act === 'q-photo') { var pf = document.getElementById('qPhotoFile'); if (pf) { pf.value = ''; pf.click(); } }
   else if (act === 'q-photo-stop') { if (photoCtl) photoCtl.abort(); }
   else if (act === 'q-photo-text') readQuoteSources([], ui.photoText);
+  else if (act === 'b-go') {
+    var goId = b.getAttribute('data-id');
+    ui.tab = 'budget'; lsSet('wd-tab', 'budget'); ui.openBudget[goId] = true; ui.openKnow['bcat-'+b.getAttribute('data-cat')] = true; render();
+    var goEl = document.querySelector('[data-act="b-open"][data-id="'+goId+'"]'); if (goEl) { goEl.scrollIntoView({block:'center'}); try { goEl.focus({preventScroll:true}); } catch(e7){} }
+  }
   else if (act === 'b-balance-paid') { var bpId = b.getAttribute('data-id'), bpRow = budgetRows().filter(function(x){ return x.id === bpId; })[0]; commit(bPatch(b.getAttribute('data-kind'), bpId, {balancePaid: !(bpRow && bpRow.balancePaid)})); }
   else if (act === 'q-photo-cancel') { ui.photoDraft = null; ui.photoMsg = ''; render(); focusSel('[data-act="q-photo"]'); }
   else if (act === 'q-photo-save') doQuotePhotoSave();
@@ -3623,6 +3674,8 @@ function shareSummary(){
     L.push('');
     L.push('예산: 예상 총액 '+fmtMan(expSum)+(total != null ? ', 총예산 '+fmtMan(total)+' (남은 돈 '+fmtMan(total - planSum)+')' : ''));
     if (paidSum) L.push('낸 돈 '+fmtMan(paidSum)+', 앞으로 낼 돈 '+fmtMan(dueSum));
+    var dues = upcomingBalances().slice(0, 3);
+    if (dues.length) L.push('다가오는 잔금: '+dues.map(function(x){ return fmtTiny(x.d, t0.getFullYear())+' '+x.r.name+' '+fmtMan(x.r.balance); }).join(', '));
   }
   var pid = state.budget && state.budget.pickedQuote;
   var pq = pid ? quoteRows().filter(function(q){ return q.id === pid; })[0] : null;
@@ -3668,7 +3721,16 @@ document.getElementById('backupCopy').addEventListener('click', function(){
   var box = document.getElementById('backupText'); box.value = backupText(); box.hidden = false; copyFrom(box);
 });
 document.getElementById('backupSave').addEventListener('click', function(){
-  var text = backupText();
+  var text = backupText(), name = 'marry-me-backup-'+ymd(today())+'.json';
+  if (dlApi) {
+    dlApi.save({filename:name, data:new Blob([text], {type:'application/json'})}).then(function(){ shareMsg('백업 파일을 저장했어요.'); }, function(e){
+      var code = e && e.code;
+      if (code === 'declined') shareMsg('저장을 취소했어요.');
+      else if (code === 'rate_limited') shareMsg('저장 창이 이미 떠 있거나 너무 자주 눌렀어요. 잠시 뒤에 다시 눌러 주세요.');
+      else { if (['unavailable','not_granted','capability_disabled','capability_removed'].indexOf(code) >= 0) dlApi = null; shareMsg('이 화면에서는 파일 저장이 막혀 있어요. ‘백업 글 복사’를 쓰세요.'); }
+    });
+    return;
+  }
   try {
     var url = URL.createObjectURL(new Blob([text], {type:'application/json'})), link = document.createElement('a');
     link.href = url; link.download = 'marry-me-backup-'+ymd(today())+'.json'; link.hidden = true;
@@ -3749,6 +3811,7 @@ document.getElementById('saveSettings').addEventListener('click', function(){
 render();
 init();
 initPhoto();
+initDownloads();
 })();
 </script>
 </body>
