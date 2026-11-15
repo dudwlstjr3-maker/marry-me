@@ -157,7 +157,7 @@ test('price items are picked one by one, each with one regional reference option
  await expect(pickRow(app,'hall-rent-1').locator('.price-refs-note')).toHaveText('금액을 비우면 ‘기준’ 값으로 계산해요.');
  await expect(pickRow(app,'hall-rent-1').locator('.price-pick-amt')).toHaveText('참고 317만원');
  // Several survey values of one item are shown side by side, but only the base one counts.
- await studio.click();await expect(refs('studio-basic-1')).toHaveCount(5);
+ await studio.click();await expect(refs('studio-basic-1')).toHaveCount(6);
  await expect(pickRow(app,'studio-basic-1').locator('li.used strong')).toHaveText('137만원');
  await expect(planTotal(app)).toHaveText('454만원');
  // Meal price is per person, multiplied by the budget's guaranteed guests.
@@ -848,5 +848,27 @@ test('clearing a migrated total or deposit keeps the same field and stays cleare
  await dep.pressSequentially('30');await expect(dep).toHaveValue('30');
  await expect.poll(async()=> (await stored(app))?.budget?.items?.b05?.deposit).toBe(30);
  await expect(app.locator('[data-act="b-open"][data-id="b05"]').locator('xpath=ancestor::li[1]').locator('.bpay .calcval')).toHaveText('130만원');
+ expect(errors).toEqual([]);
+});
+
+test('price tab names hall+SDM costs for what they are, uses checked regional figures and marks value kinds',async({page})=>{
+ const {app,errors}=await openApp(page);await app.locator('#tab-price').click();
+ await expect(app.locator('#pt-total')).toHaveText('예식장+스드메 비용');
+ await expect(app.locator('#panel-price')).not.toContainText('전체 비용 (예식장+스드메)');
+ await openSection(app,'pt-total');
+ await expect(app.locator('details[data-k="pt-total"]')).toContainText('예물·예단·혼수·신혼여행·신혼집은 빠진 금액이에요');
+ // Median, average and statistics each get their own marker.
+ await expect(app.locator('#panel-price .kchip.mid').first()).toHaveText('중간값');
+ await expect(app.locator('#panel-price .kchip.avg').first()).toHaveText('평균');
+ await expect(app.locator('#panel-price .rcap.cap-extra').first()).toContainText('추가금');
+ // Seoul outside Gangnam picks its own studio and dress figures (2025년 4월 조사).
+ await app.locator('#priceRegion').selectOption('서울(강남 외)');
+ await openSection(app,'pt-studio');await openSection(app,'pt-dress');
+ const pick=id=>app.locator('tr.price-pick').filter({has:app.locator(`[data-act="price-toggle"][data-id="${id}"]`)});
+ await app.locator('[data-act="price-toggle"][data-id="studio-basic-1"]').click();
+ await expect(pick('studio-basic-1').locator('li.used strong')).toHaveText('129만원');
+ await app.locator('[data-act="price-toggle"][data-id="dress-basic-1"]').click();
+ await expect(pick('dress-basic-1').locator('li.used strong')).toHaveText('서울(강남 외) 110만원');
+ await expect(app.locator('#panel-price .region-note').first()).toContainText('강원(스튜디오)·대전(드레스)');
  expect(errors).toEqual([]);
 });
