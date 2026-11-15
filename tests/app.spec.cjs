@@ -925,3 +925,35 @@ test('regional hall rent shows the latest official median next to the survey ran
  await expect(app.locator('#panel-price')).toContainText('256만원');
  expect(errors).toEqual([]);
 });
+
+test('wedding shoot checklist follows the shoot date and saves each item apart from completion',async({page})=>{
+ const {app,errors}=await openApp(page);await app.locator('#tab-timeline').click();
+ await app.locator('[data-act="open"][data-id="t16"]').click();
+ await expect(app.locator('[data-act="chk"][data-id="t16"]')).toHaveCount(0);
+ await app.locator('[data-act="open"][data-id="t17"]').click();
+ const box=app.locator('details.shootcl[data-k="cl-t17"]');
+ await expect(box).not.toHaveAttribute('open','');
+ await expect(app.locator('[data-act="chk"][data-id="t17"]')).toHaveCount(32);
+ await box.locator('summary').click();
+ // 2027-05-08 wedding → shoot D-120 = 2027-01-08; the first group is two weeks earlier.
+ await expect(box.locator('.cl-group h5').first()).toContainText('12.25(금)까지');
+ await expect(box.locator('.cl-group h5').last()).toContainText('2027.1.8(금)');
+ const w01=app.locator('[data-act="chk"][data-c="w01"]');
+ await w01.click();
+ await expect(w01).toHaveAttribute('aria-checked','true');
+ await expect.poll(async()=> (await stored(app))?.tasks?.t17?.checks?.w01).toBe(true);
+ await expect(box.locator('.cl-count')).toHaveText('1 / 32');
+ await w01.click();
+ await expect.poll(async()=> (await stored(app))?.tasks?.t17?.checks?.w01).toBe(false);
+ await app.locator('[data-act="chk"][data-c="w32"]').click();
+ await expect.poll(async()=> (await stored(app))?.tasks?.t17?.checks?.w32).toBe(true);
+ let st=await stored(app);expect(st.tasks.t17.done).toBeFalsy();expect(st.tasks.ts17a).toBeUndefined();
+ await app.locator('[data-act="open"][data-id="t17"]').click();
+ const row=app.locator('.task').filter({has:app.locator('[data-act="open"][data-id="t17"]')});
+ await expect(row.locator('.tdates')).toContainText('준비물 1 / 32');
+ await app.locator('[data-act="open"][data-id="t17"]').click();
+ await expect(app.locator('details.shootcl[data-k="cl-t17"]')).toHaveAttribute('open','');
+ await app.locator('[data-act="toggle"][data-id="t17"]').click();
+ await expect.poll(async()=> (await stored(app))?.tasks?.t17?.done).toBe(true);
+ st=await stored(app);expect(st.tasks.t17.checks.w32).toBe(true);expect(noArrays(st)).toBe(true);expect(errors).toEqual([]);
+});

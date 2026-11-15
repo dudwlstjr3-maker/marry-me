@@ -3,3 +3,6 @@ test-results/
 playwright-report/
 _site/
 launcher/app/
+*.log
+.env
+.env.*
