@@ -826,6 +826,8 @@ body{line-height:1.65}
 .due-list strong{font-variant-numeric:tabular-nums;white-space:nowrap}
 .due-list li.late .when,.due-list li.late .when small,.due-list li.late strong{color:var(--hong)}
 .due-note{border-left:3px solid var(--hong);padding-left:10px}
+/* 지역 표의 최신 값 줄 */
+.rtable tr.latest th,.rtable tr.latest td{background:var(--gold-soft)}
 </style>
 </head>
 <body>
@@ -1671,6 +1673,7 @@ function regionTable(cap, key, unit, dec){
   [selected].forEach(function(r){
     var v = r[key];
     h += '<tr'+(r.n === '전국' ? ' class="nat"' : '')+'><th scope="row">'+r.n+'<small>자료 '+v[3]+'건'+(v[3] <= 2 ? ' <span class="kchip few">자료 적음</span>' : '')+'</small></th><td>'+f(v[0])+'</td><td class="avg">'+f(v[1])+'</td><td>'+f(v[2])+'</td></tr>';
+    if (key === 'h' && HALL_RENT_LATEST.v[r.n] != null) h += '<tr class="latest"><th scope="row">최신 '+HALL_RENT_LATEST.month+'<small><span class="kchip mid">중간값</span> 참가격</small></th><td colspan="3" class="avg">'+f(HALL_RENT_LATEST.v[r.n])+'</td></tr>';
   });
   return h + '</tbody></table></div>';
 }
@@ -1678,6 +1681,8 @@ function ptSec(id, title){ return '<details class="pt-accordion" data-k="'+id+'"
 function ptEnd(){ return '</div></details>'; }
 /* 가격 비교표의 행. 비교안은 '그룹-순번'(예: hall-rent-1) 행 ID로 저장돼요.
    있는 행의 순서는 바꾸지 말고, 새 행은 표 끝에 추가하세요. */
+/* 참가격 공식 상세표의 지역별 대관료 중간값(2026년 9월). 앱의 ‘전라’·‘광주’는 참가격의 ‘전북’·‘전남광주’와 범위가 달라 넣지 않았어요. */
+var HALL_RENT_LATEST = {month:'2026년 9월', v:{'전국':350, '서울 강남':750, '서울(강남 외)':580, '경기':380, '인천':250, '강원':350, '충청':350, '대전':300, '경상':290, '대구':150, '부산':180, '울산':351, '제주':165}};
 var PRICE_TABLES = {
   'overall': [
     ['예식장+스드메 합계(결혼서비스 비용)', '2,139만원', '평균, 2026년 2월'],
@@ -1692,18 +1697,18 @@ var PRICE_TABLES = {
   ],
   'hall-rent': [
     ['성수기 / 비수기', '350만원 / 250만원', '중간값, 2025년 4월~2026년 6월'],
-    ['대관료(전국, 2025년 12월보다 16.7% 오름)', '350만원', '중간값, 2026년 2월']
+    ['대관료(전국)', '350만원', '중간값, 2026년 9월']
   ],
   'hall-meal': [
-    ['1인 식대(전국)', '6만원', '중간값, 2025년 8월'],
+    ['1인 식대(전국)', '6만원', '중간값, 2026년 9월'],
     ['  서울 강남 1인 식대', '8.8만원', '중간값, 2026년 2월'],
     ['식사 종류별 1인 식대 코스 / 뷔페 / 한상차림', '11.9만원 / 6.2만원 / 5.5만원', '평균, 2026년 2월']
   ],
   'hall-extra': [
-    ['생화 꽃장식', '280만원', '중간값, 2026년 2월'],
+    ['생화 꽃장식', '256만원', '중간값, 2026년 9월'],
     ['  (이전 조사)', '262만원', '중간값, 2025년 12월'],
-    ['본식 촬영', '80만원', '중간값, 2025년 6월'],
-    ['본식 원판 사진 구매', '51만원', '중간값, 2025년 12월'],
+    ['본식 촬영', '75만원', '중간값, 2026년 9월'],
+    ['본식 원판 사진 구매', '50만원', '중간값, 2026년 9월'],
     ['본식 사회자', '30만원', '참가격 통계(전국)'],
     ['본식 도우미', '30만원', '참가격 통계(전국)'],
     ['폐백 음식', '30만원', '참가격 통계(전국)'],
@@ -2921,8 +2926,8 @@ var SDM_REF = {
   b05: {v:140, t:'스튜디오 전국 중간값 140만원(2026년 9월)', sec:'pt-studio'},
   b06: {v:160, t:'드레스 전국 중간값 160만원(2026년 9월)', sec:'pt-dress'},
   b07: {v:82, t:'메이크업 전국 중간값 82만원(2026년 9월)', sec:'pt-makeup'},
-  b03: {v:null, t:'본식 촬영 중간값 80만원(2025년 6월, 영상 별도)', sec:'pt-hall'},
-  b27: {v:null, t:'생화 꽃장식 중간값 280만원(2026년 2월)', sec:'pt-hall'},
+  b03: {v:null, t:'본식 촬영 중간값 75만원(2026년 9월, 영상 별도)', sec:'pt-hall'},
+  b27: {v:null, t:'생화 꽃장식 중간값 256만원(2026년 9월)', sec:'pt-hall'},
   b08: {v:null, t:'추가금 예: 원본 파일 22만원, 드레스 피팅 6만원, 헬퍼 25만원', sec:'pt-studio'}
 };
 function budgetRefHTML(r){
