@@ -248,12 +248,12 @@ test('budget loads a plan, reflects chosen items and compares reference prices w
  // Two plan items for the same budget line are compared together; an empty budget is excluded from the difference.
  await toggle('hall-extra-1').click();await toggle('hall-extra-6').click();
  await expect(row('b27').locator('.pr-row-diff')).toHaveText('예산 미입력');
- await expect(row('b27').locator('.pr-row-nums')).toHaveText('참고 310만원 · 내 예산 -');
+ await expect(row('b27').locator('.pr-row-nums')).toHaveText('참고 286만원 · 내 예산 -');
  await expect(app.locator('.pr-legend')).toContainText('예산이나 금액을 넣지 않은 1곳은 차액에서 뺐어요.');
  await expect(sum.locator('.pr-diff')).toHaveText('350만원 초과');
  await row('b27').locator('summary').click();
  await row('b27').locator('[data-act="b-plan-import"]').click();
- await expect.poll(async()=> (await stored(app))?.budget?.items?.b27?.plan).toBe(310);
+ await expect.poll(async()=> (await stored(app))?.budget?.items?.b27?.plan).toBe(286);
  await expect(row('b27').locator('.pr-row-diff')).toHaveText('시세와 같아요');
  // Applying a plan never rewrites amounts on its own; replacing one is an explicit, labelled choice.
  await row('b01').locator('summary').click();
@@ -268,18 +268,18 @@ test('budget loads a plan, reflects chosen items and compares reference prices w
 test('my own amounts replace the reference price in plans and in the budget review',async({page})=>{
  const {app,errors}=await openApp(page,PLAN_SEED());await app.locator('#tab-price').click();
  await openSection(app,'pt-hall');
- await expect(app.locator('.price-group-tab[data-id="pa"]')).toContainText('1,170만원');
+ await expect(app.locator('.price-group-tab[data-id="pa"]')).toContainText('1,146만원');
  const rent=app.locator('[data-price-mine="hall-rent-1"]');
  await expect(rent).toHaveValue('');await expect(rent).toHaveAttribute('placeholder','참고 710');
  await rent.fill('520');await expect(rent).toBeFocused();
  await expect(pickRow(app,'hall-rent-1').locator('.price-pick-amt')).toHaveText('내 금액 520만원');
  await expect(pickRow(app,'hall-rent-1').locator('li.used strong')).toHaveText('710만원');
  await expect(pickRow(app,'hall-rent-1').locator('.price-refs-note')).toHaveText('합계에는 직접 넣은 금액을 써요.');
- await expect(planTotal(app)).toHaveText('980만원');
+ await expect(planTotal(app)).toHaveText('956만원');
  await expect(app.locator('.price-builder .price-group-summary div').nth(2).locator('strong')).toHaveText('1개 / 3개');
  // Typed amounts are not region-dependent, so changing the region raises no notice for them.
  await app.locator('#priceRegion').selectOption('부산');await expect(app.locator('#panel-price .price-note')).toHaveCount(0);
- await expect(planTotal(app)).toHaveText('980만원');
+ await expect(planTotal(app)).toHaveText('956만원');
  await app.locator('[data-act="price-toggle"][data-id="hall-meal-1"]').click();
  await app.locator('[data-price-mine="hall-meal-1"]').fill('65000');
  await expect(pickRow(app,'hall-meal-1').locator('.price-pick-amt')).toHaveText('내 금액 6.5만원 × 187명 = 1,216만원');
@@ -595,15 +595,16 @@ test('price comparison keeps regional prices with their item and supports per-it
  await expect(section('pt-dress')).toHaveJSProperty('open',true);
  await app.locator('#priceRegion').selectOption('서울 강남');
  await expect.poll(async()=> (await stored(app))?.budget.region).toBe('서울 강남');
- await expect(app.locator('#panel-price .rtable:not(.ptable) tbody tr')).toHaveCount(3);
- for (const row of await app.locator('#panel-price .rtable:not(.ptable) tbody tr').all()) await expect(row.locator('th[scope="row"]')).toContainText('서울 강남');
+ // The rent table also shows one 'latest official median' row for the region.
+ await expect(app.locator('#panel-price .rtable:not(.ptable) tbody tr:not(.latest)')).toHaveCount(3);
+ for (const row of await app.locator('#panel-price .rtable:not(.ptable) tbody tr:not(.latest)').all()) await expect(row.locator('th[scope="row"]')).toContainText('서울 강남');
  await app.locator('#tab-budget').click();
  await expect(app.locator('#bRegion')).toHaveValue('서울 강남');
  await app.locator('#panel-budget select[data-bregion]').selectOption('부산');
  await expect.poll(async()=> (await stored(app))?.budget.region).toBe('부산');
  await app.locator('#tab-price').click();
  await expect(app.locator('#priceRegion')).toHaveValue('부산');
- for (const row of await app.locator('#panel-price .rtable:not(.ptable) tbody tr').all()) await expect(row.locator('th[scope="row"]')).toContainText('부산');
+ for (const row of await app.locator('#panel-price .rtable:not(.ptable) tbody tr:not(.latest)').all()) await expect(row.locator('th[scope="row"]')).toContainText('부산');
  await expect(section('pt-dress')).toHaveJSProperty('open',true);
  await app.locator('#tab-budget').click();
  await expect(row('b02').locator('.refline')).toContainText('부산 1인 식대 평균 4.7만원');
@@ -911,5 +912,16 @@ test('inside claude.ai the backup file is saved through the app download prompt'
  expect(saved.name).toBe('marry-me-backup-2026-10-06.json');expect(saved.body.app).toBe('marry-me');expect(saved.body.data.groom).toBe('준호');
  await app.locator('#backupSave').click();
  await expect(app.locator('#shareMsg')).toHaveText('저장을 취소했어요.');
+ expect(errors).toEqual([]);
+});
+
+test('regional hall rent shows the latest official median next to the survey range',async({page})=>{
+ const seed=structuredClone(SEED);seed.budget.region='서울 강남';
+ const {app,errors}=await openApp(page,seed);await app.locator('#tab-price').click();await openSection(app,'pt-hall');
+ const latest=app.locator('#pt-hall').locator('xpath=ancestor::details[1]').locator('tr.latest');
+ await expect(latest).toHaveCount(1);await expect(latest).toContainText('최신 2026년 9월');await expect(latest.locator('td')).toHaveText('750');
+ // 광주 has no exact match in the new regions, so no latest row is shown.
+ await app.locator('#priceRegion').selectOption('광주');await expect(latest).toHaveCount(0);
+ await expect(app.locator('#panel-price')).toContainText('256만원');
  expect(errors).toEqual([]);
 });
