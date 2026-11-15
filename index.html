@@ -838,6 +838,35 @@ body{line-height:1.65}
 .due-note{border-left:3px solid var(--hong);padding-left:10px}
 /* 지역 표의 최신 값 줄 */
 .rtable tr.latest th,.rtable tr.latest td{background:var(--gold-soft)}
+/* 가격 비교: 접기 제목·펼친 내용·직접 금액을 서로 다른 면으로 구분해요. */
+#panel-price .price-builder-tools{gap:8px}
+#panel-price .know details{border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+#panel-price .know details+details{margin-top:8px}
+#panel-price .know details>summary{padding:10px 12px;min-height:48px;border-bottom:0;border-radius:5px;background:var(--paper);cursor:pointer}
+#panel-price .know details[open]{border-color:var(--gold-line)}
+#panel-price .know details[open]>summary{border-bottom:1px solid var(--gold-line);border-radius:5px 5px 0 0;background:var(--gold-soft)}
+#panel-price .know .price-category{margin-top:14px;border-color:var(--gold-line)}
+#panel-price .know .price-category>summary{min-height:56px;background:var(--gold-soft)}
+#panel-price .price-category>.body{padding:10px 6px}
+#panel-price .pt-content{padding:8px 6px 12px}
+#panel-price details:is(.price-picked-details,.price-custom,.price-compare,.trash)>:not(summary){padding:10px 8px}
+#panel-price .know details>summary::after,
+#panel-price .know details>summary>h3::after,
+#panel-price .know details>summary>h4::after{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;border:1px solid var(--gold-line);border-radius:5px;background:var(--surface);color:var(--gold);font:500 20px/1 var(--sans)}
+#panel-price .know details>summary:focus-visible{outline-offset:2px}
+@media (hover:hover){
+  #panel-price .know details>summary:hover{background:var(--gold-soft);box-shadow:inset 3px 0 var(--gold)}
+}
+#panel-price .know details>summary:active{box-shadow:inset 3px 0 var(--gold)}
+#panel-price .price-pick-in{border-color:var(--gold-line)}
+#panel-price .price-pick.on .price-pick-in{padding-top:6px}
+#panel-price .price-mine{padding:10px 8px;border-color:var(--gold);background:var(--gold-soft)}
+#panel-price :is(input,select,textarea){border-color:var(--gold-line);background:var(--surface)}
+#panel-price .price-mine input{min-height:48px;border:2px solid var(--gold);font-size:16px;background:var(--surface)}
+#panel-price :is(input,select,textarea):focus{border-color:var(--focus);outline:2px solid var(--focus);outline-offset:2px}
+#panel-price .price-mine:focus-within{border-color:var(--focus)}
+#panel-price .price-refs{margin-top:4px;padding:8px;border:1px solid var(--line);border-radius:4px;background:var(--paper)}
+#panel-price .price-pick-src{padding-top:6px;border-top:1px solid var(--line)}
 </style>
 </head>
 <body>

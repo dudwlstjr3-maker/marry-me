@@ -1,3 +1,17 @@
+# 가격 비교 금액 입력·접기 구분
+
+- 기준: main `47fc0f3`, 변경 후: `design/price-input-disclosure`.
+- 390px × 844px, 라이트·다크, 동일한 `priceBudgetSeed()`와 고정 시각. 입력 화면은 포커스 상태도 동일하게 촬영한다.
+- 종이색 접기 제목, 열린 상태의 금색 바탕·구분선, 48px 이상 제목 전체 터치 영역, 직접 금액과 참고 시세의 분리를 비교한다.
+- 재현: `node tests/server.cjs` 실행 후 `SCREENSHOT_BEFORE_REF=47fc0f3 npm run screenshots -- before controls`, `npm run screenshots -- after controls`.
+
+| 화면 | 라이트 전 | 라이트 후 | 다크 전 | 다크 후 |
+| --- | --- | --- | --- | --- |
+| 접힌 보조 도구·분류 | [전](before-light-price-controls-closed.png) | [후](after-light-price-controls-closed.png) | [전](before-dark-price-controls-closed.png) | [후](after-dark-price-controls-closed.png) |
+| 펼친 분류·예식장 가격표 | [전](before-light-price-controls-open.png) | [후](after-light-price-controls-open.png) | [전](before-dark-price-controls-open.png) | [후](after-dark-price-controls-open.png) |
+| 금액 입력 중·참고 시세 | [전](before-light-price-controls-input.png) | [후](after-light-price-controls-input.png) | [전](before-dark-price-controls-input.png) | [후](after-dark-price-controls-input.png) |
+| 직접 추가 펼침·입력칸 | [전](before-light-price-controls-custom.png) | [후](after-light-price-controls-custom.png) | [전](before-dark-price-controls-custom.png) | [후](after-dark-price-controls-custom.png) |
+
 # 가격 비교 모바일 접기 전후 비교
 
 - 기준: 최신 main `9cd80ab`, 변경 후: `design/price-mobile-collapse`.
