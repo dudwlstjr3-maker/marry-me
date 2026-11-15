@@ -805,6 +805,15 @@ body{line-height:1.65}
 .price-ref-name,.price-ref-list small,.price-ref-name em,.price-refs-note,.price-note,
 .price-compare-sec li,.price-compare-sec small,.pt-sec small,.price-badge,.price-state,.pr-diff,
 .trash-list small,.refline,.price-source,.rtable thead th,.rtable th[scope=row] small){font-size:14px}
+/* 가격표 구분: 중간값·평균·참가격 통계는 색 표시로, 기본·추가금 표는 제목 왼쪽 줄 색으로 나눠요. */
+.kchip{display:inline-block;margin-right:4px;padding:0 6px;border:1px solid var(--line);border-radius:4px;font-size:13px;font-weight:600;line-height:1.6;vertical-align:baseline;white-space:nowrap}
+.kchip.mid{color:var(--gold);border-color:var(--gold-line);background:var(--gold-soft)}
+.kchip.avg{color:var(--chung);border-color:var(--chung);background:var(--chung-soft)}
+.kchip.stat{color:var(--muted);background:var(--surface)}
+.kchip.few{color:var(--hong);border-color:var(--hong);background:var(--surface);font-weight:500}
+.rcap.cap-base,.rcap.cap-extra{padding-left:10px;border-left:4px solid var(--gold)}
+.rcap.cap-extra{border-left-color:var(--hong)}
+.region-note{margin-top:6px}
 </style>
 </head>
 <body>
@@ -1649,7 +1658,7 @@ function regionTable(cap, key, unit, dec){
   var selected = REGION_COST.filter(function(r){ return r.n === reg; })[0] || REGION_COST[0];
   [selected].forEach(function(r){
     var v = r[key];
-    h += '<tr'+(r.n === '전국' ? ' class="nat"' : '')+'><th scope="row">'+r.n+'<small>자료 '+v[3]+'건</small></th><td>'+f(v[0])+'</td><td class="avg">'+f(v[1])+'</td><td>'+f(v[2])+'</td></tr>';
+    h += '<tr'+(r.n === '전국' ? ' class="nat"' : '')+'><th scope="row">'+r.n+'<small>자료 '+v[3]+'건'+(v[3] <= 2 ? ' <span class="kchip few">자료 적음</span>' : '')+'</small></th><td>'+f(v[0])+'</td><td class="avg">'+f(v[1])+'</td><td>'+f(v[2])+'</td></tr>';
   });
   return h + '</tbody></table></div>';
 }
@@ -1659,7 +1668,7 @@ function ptEnd(){ return '</div></details>'; }
    있는 행의 순서는 바꾸지 말고, 새 행은 표 끝에 추가하세요. */
 var PRICE_TABLES = {
   'overall': [
-    ['결혼서비스 전체 비용', '2,139만원', '평균, 2026년 2월'],
+    ['예식장+스드메 합계(결혼서비스 비용)', '2,139만원', '평균, 2026년 2월'],
     ['  그중 식대 비중', '61.4%', '참가격 통계'],
     ['  그중 대관료 비중', '20.9%', '참가격 통계'],
     ['  그중 기본 장식비 비중', '3.5%', '참가격 통계']
@@ -1692,7 +1701,8 @@ var PRICE_TABLES = {
     ['스튜디오 기본', '137만원', '중간값, 2026년 2월'],
     ['  (이전 조사)', '132만원', '중간값, 2025년 8월'],
     ['가장 비싼 지역 / 싼 지역', '강원 159만원 / 경기·충청 100만원', '중간값, 2025년 4월'],
-    ['서울 강남', '150만원', '중간값, 2025년 4월']
+    ['서울 강남', '150만원', '중간값, 2025년 4월'],
+    ['서울(강남 외)', '129만원', '중간값, 2025년 4월']
   ],
   'studio-extra': [
     ['원본 파일 전체 구매', '22만원', '중간값, 2025년 4월'],
@@ -1704,8 +1714,8 @@ var PRICE_TABLES = {
   ],
   'dress-basic': [
     ['드레스 기본', '160만원', '중간값, 2026년 2월'],
-    ['가장 비싼 지역 / 싼 지역', '대전 220만원 / 서울(강남 외) 118만원', '중간값, 2025년 12월'],
-    ['서울 강남', '198만원', '중간값, 2025년 12월']
+    ['가장 비싼 지역 / 싼 지역', '대전 222만원 / 서울(강남 외) 110만원', '중간값, 2025년 4월'],
+    ['서울 강남', '205만원', '중간값, 2025년 4월']
   ],
   'dress-extra': [
     ['피팅(시착)', '6만원', '중간값, 2025년 4월'],
@@ -1738,7 +1748,7 @@ var PRICE_TABLES = {
    regional: 지역별 표(REGION_COST)의 그 지역 평균을 선택지로 더해요.
    opts: 한 항목의 가격 선택지(하나만 골라요). row = 값을 읽는 표의 행, part = 'A / B' 값 중 몇 번째인지, regions = 그 값의 지역(없으면 전국). */
 var PRICE_ITEMS = [
-  {id:'overall-1', sec:'total', name:'결혼서비스 전체 비용', budget:['b01','b02','b05','b06','b07'], bundle:true, regional:'t', opts:[{id:'overall-1', row:'overall-1'}]},
+  {id:'overall-1', sec:'total', name:'예식장+스드메 합계', budget:['b01','b02','b05','b06','b07'], bundle:true, regional:'t', opts:[{id:'overall-1', row:'overall-1'}]},
   {id:'hall-basic-1', sec:'hall', name:'결혼식장 계약금', budget:['b01','b02'], bundle:true, opts:[{id:'hall-basic-1', row:'hall-basic-1'}, {id:'hall-basic-2', row:'hall-basic-2'}]},
   {id:'hall-rent-1', sec:'hall', name:'대관료', budget:['b01'], regional:'h', opts:[{id:'hall-rent-1', row:'hall-rent-1'}]},
   {id:'hall-meal-1', sec:'hall', name:'식대', budget:['b02'], perHead:true, regional:'m', opts:[{id:'hall-meal-1', row:'hall-meal-1'}, {id:'hall-meal-2', row:'hall-meal-2', regions:['서울 강남']}]},
@@ -1750,7 +1760,7 @@ var PRICE_ITEMS = [
   {id:'hall-extra-7', sec:'hall', name:'폐백 음식', budget:['b11'], opts:[{id:'hall-extra-7', row:'hall-extra-7'}]},
   {id:'hall-extra-8', sec:'hall', name:'폐백 수모비', budget:['b11'], opts:[{id:'hall-extra-8', row:'hall-extra-8'}]},
   {id:'hall-extra-9', sec:'hall', name:'혼주 헤어·메이크업', budget:['b27'], opts:[{id:'hall-extra-9', row:'hall-extra-9', label:'여성 + 남성'}, {id:'hall-extra-9a', row:'hall-extra-9', part:0, label:'여성'}, {id:'hall-extra-9b', row:'hall-extra-9', part:1, label:'남성'}, {id:'hall-extra-10', row:'hall-extra-10'}]},
-  {id:'studio-basic-1', sec:'studio', name:'스튜디오 기본', budget:['b05'], opts:[{id:'studio-basic-1', row:'studio-basic-1'}, {id:'studio-basic-2', row:'studio-basic-2'}, {id:'studio-basic-3a', row:'studio-basic-3', part:0, label:'가장 비싼 지역', regions:['강원']}, {id:'studio-basic-3b', row:'studio-basic-3', part:1, label:'가장 싼 지역', regions:['경기','충청']}, {id:'studio-basic-4', row:'studio-basic-4', regions:['서울 강남']}]},
+  {id:'studio-basic-1', sec:'studio', name:'스튜디오 기본', budget:['b05'], opts:[{id:'studio-basic-1', row:'studio-basic-1'}, {id:'studio-basic-2', row:'studio-basic-2'}, {id:'studio-basic-3a', row:'studio-basic-3', part:0, label:'가장 비싼 지역', regions:['강원']}, {id:'studio-basic-3b', row:'studio-basic-3', part:1, label:'가장 싼 지역', regions:['경기','충청']}, {id:'studio-basic-4', row:'studio-basic-4', regions:['서울 강남']}, {id:'studio-basic-5', row:'studio-basic-5', regions:['서울(강남 외)']}]},
   {id:'studio-extra-1', sec:'studio', name:'원본 파일 전체 구매', budget:['b08'], opts:[{id:'studio-extra-1', row:'studio-extra-1'}]},
   {id:'studio-extra-2', sec:'studio', name:'앨범 페이지 추가(1장)', budget:['b08'], opts:[{id:'studio-extra-2', row:'studio-extra-2'}]},
   {id:'studio-extra-3', sec:'studio', name:'야외·야간 촬영', budget:['b08'], opts:[{id:'studio-extra-3', row:'studio-extra-3', label:'야외 + 야간'}, {id:'studio-extra-3a', row:'studio-extra-3', part:0, label:'야외 촬영만'}, {id:'studio-extra-3b', row:'studio-extra-3', part:1, label:'야간 촬영만'}]},
@@ -1842,7 +1852,7 @@ var PRICE_EXTRA_GROUPS = [
   ]}
 ];
 PRICE_EXTRA_GROUPS.forEach(function(g){ g.items.forEach(function(x){ PRICE_ITEMS.push({id:x[0], sec:'extra', grp:g.id, name:x[1], budget:[x[2]], note:x[3], opts:[]}); }); });
-var PRICE_SECS = {total:'전체 비용', hall:'예식장', studio:'스튜디오', dress:'드레스', make:'메이크업', package:'스드메 묶음', extra:'그 밖의 비용', custom:'직접 추가'};
+var PRICE_SECS = {total:'예식장+스드메', hall:'예식장', studio:'스튜디오', dress:'드레스', make:'메이크업', package:'스드메 묶음', extra:'그 밖의 비용', custom:'직접 추가'};
 var PRICE_ITEM_BY_ID = {}, PRICE_ROW_REF = {}, PRICE_ITEM_LAST_ROW = {};
 PRICE_ITEMS.forEach(function(it){
   PRICE_ITEM_BY_ID[it.id] = it;
@@ -2105,15 +2115,23 @@ function pricePickRow(item, group, region, basis){
   }
   return h + '</div></td></tr>';
 }
+/* ‘중간값, 2026년 2월’ → [중간값] 2026년 2월. 중간값·평균·참가격 통계를 색으로 나눠 한눈에 구분해요. */
+function priceKindHTML(src){
+  var m = /^(중간값|평균|참가격 통계)(.*)$/.exec(src);
+  if (!m) return src;
+  var cls = m[1] === '중간값' ? 'mid' : m[1] === '평균' ? 'avg' : 'stat';
+  return '<span class="kchip '+cls+'">'+m[1]+'</span>'+m[2].replace(/^,\s*/, ' ');
+}
 function priceTable(cap, rows, head, group){
   head = head || ['항목', '중간값', '조사 시점'];
   group = group || 'reference';
   var active = activePriceGroup(), region = curRegion(), basis = priceHeadBasis();
-  var h = '<p class="rcap">'+cap+'</p><div class="rwrap"><table class="rtable ptable"><thead><tr>' +
+  var capCls = /추가금|선택/.test(cap) ? ' cap-extra' : /기본|필수/.test(cap) ? ' cap-base' : '';
+  var h = '<p class="rcap'+capCls+'">'+cap+'</p><div class="rwrap"><table class="rtable ptable"><thead><tr>' +
     head.concat(['비교안']).map(function(x){ return '<th scope="col">'+x+'</th>'; }).join('') + '</tr></thead><tbody>';
   rows.forEach(function(r, index){
     var id = group + '-' + (index + 1), ref = PRICE_ROW_REF[id];
-    h += '<tr><th scope="row">'+r[0]+'</th><td class="avg">'+r[1]+'</td><td class="price-source">'+r[2]+'</td>' +
+    h += '<tr><th scope="row">'+r[0]+'</th><td class="avg">'+r[1]+'</td><td class="price-source">'+priceKindHTML(r[2])+'</td>' +
       (ref ? '' : '<td class="price-config"><span class="tip">참고값 · 합계에서 제외</span></td>') + '</tr>';
     if (ref && PRICE_ITEM_LAST_ROW[ref.item] === id) h += pricePickRow(PRICE_ITEM_BY_ID[ref.item], active, region, basis);
   });
@@ -2265,9 +2283,10 @@ function priceHTML(){
     '<li>모두 한국소비자원 조사값이고, 조사 시점이 항목마다 달라요. 같은 항목에 시점이 다른 값이 있으면 최신 값을 위에 두었어요.</li>' +
     '<li>기본 가격에는 선택 품목(추가금)이 빠져 있어요. 추가금은 항목마다 따로 정리했어요.</li></ul>' + ptEnd() +
 
-    ptSec('pt-total', '전체 비용 (예식장+스드메)') +
+    ptSec('pt-total', '예식장+스드메 비용') +
     priceTable('전국', PRICE_TABLES['overall'], ['항목', '금액', '기준·시점'], 'overall') +
-    regionTable('지역별 전체 비용', 't', '만원', false) + ptEnd() +
+    regionTable('지역별 예식장+스드메 비용', 't', '만원', false) +
+    '<p class="tip">한국소비자원 조사는 예식장과 스드메만 봐요. 예물·예단·혼수·신혼여행·신혼집은 빠진 금액이에요. 신혼집까지 합친 결혼 전체 비용은 결혼정보회사 듀오 조사(2025년 2월, 결혼 2년 차 부부 1,000명)에서 평균 3억 6,173만원이었고, 그중 신혼집이 3억 408만원이었어요(언론 보도 기준).</p>' + ptEnd() +
 
     ptSec('pt-hall', '예식장') +
     priceTable('기본(필수) 항목', PRICE_TABLES['hall-basic'], ['항목', '금액', '기준·시점'], 'hall-basic') +
@@ -2279,11 +2298,11 @@ function priceHTML(){
     '<p class="tip">식장이 많이 취급하는 추가 항목은 본식 촬영(67.8%), 혼주 헤어·메이크업(62.4%), 본식 사회자(46.7%) 순이에요. 성수기 주말엔 생화 장식이나 본식 도우미를 필수로 붙이는 식장이 32.8%였어요.</p>' + ptEnd() +
 
     ptSec('pt-studio', '스튜디오') +
-    priceTable('기본(20P 앨범·20R 액자)', PRICE_TABLES['studio-basic'], ['항목', '금액', '기준·시점'], 'studio-basic') +
+    priceTable('기본(20P 앨범·20R 액자)', PRICE_TABLES['studio-basic'], ['항목', '금액', '기준·시점'], 'studio-basic') + '<p class="tip region-note">지역 값은 그 지역에서 조사된 업체 가격의 가운데 값이에요. 조사 업체가 적은 지역은 몇 곳의 가격에 크게 흔들릴 수 있어서, 강원(스튜디오)·대전(드레스)이 서울 강남보다 높게 나오기도 했어요. 지역 값은 참고만 하고 받은 견적끼리 비교하세요.</p>' +
     priceTable('추가금(선택 항목)', PRICE_TABLES['studio-extra'], ['항목', '금액', '기준·시점'], 'studio-extra') + ptEnd() +
 
     ptSec('pt-dress', '드레스') +
-    priceTable('기본(본식 1벌+촬영 3벌)', PRICE_TABLES['dress-basic'], ['항목', '금액', '기준·시점'], 'dress-basic') +
+    priceTable('기본(본식 1벌+촬영 3벌)', PRICE_TABLES['dress-basic'], ['항목', '금액', '기준·시점'], 'dress-basic') + '<p class="tip region-note">지역 값은 그 지역에서 조사된 업체 가격의 가운데 값이에요. 조사 업체가 적은 지역은 몇 곳의 가격에 크게 흔들릴 수 있어서, 강원(스튜디오)·대전(드레스)이 서울 강남보다 높게 나오기도 했어요. 지역 값은 참고만 하고 받은 견적끼리 비교하세요.</p>' +
     priceTable('추가금(선택 항목)', PRICE_TABLES['dress-extra'], ['항목', '금액', '기준·시점'], 'dress-extra') + ptEnd() +
 
     ptSec('pt-makeup', '메이크업') +
