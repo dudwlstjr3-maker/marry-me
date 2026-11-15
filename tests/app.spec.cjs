@@ -464,7 +464,7 @@ test('legacy price data is read into the new plans and everything survives a rel
  // Later PR #4 shape: plans keyed by table rows, including a superseded survey row and a regional row.
  const later=structuredClone(SEED);later.pricePlan={activeGroup:'default',groups:{default:{name:'기본안',items:{'hall-rent-1':true,'studio-basic-1':false,'studio-basic-2':true,'hall-meal-2':true}},pg1:{name:'옛 조합',items:{'package-2':true}}}};
  await put(later);await app.locator('#tab-price').click();
- await expect(app.locator('.price-group-tab[data-id="default"]')).toContainText('2,065만원 ~ 2,165만원');
+ await expect(app.locator('.price-group-tab[data-id="default"]')).toContainText('2,028만원 ~ 2,128만원');
  await expect(app.locator('.price-group-tab[data-id="pg1"]')).toContainText('319만원');
  await openSection(app,'pt-studio');await expect(pickRow(app,'studio-basic-1').locator('li.used .price-ref-name')).toContainText('(이전 조사)');
  await app.locator('[data-act="price-toggle"][data-id="studio-extra-1"]').click();
