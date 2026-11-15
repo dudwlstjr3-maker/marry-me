@@ -957,3 +957,36 @@ test('wedding shoot checklist follows the shoot date and saves each item apart f
  await expect.poll(async()=> (await stored(app))?.tasks?.t17?.done).toBe(true);
  st=await stored(app);expect(st.tasks.t17.checks.w32).toBe(true);expect(noArrays(st)).toBe(true);expect(errors).toEqual([]);
 });
+
+test('open rows stand out in colour, show an arrow, and close from the bottom or by tapping the amount',async({page})=>{
+ const {app,errors}=await openApp(page);
+ const bgOf=l=>l.evaluate(e=>getComputedStyle(e).backgroundColor);
+ await app.locator('#tab-budget').click();
+ const title=app.locator('[data-act="b-open"][data-id="b01"]'),li=app.locator('li.bitem').filter({has:title});
+ // Every row that opens carries an arrow.
+ expect(await app.locator('#panel-budget .t-title[aria-expanded]').count()).toBe(await app.locator('#panel-budget .row > .chev').count());
+ // Tapping the amount on the right opens the row as well.
+ await li.locator('.bamt').click();
+ await expect(title).toHaveAttribute('aria-expanded','true');await expect(li).toHaveClass(/is-open/);
+ await expect(li.locator('.fhead')).toHaveText(['금액과 날짜','그 밖']);
+ const head=await bgOf(li.locator('.row')),body=await bgOf(li.locator('.detail')),closed=await bgOf(app.locator('li.bitem:not(.is-open)').first());
+ expect(head).not.toBe(closed);expect(body).not.toBe(closed);expect(head).not.toBe(body);
+ expect((await li.locator('.detail').evaluate(e=>getComputedStyle(e).borderLeftWidth))).toBe('4px');
+ // Typing still works inside the tinted box, and the bottom button folds the row and returns focus to it.
+ await li.locator('[data-fk="b-total-b01"]').fill('360');await expect(li.locator('.bamt')).toContainText('360만원');
+ const close=li.locator('[data-act="close-row"]');expect((await close.boundingBox()).height).toBeGreaterThanOrEqual(44);
+ await close.click();
+ await expect(title).toHaveAttribute('aria-expanded','false');await expect(li).not.toHaveClass(/is-open/);await expect(title).toBeFocused();
+ await expect(app.locator('[data-act="close-row"]')).toHaveCount(0);
+ await expect.poll(async()=> (await stored(app))?.budget?.items?.b01?.plan).toBe(360);
+ // The same card and close button on the other tabs.
+ for(const [tab,act] of [['timeline','open'],['guest','g-open'],['talk','talk-open']]){
+  await app.locator('#tab-'+tab).click();
+  const t=app.locator(`#panel-${tab} [data-act="${act}"]`).first(),id=await t.getAttribute('data-id');
+  const row=app.locator(`#panel-${tab} li`).filter({has:app.locator(`[data-act="${act}"][data-id="${id}"]`)});
+  await t.click();await expect(row).toHaveClass(/is-open/);await expect(t).toHaveAttribute('aria-expanded','true');
+  await row.locator('[data-act="close-row"]').click();
+  await expect(t).toHaveAttribute('aria-expanded','false');await expect(app.locator(`#panel-${tab} .is-open`)).toHaveCount(0);
+ }
+ expect(errors).toEqual([]);
+});
