@@ -158,11 +158,11 @@ test('price items are picked one by one, each with one regional reference option
  await expect(pickRow(app,'hall-rent-1').locator('.price-pick-amt')).toHaveText('참고 317만원');
  // Several survey values of one item are shown side by side, but only the base one counts.
  await studio.click();await expect(refs('studio-basic-1')).toHaveCount(6);
- await expect(pickRow(app,'studio-basic-1').locator('li.used strong')).toHaveText('137만원');
- await expect(planTotal(app)).toHaveText('454만원');
+ await expect(pickRow(app,'studio-basic-1').locator('li.used strong')).toHaveText('140만원');
+ await expect(planTotal(app)).toHaveText('457만원');
  // Meal price is per person, multiplied by the budget's guaranteed guests.
  await meal.click();await expect(pickRow(app,'hall-meal-1').locator('.price-pick-amt')).toHaveText('참고 5.9만원 × 187명 = 1,103만원');
- await expect(planTotal(app)).toHaveText('1,557만원');
+ await expect(planTotal(app)).toHaveText('1,560만원');
  await studio.click();await expect(studio).toHaveAttribute('aria-checked','false');await expect(rent).toHaveAttribute('aria-checked','true');
  await expect(planTotal(app)).toHaveText('1,420만원');
  // Only picked items get an amount field; empty fields show the base reference as a hint.
@@ -464,7 +464,7 @@ test('legacy price data is read into the new plans and everything survives a rel
  // Later PR #4 shape: plans keyed by table rows, including a superseded survey row and a regional row.
  const later=structuredClone(SEED);later.pricePlan={activeGroup:'default',groups:{default:{name:'기본안',items:{'hall-rent-1':true,'studio-basic-1':false,'studio-basic-2':true,'hall-meal-2':true}},pg1:{name:'옛 조합',items:{'package-2':true}}}};
  await put(later);await app.locator('#tab-price').click();
- await expect(app.locator('.price-group-tab[data-id="default"]')).toContainText('2,065만원 ~ 2,165만원');
+ await expect(app.locator('.price-group-tab[data-id="default"]')).toContainText('2,028만원 ~ 2,128만원');
  await expect(app.locator('.price-group-tab[data-id="pg1"]')).toContainText('319만원');
  await openSection(app,'pt-studio');await expect(pickRow(app,'studio-basic-1').locator('li.used .price-ref-name')).toContainText('(이전 조사)');
  await app.locator('[data-act="price-toggle"][data-id="studio-extra-1"]').click();
@@ -577,7 +577,7 @@ test('price comparison keeps regional prices with their item and supports per-it
  const row=id=>app.locator(`[data-act="b-open"][data-id="${id}"]`).locator('xpath=ancestor::li[1]');
  await expect(row('b01').locator('.refline')).toHaveText('전국 대관료 평균 317만원, 내 금액이 33만원 높아요');
  await expect(row('b02').locator('.refline')).toHaveText('전국 1인 식대 평균 5.9만원, 내 금액이 0.3만원 높아요');
- await expect(row('b05').locator('.refline')).toContainText('스튜디오 전국 중간값 137만원(2026년 2월)');
+ await expect(row('b05').locator('.refline')).toContainText('스튜디오 전국 중간값 140만원(2026년 9월)');
  await app.locator('[data-act="goto-price"][data-sec="pt-hall"]').click();
  await expect(card).toHaveJSProperty('open',true);
  const section=id=>card.locator('details.pt-accordion').filter({has:app.locator('#'+id)});
