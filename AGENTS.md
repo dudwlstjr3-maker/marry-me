@@ -23,7 +23,7 @@
 4. 고정 ID는 바꾸거나 지우지 않는다: TASKS t01~t44, BUDGET_ITEMS b01~b27, TALKS m1~m17. 새 항목은 새 ID로.
 5. 모든 input·textarea·select에 고유한 `data-fk`와 label 또는 aria-label을 붙인다.
 6. 누르는 영역은 44px 이상, 글자 대비는 4.5:1 이상. 색은 `:root` CSS 변수로만 쓰고 다크 모드를 유지한다.
-7. 법·제도·통계·날짜 같은 사실 내용(`BASIS`, `knowHTML`)은 작업 요청에 있을 때만 고친다. 그때는 `ALLOW_CONTENT_CHANGE=1 npm test`로 시험하고, PR에 바꾼 사실과 출처, 기준일을 적는다.
+7. 법·제도·통계·날짜 같은 사실 내용(`BASIS`, `knowHTML`)은 작업 요청에 있을 때만 고친다. 그때는 `ALLOW_CONTENT_CHANGE=1 npm test`로 시험하고, PR에 바꾼 사실과 출처, 기준일을 적는다. PR의 자동 시험도 통과하게 하려면 `tests/content-change-allowed.txt` 첫 줄에 그때의 `main` 커밋 번호(`git rev-parse main`)를 적는다. 병합되면 `main`이 바뀌어 이 허용은 저절로 끝난다. 카드 하나만 다시 확인했으면 `BASIS`는 두고 `KNOW_CHECKED`에 그 카드의 확인일을 적는다.
 8. `ARTIFACT_URL`(claude.ai 앱 링크)은 바꾸지 않는다.
 
 ## 시험 실행

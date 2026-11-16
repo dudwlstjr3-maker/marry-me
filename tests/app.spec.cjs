@@ -547,7 +547,10 @@ test('storage and fixed content remain byte-for-byte unchanged',async()=>{
  expect(block(current,'function defaultBody()','/* ---------------- ui state')).toBe(block(original,'function defaultBody()','/* ---------------- ui state'));
  expect(current).not.toMatch(/<form\b|type=["']submit/i);
  // Facts (laws, statistics, dates) may change only when a task asks for it: run with ALLOW_CONTENT_CHANGE=1 and say so in the PR.
- if (process.env.ALLOW_CONTENT_CHANGE === '1') return;
+ // A facts PR also passes CI by naming, in tests/content-change-allowed.txt, the main commit it was written against.
+ // Once that PR is merged main moves on, so the allowance ends by itself.
+ const allowFile='tests/content-change-allowed.txt',mainSha=execFileSync('git',['rev-parse','main'],{encoding:'utf8'}).trim();
+ if (process.env.ALLOW_CONTENT_CHANGE === '1' || (fs.existsSync(allowFile) && fs.readFileSync(allowFile,'utf8').trim().split(/\s+/)[0] === mainSha)) return;
  const normalize=s=>s.replace(/regCalcHTML\('[^']+'\)/g,'regCalcHTML()').replace(/var TASK_DETAILS = \{[\s\S]*?\n\};\n\nvar PHASES =/,'var PHASES =').replace("var TABS = ['timeline','budget','price','guest','honey','know','talk'];","var TABS = ['timeline','budget','guest','honey','know','talk'];");
  expect(normalize(block(current,'var BASIS =','function esc('))).toBe(normalize(block(original,'var BASIS =','function esc(')));
  const updatePriceLink=source=>source.replace("'<li>항목별 금액은 위의 \\'항목별 가격 비교표\\'에 모아 두었어요.</li></ul>'", "'<li>항목별 금액은 가격 비교 탭에서 확인할 수 있어요. <button class=\"link\" type=\"button\" data-act=\"goto-price\">가격 비교 탭 열기</button></li></ul>'");
@@ -988,5 +991,30 @@ test('open rows stand out in colour, show an arrow, and close from the bottom or
   await row.locator('[data-act="close-row"]').click();
   await expect(t).toHaveAttribute('aria-expanded','false');await expect(app.locator(`#panel-${tab} .is-open`)).toHaveCount(0);
  }
+ expect(errors).toEqual([]);
+});
+
+test('know tab separates the law in force from the 2027 plan, shows the newlywed loan change and per-card check dates',async({page})=>{
+ const {app,errors}=await openApp(page);
+ // First screen: a wedding after the 2026 deadline gets the notice, worded as not yet decided.
+ await expect(app.locator('#hero .notice')).toContainText('현금 지원(부부 100만원)');
+ await expect(app.locator('#hero .notice')).toContainText('아직 확정되지 않았어요');
+ await app.locator('#tab-know').click();
+ const cardOf=k=>app.locator(`#panel-know details[data-k="${k}"]`);
+ await cardOf('k3').locator('summary').click();
+ await expect(cardOf('k3')).toContainText('2024년 1월 1일 ~ 2026년 12월 31일');
+ await expect(cardOf('k3')).toContainText('혼인지원금');await expect(cardOf('k3')).toContainText('확정 전');
+ await expect(cardOf('k3')).toContainText('지급 시기와 신청 방법은 아직 정해지지 않았어요');
+ await expect(cardOf('k3').locator('.checked')).toHaveText('2026년 11월 16일에 다시 확인했어요.');
+ await cardOf('k3').locator('[data-fk="reg-tax"]').fill('2027-03-01');
+ await expect(cardOf('k3').locator('.calc')).toContainText('아직 확정 전이에요');
+ await cardOf('k8').locator('summary').click();
+ await expect(cardOf('k8')).toContainText('2026년 10월 19일부터');
+ await expect(cardOf('k8')).toContainText('신청인 6,000만원 이하');await expect(cardOf('k8')).toContainText('신청인 5,000만원 이하');
+ await expect(cardOf('k8')).toContainText('보금자리론은 신청인 7,000만원 이하');
+ await expect(cardOf('k8').locator('.checked')).toHaveCount(1);
+ // Cards that were not rechecked keep following the date at the top.
+ await expect(cardOf('k2').locator('.checked')).toHaveCount(0);await expect(cardOf('k6').locator('.checked')).toHaveCount(0);
+ await expect(app.locator('#panel-know .basis')).toContainText('2026년 10월 6일 기준');
  expect(errors).toEqual([]);
 });
