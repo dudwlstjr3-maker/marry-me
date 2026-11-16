@@ -912,6 +912,22 @@ body{line-height:1.65}
 .fhead{display:flex;align-items:center;gap:8px;margin:0;color:var(--gold);font-size:13px;font-weight:600;line-height:1.5}
 .fhead::after{content:"";flex:1;height:1px;background:var(--gold-line)}
 .fhead:not(:first-child){margin-top:6px}
+/* 첫 화면: 날짜를 정한 뒤에는 얇은 띠 */
+.hero.compact{padding-top:12px}
+.hero-bar{appearance:none;display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:8px 10px 8px 14px;border:1px solid var(--gold-line);border-left:4px solid var(--gold);border-radius:8px;background:var(--surface);text-align:left;cursor:pointer;box-shadow:0 2px 8px var(--shadow)}
+.hero-bar-main{flex:1;min-width:0;display:grid;gap:1px}
+.hero-bar .names{margin:0;font-family:var(--serif);font-size:17px;font-weight:700;line-height:1.4;letter-spacing:0}
+.hero-bar .when{margin:0;max-width:none;font-size:13px;line-height:1.5;color:var(--muted)}
+.hero-dday{flex:none;font-family:var(--serif);font-size:26px;font-weight:700;line-height:1.2;letter-spacing:-.03em;color:var(--gold);font-variant-numeric:lining-nums tabular-nums;white-space:nowrap}
+.hero-prog{display:grid;gap:3px;margin:10px 2px 0}
+.hero-prog .strand{height:3px}
+.hero.compact .stats{justify-content:flex-start;gap:2px 12px;padding:8px 2px 0;border-top:0;font-size:13px}
+.hero.compact .notice{margin-top:10px;padding:0 12px}
+.n-fold>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-block:8px;list-style:none;cursor:pointer;line-height:1.5}
+.n-fold>summary::-webkit-details-marker{display:none}
+.n-fold>p{margin:0;padding:10px 0 4px;border-top:1px solid var(--line)}
+.hero.compact+.tabs{margin-top:14px}
+.close-row.hero-fold{margin-top:14px}
 /* 펼친 상자 맨 아래의 닫기 */
 .close-row{appearance:none;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:44px;margin-top:2px;padding:8px 12px;border:1px solid var(--gold-line);border-radius:6px;background:var(--surface);color:var(--gold);font-size:14px;font-weight:600;line-height:1.3;cursor:pointer}
 .close-row::before{border-color:currentColor;margin:0}
@@ -927,8 +943,8 @@ body{line-height:1.65}
 .pr-pick[open]>summary,.pr-row[open]>summary{border-radius:5px 5px 0 0;background:var(--open-head)}
 details:is(.price-picked-details,.price-custom,.price-compare,.trash)[open]{border-color:var(--gold-line)}
 details:is(.price-picked-details,.price-custom,.price-compare,.trash)[open]>summary{border-bottom-color:var(--gold-line);background:var(--open-head)}
-.glance-more>summary::after,.q-paste>summary::after{content:"";flex:none;box-sizing:border-box;width:9px;height:9px;margin-left:8px;border:solid var(--chung);border-width:0 2px 2px 0;transform:translateY(-3px) rotate(45deg)}
-.glance-more[open]>summary::after,.q-paste[open]>summary::after{transform:translateY(2px) rotate(-135deg)}
+.glance-more>summary::after,.q-paste>summary::after,.n-fold>summary::after{content:"";flex:none;box-sizing:border-box;width:9px;height:9px;margin-left:8px;border:solid var(--chung);border-width:0 2px 2px 0;transform:translateY(-3px) rotate(45deg)}
+.glance-more[open]>summary::after,.q-paste[open]>summary::after,.n-fold[open]>summary::after{transform:translateY(2px) rotate(-135deg)}
 </style>
 </head>
 <body>
@@ -1424,6 +1440,7 @@ function init(){
 /* ---------------- ui state ---------------- */
 var ui = {
   tab: lsGet('wd-tab') || 'timeline',
+  heroOpen: lsGet('wd-hero') === '1',
   hideDone: lsGet('wd-hideDone') === '1',
   showHidden: false,
   open: {},
@@ -1597,6 +1614,8 @@ function renderHero(list){
   var big = d > 0 ? 'D-' + d : (d === 0 ? 'D-Day' : 'D+' + (-d));
   var c = counts(list);
   var pct = c.total ? Math.round(c.done / c.total * 100) : 0;
+  var compact = !ui.heroOpen;
+  el.className = 'wrap hero' + (compact ? ' compact' : '');
   var stats = '<span><b>'+c.left+'</b>개 남음</span>' +
     (c.catchup ? '<span class="soon">먼저 챙길 일 <b>'+c.catchup+'</b>개</span>' : '') +
     '<span>이번 주 <b>'+c.week+'</b>개</span>' +
@@ -1606,8 +1625,24 @@ function renderHero(list){
   var todayStr = ymd(t0);
   var reg = state.regDate;
   if (todayStr <= TAX_END && ((reg && reg > TAX_END) || (!reg && state.weddingDate >= '2026-12-01'))) {
-    notice = '<p class="notice">결혼세액공제(1인 50만원)는 현행법상 <b>2026년 12월 31일까지</b> 혼인신고한 경우에만 받아요. 2027년 신고분부터는 현금 지원(부부 100만원)으로 바꾸는 정부안이 국회에서 심의 중이고, 아직 확정되지 않았어요. ' +
-      '<button class="link" type="button" data-act="goto-know" data-k="k1">혼인신고 시기 따져 보기</button></p>';
+    var noticeText = '결혼세액공제(1인 50만원)는 현행법상 <b>2026년 12월 31일까지</b> 혼인신고한 경우에만 받아요. 2027년 신고분부터는 현금 지원(부부 100만원)으로 바꾸는 정부안이 국회에서 심의 중이고, 아직 확정되지 않았어요. ' +
+      '<button class="link" type="button" data-act="goto-know" data-k="k1">혼인신고 시기 따져 보기</button>';
+    /* 얇은 띠일 때는 한 줄 요약만 보이고, 누르면 전체 안내가 펼쳐져요. */
+    notice = compact
+      ? '<details class="notice n-fold" data-k="hero-notice"'+(ui.openKnow['hero-notice'] ? ' open' : '')+'><summary><span>결혼세액공제는 <b>2026년 12월 31일</b> 신고분까지예요. 2027년부터는 확정 전이에요.</span></summary><p>'+noticeText+'</p></details>'
+      : '<p class="notice">'+noticeText+'</p>';
+  }
+  if (compact) {
+    /* 날짜를 정한 뒤에는 얇은 띠만 보여 주고, 누르면 청첩장 카드가 펼쳐져요. */
+    var hg = (state.groom || '').trim(), hb = (state.bride || '').trim();
+    el.innerHTML = '<button class="hero-bar" type="button" data-act="hero-toggle" data-fk="hero-toggle" aria-expanded="false">' +
+        '<span class="hero-bar-main">' +
+          (hg || hb ? '<span class="names">'+esc(hg)+(hg && hb ? ' <span class="heart" aria-hidden="true">♥</span> ' : '')+esc(hb)+'</span>' : '') +
+          '<span class="when">'+esc(fmtLong(wd))+(state.weddingTime ? ' '+esc(fmtTime(state.weddingTime)) : '')+'</span>' +
+        '</span><span class="sr">결혼식까지</span><span class="hero-dday">'+esc(big)+'</span><span class="sr">청첩장 카드 펼치기</span>'+CHEV+'</button>' +
+      '<div class="hero-prog" role="img" aria-label="할 일 '+c.total+'개 중 '+c.done+'개 완료"><span class="strand c"><i style="width:'+pct+'%"></i></span><span class="strand h"><i style="width:'+pct+'%"></i></span></div>' +
+      '<p class="stats">'+stats+'</p>' + notice;
+    return;
   }
   el.innerHTML = '<div class="invitation">'+invitationDecorHTML()+namesHTML() +
     '<div class="dday" aria-label="결혼식까지 '+esc(big)+'">'+esc(big)+'</div>' +
@@ -1621,7 +1656,8 @@ function renderHero(list){
         '<circle cx="28.5" cy="18" r="3.4" fill="var(--ink)"/>' +
       '</svg>' +
     '</div>' +
-    '<p class="stats">'+stats+'</p>' + notice;
+    '<p class="stats">'+stats+'</p>' +
+    '<button class="close-row hero-fold" type="button" data-act="hero-toggle" data-fk="hero-toggle" aria-expanded="true">청첩장 카드 접기</button>' + notice;
 }
 
 function renderTabs(){
@@ -3817,6 +3853,7 @@ function doHeroSave(){
   if (hg) hp.groom = hg.value.trim();
   if (hb) hp.bride = hb.value.trim();
   if (!state.startDate) hp.startDate = ymd(today());
+  ui.heroOpen = true; /* 처음 날짜를 정한 이번 방문에는 청첩장 카드를 한 번 보여 줘요. 다음부터는 얇은 띠예요. */
   commit(hp);
 }
 document.addEventListener('click', function(e){
@@ -3839,6 +3876,11 @@ document.addEventListener('click', function(e){
   else if (act === 'q-photo-cancel') { ui.photoDraft = null; ui.photoMsg = ''; render(); focusSel('[data-act="q-photo"]'); }
   else if (act === 'q-photo-save') doQuotePhotoSave();
   else if (act === 'hero-save') doHeroSave();
+  else if (act === 'hero-toggle') {
+    ui.heroOpen = !ui.heroOpen; lsSet('wd-hero', ui.heroOpen ? '1' : '0'); render();
+    var heroBtn = document.querySelector('[data-act="hero-toggle"]');
+    if (heroBtn) { try { heroBtn.focus({preventScroll:true}); } catch(e9){} if (!ui.heroOpen) window.scrollTo(0, 0); }
+  }
 });
 /* Enter in a one-line field runs that row's button */
 document.addEventListener('keydown', function(e){

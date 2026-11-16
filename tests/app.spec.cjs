@@ -617,6 +617,8 @@ test('price comparison keeps regional prices with their item and supports per-it
 
 test('ceremony decorations are inert, compact and respect motion preferences',async({page})=>{
  const {app}=await openApp(page);
+ // The invitation card is folded once the date is set; unfold it to audit its decorations.
+ await app.locator('[data-act="hero-toggle"]').click();await expect(app.locator('.invitation')).toBeVisible();
  const audit=await app.locator('body').evaluate(()=>{
   const svg=[...document.querySelectorAll('svg[aria-hidden="true"]')];
   const decor=[...document.querySelectorAll('.ceremony-decor,.bow')];
@@ -996,9 +998,12 @@ test('open rows stand out in colour, show an arrow, and close from the bottom or
 
 test('know tab separates the law in force from the 2027 plan, shows the newlywed loan change and per-card check dates',async({page})=>{
  const {app,errors}=await openApp(page);
- // First screen: a wedding after the 2026 deadline gets the notice, worded as not yet decided.
- await expect(app.locator('#hero .notice')).toContainText('현금 지원(부부 100만원)');
- await expect(app.locator('#hero .notice')).toContainText('아직 확정되지 않았어요');
+ // First screen: a wedding after the 2026 deadline gets a one-line notice; opening it shows the full wording, as not yet decided.
+ const notice=app.locator('#hero .notice');
+ await expect(notice.locator('summary')).toContainText('2026년 12월 31일');await expect(notice.locator('summary')).toContainText('2027년부터는 확정 전');
+ await notice.locator('summary').click();
+ await expect(notice.locator('p')).toBeVisible();
+ await expect(notice.locator('p')).toContainText('현금 지원(부부 100만원)');await expect(notice.locator('p')).toContainText('아직 확정되지 않았어요');
  await app.locator('#tab-know').click();
  const cardOf=k=>app.locator(`#panel-know details[data-k="${k}"]`);
  await cardOf('k3').locator('summary').click();
@@ -1016,5 +1021,40 @@ test('know tab separates the law in force from the 2027 plan, shows the newlywed
  // Cards that were not rechecked keep following the date at the top.
  await expect(cardOf('k2').locator('.checked')).toHaveCount(0);await expect(cardOf('k6').locator('.checked')).toHaveCount(0);
  await expect(app.locator('#panel-know .basis')).toContainText('2026년 10월 6일 기준');
+ expect(errors).toEqual([]);
+});
+
+test('first screen folds to a slim D-day bar once the date is set, and unfolds to the invitation card',async({page})=>{
+ const {app,errors}=await openApp(page);
+ const bar=app.locator('.hero-bar');
+ await expect(bar).toBeVisible();await expect(bar).toHaveAttribute('aria-expanded','false');
+ await expect(app.locator('.invitation')).toHaveCount(0);
+ await expect(bar.locator('.names')).toContainText('준호');await expect(bar.locator('.names')).toContainText('민지');
+ await expect(bar.locator('.when')).toHaveText('2027년 5월 8일 토요일 오후 12시 30분');
+ await expect(bar.locator('.hero-dday')).toHaveText('D-214');
+ // A screen reader hears what is shown on the bar (names, date, D-day) and what pressing it does.
+ await expect(bar).toHaveAccessibleName(/준호.*민지.*2027년 5월 8일 토요일 오후 12시 30분.*결혼식까지.*D-214.*청첩장 카드 펼치기/);
+ await expect(app.locator('#hero .stats')).toContainText('132개 중 9개 완료');
+ await expect(app.locator('#hero .notice')).toBeVisible();
+ // The tabs and the start of the list now sit on the first screen (they were a full screen down).
+ const tabsTop=await app.locator('.tabs').evaluate(e=>e.getBoundingClientRect().top);
+ expect(tabsTop).toBeLessThan(page.viewportSize().height/2);
+ await expect(app.locator('#panel-timeline .phase-head').first()).toBeInViewport();
+ // Unfold: the invitation card comes back with a fold button, and the choice is remembered on this device.
+ await bar.click();
+ await expect(app.locator('.invitation')).toBeVisible();await expect(app.locator('.dday')).toHaveText('D-214');
+ const fold=app.locator('.hero-fold');await expect(fold).toHaveAttribute('aria-expanded','true');await expect(fold).toBeFocused();
+ expect(await app.locator('body').evaluate(()=>localStorage.getItem('wd-hero'))).toBe('1');
+ await fold.click();
+ await expect(app.locator('.invitation')).toHaveCount(0);await expect(bar).toBeFocused();
+ expect(await app.locator('body').evaluate(()=>localStorage.getItem('wd-hero'))).toBe('0');
+ expect(errors).toEqual([]);
+});
+
+test('the invitation card stays open on the visit where the date is first set',async({page})=>{
+ const {app,errors}=await openApp(page,null);
+ await expect(app.locator('.invitation #heroDate')).toBeVisible();await expect(app.locator('.hero-bar')).toHaveCount(0);
+ await app.locator('#heroDate').fill('2027-05-08');await app.locator('[data-act="hero-save"]').click();
+ await expect(app.locator('.invitation .dday')).toHaveText('D-214');await expect(app.locator('.hero-fold')).toBeVisible();
  expect(errors).toEqual([]);
 });
