@@ -1032,6 +1032,8 @@ test('first screen folds to a slim D-day bar once the date is set, and unfolds t
  await expect(bar.locator('.names')).toContainText('준호');await expect(bar.locator('.names')).toContainText('민지');
  await expect(bar.locator('.when')).toHaveText('2027년 5월 8일 토요일 오후 12시 30분');
  await expect(bar.locator('.hero-dday')).toHaveText('D-214');
+ // A screen reader hears what is shown on the bar (names, date, D-day) and what pressing it does.
+ await expect(bar).toHaveAccessibleName(/준호.*민지.*2027년 5월 8일 토요일 오후 12시 30분.*결혼식까지.*D-214.*청첩장 카드 펼치기/);
  await expect(app.locator('#hero .stats')).toContainText('132개 중 9개 완료');
  await expect(app.locator('#hero .notice')).toBeVisible();
  // The tabs and the start of the list now sit on the first screen (they were a full screen down).

@@ -1635,11 +1635,11 @@ function renderHero(list){
   if (compact) {
     /* 날짜를 정한 뒤에는 얇은 띠만 보여 주고, 누르면 청첩장 카드가 펼쳐져요. */
     var hg = (state.groom || '').trim(), hb = (state.bride || '').trim();
-    el.innerHTML = '<button class="hero-bar" type="button" data-act="hero-toggle" data-fk="hero-toggle" aria-expanded="false" aria-label="결혼식까지 '+esc(big)+'. 청첩장 카드 펼치기">' +
+    el.innerHTML = '<button class="hero-bar" type="button" data-act="hero-toggle" data-fk="hero-toggle" aria-expanded="false">' +
         '<span class="hero-bar-main">' +
           (hg || hb ? '<span class="names">'+esc(hg)+(hg && hb ? ' <span class="heart" aria-hidden="true">♥</span> ' : '')+esc(hb)+'</span>' : '') +
           '<span class="when">'+esc(fmtLong(wd))+(state.weddingTime ? ' '+esc(fmtTime(state.weddingTime)) : '')+'</span>' +
-        '</span><span class="hero-dday">'+esc(big)+'</span>'+CHEV+'</button>' +
+        '</span><span class="sr">결혼식까지</span><span class="hero-dday">'+esc(big)+'</span><span class="sr">청첩장 카드 펼치기</span>'+CHEV+'</button>' +
       '<div class="hero-prog" role="img" aria-label="할 일 '+c.total+'개 중 '+c.done+'개 완료"><span class="strand c"><i style="width:'+pct+'%"></i></span><span class="strand h"><i style="width:'+pct+'%"></i></span></div>' +
       '<p class="stats">'+stats+'</p>' + notice;
     return;
