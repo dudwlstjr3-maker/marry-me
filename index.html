@@ -183,6 +183,7 @@ input:disabled,textarea:disabled{opacity:.6}
 .know details[open] summary h3::after{content:"−"}
 .know .lead{margin:4px 0 0;font-size:14px;color:var(--muted)}
 .know .body{margin-top:16px;font-size:16px;line-height:1.75}
+.know .checked{margin:12px 0 0;padding-top:8px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted)}
 .know ul{margin:0;padding-left:18px}
 .know li{margin:10px 0}
 .calc{margin-top:12px;padding:12px 14px;background:var(--chung-soft);border-radius:8px;font-size:14px;display:grid;gap:6px}
@@ -1605,7 +1606,7 @@ function renderHero(list){
   var todayStr = ymd(t0);
   var reg = state.regDate;
   if (todayStr <= TAX_END && ((reg && reg > TAX_END) || (!reg && state.weddingDate >= '2026-12-01'))) {
-    notice = '<p class="notice">결혼세액공제(1인 50만원)는 현행법상 <b>2026년 12월 31일까지</b> 혼인신고한 경우에만 받아요. 2027년 이후 신고분은 연장 법안이 발의만 된 상태예요. ' +
+    notice = '<p class="notice">결혼세액공제(1인 50만원)는 현행법상 <b>2026년 12월 31일까지</b> 혼인신고한 경우에만 받아요. 2027년 신고분부터는 현금 지원(부부 100만원)으로 바꾸는 정부안이 국회에서 심의 중이고, 아직 확정되지 않았어요. ' +
       '<button class="link" type="button" data-act="goto-know" data-k="k1">혼인신고 시기 따져 보기</button></p>';
   }
   el.innerHTML = '<div class="invitation">'+invitationDecorHTML()+namesHTML() +
@@ -1842,7 +1843,7 @@ function regCalcHTML(key){
   if (!reg) return '<div class="calc">'+input+'<p>날짜를 넣으면 결혼세액공제 대상 여부와 결혼자금 증여공제 기간을 계산해요.</p></div>';
   var s = state.regDate, ok = s >= '2024-01-01' && s <= TAX_END;
   return '<div class="calc">'+input +
-    '<p>결혼세액공제: '+(ok ? '<span class="yes">현행법상 대상이에요.</span>' : '<span class="no">현행법(2024~2026년 신고분) 기준으로는 대상이 아니에요.</span>' + (s > TAX_END ? ' 연장 법안이 통과되면 달라질 수 있어요.' : ''))+'</p>' +
+    '<p>결혼세액공제: '+(ok ? '<span class="yes">현행법상 대상이에요.</span>' : '<span class="no">현행법(2024~2026년 신고분) 기준으로는 대상이 아니에요.</span>' + (s > TAX_END ? ' 2027년 신고분부터는 현금 지원(부부 100만원)으로 바꾸는 정부안과 공제를 연장하는 법안이 국회에 있어요. 아직 확정 전이에요.' : ''))+'</p>' +
     '<p>결혼자금 증여공제 기간: <b>'+esc(fmtShort(addYears(reg,-2), 0))+'</b> ~ <b>'+esc(fmtShort(addYears(reg,2), 0))+'</b></p>' +
   '</div>';
 }
@@ -2390,20 +2391,22 @@ function pricePlanHTML(){
 function cmpRow(t, pre, post){
   return '<div class="cmp-row"><h4>'+t+'</h4><p class="pre"><span class="tag">신고 전</span> '+pre+'</p><p class="post"><span class="tag">신고 후</span> '+post+'</p></div>';
 }
+/* 카드별로 내용을 공식 자료에서 다시 확인한 날. 없는 카드는 맨 위의 기준일(BASIS)을 따라요. */
+var KNOW_CHECKED = {k3:'2026년 11월 16일', k4:'2026년 11월 16일', k5:'2026년 11월 16일', k8:'2026년 11월 16일'};
 function card(id, title, lead, body, links, compact){
   var open = !!ui.openKnow[id];
   return '<details'+(compact ? ' class="price-category"' : '')+' data-k="'+id+'"'+(open?' open':'')+'><summary><h3>'+title+'</h3>'+(compact ? '' : '<p class="lead">'+lead+'</p>')+'</summary>' +
-    '<div class="body">'+(compact ? '<p class="lead">'+lead+'</p>' : '')+body+(links ? '<div class="srcs">'+links+'</div>' : '')+'</div></details>';
+    '<div class="body">'+(compact ? '<p class="lead">'+lead+'</p>' : '')+body+(KNOW_CHECKED[id] ? '<p class="checked">'+KNOW_CHECKED[id]+'에 다시 확인했어요.</p>' : '')+(links ? '<div class="srcs">'+links+'</div>' : '')+'</div></details>';
 }
 function a(href, text){ return '<a href="'+href+'" target="_blank" rel="noopener noreferrer">'+text+'</a>'; }
 
 function knowHTML(){
-  var h = '<p class="basis">'+BASIS+' 기준 내용이에요. 제도는 해마다 바뀌니 신청 전에 공식 사이트에서 한 번 더 확인하세요.</p><div class="know">';
+  var h = '<p class="basis">'+BASIS+' 기준 내용이에요. 카드 아래에 ‘다시 확인’ 날짜가 있으면 그 카드는 그날 기준이에요. 제도는 해마다 바뀌니 신청 전에 공식 사이트에서 한 번 더 확인하세요.</p><div class="know">';
   h += card('k1', '혼인신고 시기부터 정하기',
     '결혼식 날과 혼인신고 날은 달라도 돼요. 언제 하느냐에 따라 세금과 대출 조건이 달라져요.',
     '<ul><li>결혼세액공제는 혼인신고서를 낸 날을 기준으로 대상이 갈려요.</li>' +
     '<li>부모님께 받는 결혼자금 공제는 혼인신고일 앞뒤 2년 안에 받은 돈만 해당돼요.</li>' +
-    '<li>대출·청약은 혼인신고 뒤 부부 소득을 합쳐 보는 경우가 많아 자격과 한도가 바뀔 수 있어요. 받을 상품 기준으로 미리 비교하세요.</li></ul>' + regCalcHTML('timing'));
+    '<li>대출·청약은 혼인신고 뒤 부부 소득을 합쳐 보는 경우가 많아 자격과 한도가 바뀔 수 있어요. 받을 상품 기준으로 미리 비교하세요. 신혼부부 정책대출은 2026년 10월 19일부터 합산 소득이 기준을 넘어도 신청하는 한 사람의 소득으로 볼 수 있게 됐어요(아래 ‘신혼집·대출·청약’).</li></ul>' + regCalcHTML('timing'));
   h += card('k9', '혼인신고 전과 후, 청약·분양 차이',
     '청약은 세대 단위로 봐요. 혼인신고를 하면 두 사람의 주택·분양권 이력과 소득을 합쳐서 봐요.',
     '<div class="cmp">' +
@@ -2413,7 +2416,7 @@ function knowHTML(){
     cmpRow('가점제(민영 일반공급)', '본인 점수만 들어가요.', '배우자가 부양가족으로 들어가 5점이 오르고, 배우자 청약통장 가입기간의 절반을 최대 3점까지 더해요. 만 30세 전에 혼인신고하면 무주택기간을 혼인신고일부터 세요.') +
     cmpRow('부부 각자 청약', '서로 상관없이 각자 신청해요.', '부부가 각각 신청할 수 있고, 발표일이 같은 곳에 둘 다 당첨되면 먼저 접수한 1건만 유효해요. 적용 여부는 공고문에서 확인하세요(공공임대는 제외).') +
     cmpRow('당첨 이력 제한', '각자 자기 이력만 봐요.', '신혼부부·생애최초·신생아 특별공급에서는 배우자의 혼인 전 당첨 이력(재당첨 제한, 특공 횟수 제한 등)을 따지지 않아요.') +
-    cmpRow('세금·대출', '각자 1세대로 봐요.', '정책대출과 특공 소득은 부부 합산이고, 양도세·취득세의 주택 수도 세대 기준으로 바뀌어요. 집이 있는 채로 결혼한다면 신고 전에 세무 상담을 받아 보세요.') +
+    cmpRow('세금·대출', '각자 1세대로 봐요.', '특공 소득은 부부 합산이에요. 정책대출도 부부 합산이 기본인데, 2026년 10월 19일부터 신혼부부는 합산 기준을 넘으면 신청하는 한 사람의 소득으로 볼 수 있어요. 양도세·취득세의 주택 수도 세대 기준으로 바뀌어요. 집이 있는 채로 결혼한다면 신고 전에 세무 상담을 받아 보세요.') +
     '</div><p class="tip" style="margin-top:10px">2024년 3월 25일 개정된 주택공급 규칙 기준이에요. 단지마다 적용이 달라질 수 있으니 입주자모집공고를 먼저 보세요.</p>',
     a('https://www.applyhome.co.kr','청약홈'));
   h += card('k2', '혼인신고 하는 법',
@@ -2431,8 +2434,10 @@ function knowHTML(){
     '<li>부부 각자 50만원, 합쳐서 최대 100만원. 평생 한 번이고 재혼도 해당돼요. 사실혼은 안 돼요.</li>' +
     '<li>혼인신고한 해의 연말정산(다음 해 1~2월)이나 5월 종합소득세 신고 때 반영해요.</li>' +
     '<li>낼 세금에서 빼 주는 방식이라 낼 세금이 50만원보다 적으면 그만큼만 줄어요.</li>' +
-    '<li>2027년 이후 신고분은 연장 법안이 국회에 발의된 상태로, 아직 확정되지 않았어요.</li></ul>' + regCalcHTML('tax'),
-    a('https://www.hometax.go.kr','홈택스'));
+    '<li>2027년 신고분부터는 달라질 수 있어요(확정 전). 정부는 세액공제를 끝내고, 2027년 1월 1일 이후 혼인신고한 부부에게 현금으로 부부 100만원(1인 50만원)을 주는 ‘혼인지원금’을 2027년 예산안에 넣었어요. 소득과 상관없이 평생 한 번이에요.</li>' +
+    '<li>이 지원금은 국회에서 예산이 확정돼야 하고, 지급 시기와 신청 방법은 아직 정해지지 않았어요.</li>' +
+    '<li>세액공제를 2029년이나 2030년까지 늘리는 법안 2건도 국회 소위원회에서 심사 중이에요(의결 전, 법제처 국회입법현황 기준).</li></ul>' + regCalcHTML('tax'),
+    a('https://www.hometax.go.kr','홈택스') + a('https://opinion.lawmaking.go.kr','국회입법현황(법제처)'));
   h += card('k4', '부모님께 받는 결혼자금',
     '부모·조부모에게 받는 돈은 기본 공제 5천만원에 더해 결혼 때 최대 1억원이 더 공제돼요.',
     '<ul><li>기간: 혼인신고일 전 2년부터 후 2년까지, 모두 4년 안에 받은 돈.</li>' +
@@ -2468,9 +2473,11 @@ function knowHTML(){
   h += card('k8', '신혼집·대출·청약',
     '혼인 여부와 혼인 기간이 자격·한도에 들어가는 상품이 많아요. 계약 전에 자격부터 확인하세요.',
     '<ul><li>정책 대출은 부부 합산 소득·자산 기준이 붙는 경우가 많고 기준이 해마다 바뀌어요. 주택도시기금에서 최신 기준을 보세요.</li>' +
+    '<li>2026년 10월 19일부터 신혼부부는 부부 합산 소득이 기준을 넘어도, 신청하는 한 사람의 소득이 기준 이하이면 신청할 수 있어요. 디딤돌(집 살 때)은 합산 8,500만원을 넘어도 신청인 6,000만원 이하, 버팀목(전세)은 합산 7,500만원을 넘어도 신청인 5,000만원 이하, 보금자리론은 신청인 7,000만원 이하예요.</li>' +
+    '<li>디딤돌·버팀목은 이때도 자산 기준과 금리를 부부 합산으로 봐요. 디딤돌은 신청인이 집을 사는 사람, 버팀목은 신청인이 임차인이어야 해요.</li>' +
     '<li>청약에는 신혼부부 특별공급처럼 혼인 기간이 조건인 유형이 있어요. 청약홈에서 공고별 자격을 확인하세요.</li>' +
     '<li>집 명의(단독·공동)는 세금과 대출에 영향을 줘요. 계약 전에 둘이 정해 두세요.</li></ul>',
-    a('https://nhuf.molit.go.kr','주택도시기금') + a('https://www.applyhome.co.kr','청약홈'));
+    a('https://nhuf.molit.go.kr','주택도시기금') + a('https://www.hf.go.kr','한국주택금융공사') + a('https://www.applyhome.co.kr','청약홈'));
   return h + '</div>';
 }
 
