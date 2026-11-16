@@ -1098,6 +1098,15 @@ test('the pressed control stays where it was when a tick redraws the page or a s
  await app.locator('body').evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
  await expect(last).toHaveAttribute('aria-expanded','false');
  expect(Math.abs(await last.evaluate(e=>e.getBoundingClientRect().top)-rowTop)).toBeLessThanOrEqual(1);
+ // Look-alike buttons (the twelve honeymoon months) are told apart, so choosing one in a lower row does not scroll the page.
+ await app.locator('#tab-honey').click();
+ const dec=app.locator('#panel-honey [data-act="month"][data-m="12"]');await dec.evaluate(e=>e.scrollIntoView({block:'center'}));
+ const decTop=await dec.evaluate(e=>e.getBoundingClientRect().top),janTop=await app.locator('#panel-honey [data-act="month"][data-m="1"]').evaluate(e=>e.getBoundingClientRect().top),db=await dec.boundingBox();
+ expect(decTop).toBeGreaterThan(janTop);
+ await page.mouse.click(db.x+db.width/2,db.y+db.height/2);
+ await app.locator('body').evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+ await expect(dec).toHaveAttribute('aria-pressed','true');
+ expect(Math.abs(await dec.evaluate(e=>e.getBoundingClientRect().top)-decTop)).toBeLessThanOrEqual(1);
  // The save-status line keeps its height on phones, so "저장됨" coming and going does not move the page.
  const barH=()=>app.locator('.bar').evaluate(e=>e.getBoundingClientRect().height);
  const withText=await barH();await app.locator('#status').evaluate(e=>{e.textContent='';});

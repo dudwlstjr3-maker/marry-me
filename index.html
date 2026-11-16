@@ -3711,19 +3711,23 @@ function setEndSpace(px){
 function tapSelector(el){
   if (el.tagName === 'SUMMARY') { var dk = el.parentElement && el.parentElement.getAttribute('data-k'); return dk ? 'details[data-k="'+dk+'"] > summary' : ''; }
   var fk = el.getAttribute('data-fk'); if (fk) return '[data-fk="'+fk+'"]';
+  if (!el.hasAttribute('data-act')) return '';
+  /* 같은 일을 하는 단추가 여러 개일 수 있으니(월 고르기 등) data- 속성을 모두 써서 가려내요. */
   var sel = '';
-  ['data-act','data-id','data-group','data-kind','data-c','data-v','data-parent'].forEach(function(a){ var v = el.getAttribute(a); if (v != null && !/["\\]/.test(v)) sel += '['+a+'="'+v+'"]'; });
-  return el.hasAttribute('data-act') ? sel : '';
+  Array.prototype.forEach.call(el.attributes, function(a){ if (a.name.indexOf('data-') === 0 && !/["\\\]]/.test(a.value)) sel += '['+a.name+'="'+a.value+'"]'; });
+  return sel;
 }
+/* 그 단추 하나만 가리킬 때에만 써요. 여럿이 걸리면 엉뚱한 단추를 기준으로 화면을 옮기게 돼요. */
+function tapOnly(sel){ try { var found = document.querySelectorAll(sel); return found.length === 1 ? found[0] : null; } catch(e10){ return null; } }
 function tapRemember(e){
   tapKeep = null;
   var el = e.target && e.target.closest && e.target.closest('[data-act],[data-fk],summary');
   var sel = el ? tapSelector(el) : '';
-  if (sel) tapKeep = {sel:sel, top:el.getBoundingClientRect().top, y:window.scrollY, tab:ui.tab};
+  if (sel && tapOnly(sel) === el) tapKeep = {sel:sel, top:el.getBoundingClientRect().top, y:window.scrollY, tab:ui.tab};
 }
 function tapFix(k){
   if (ui.tab !== k.tab) return;
-  var el = null; try { el = document.querySelector(k.sel); } catch(e10){}
+  var el = tapOnly(k.sel);
   if (!el || !el.getClientRects().length) return;
   var moved = el.getBoundingClientRect().top - k.top;   /* 여기서 배치를 다시 계산하므로 아래의 scrollY는 최신이에요 */
   var y = window.scrollY, max = document.documentElement.scrollHeight - window.innerHeight;
