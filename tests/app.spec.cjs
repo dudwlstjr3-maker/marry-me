@@ -1058,3 +1058,49 @@ test('the invitation card stays open on the visit where the date is first set',a
  await expect(app.locator('.invitation .dday')).toHaveText('D-214');await expect(app.locator('.hero-fold')).toBeVisible();
  expect(errors).toEqual([]);
 });
+
+test('the pressed control stays where it was when a tick redraws the page or a section is closed',async({page})=>{
+ const {app,errors}=await openApp(page);
+ const topOf=sel=>app.locator(sel).first().evaluate(e=>e.getBoundingClientRect().top);
+ // A real tap at the control's current place, without Playwright scrolling it first.
+ const tapAt=async(sel,block)=>{const loc=app.locator(sel).first();await loc.evaluate((e,b)=>e.scrollIntoView({block:b}),block||'center');
+  const before=await topOf(sel),box=await loc.boundingBox();await page.mouse.click(box.x+Math.min(box.width/2,40),box.y+box.height/2);
+  await app.locator('body').evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));return before;};
+ await app.locator('#tab-price').click();
+ await app.locator('#panel-price details[data-k="k14"] > summary').click();await app.locator('#panel-price details[data-k="px-flower"] > summary').click();
+ // Ticking the first item adds a "담긴 항목 보기" box above it; the tick box must not slide from under the finger.
+ const tick='[data-act="price-toggle"][data-id="x-bouquet"]';
+ let before=await tapAt(tick);
+ await expect(app.locator(tick)).toHaveAttribute('aria-checked','true');await expect(app.locator('details.price-picked-details')).toHaveCount(1);
+ expect(Math.abs(await topOf(tick)-before)).toBeLessThanOrEqual(1);
+ before=await tapAt(tick);await expect(app.locator(tick)).toHaveAttribute('aria-checked','false');
+ expect(Math.abs(await topOf(tick)-before)).toBeLessThanOrEqual(1);
+ // Closing a tall section makes the page shorter than the scroll position; the header that was tapped must stay put.
+ const head='#panel-price details[data-k="k14"] > summary';
+ await app.locator('#panel-price details[data-k="px-thanks"] > summary').click();
+ await app.locator('[data-act="price-toggle"][data-id="x-song"]').evaluate(e=>e.scrollIntoView({block:'end'}));
+ const headTop=await topOf(head),y0=await app.locator('body').evaluate(()=>scrollY);
+ if(headTop>60&&headTop<page.viewportSize().height-60){   // the header is on screen: tap it where it is
+  const box=await app.locator(head).boundingBox();await page.mouse.click(box.x+40,box.y+box.height/2);
+  await app.locator('body').evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+  expect(Math.abs(await topOf(head)-headTop)).toBeLessThanOrEqual(1);
+ } else { before=await tapAt(head,'start');expect(Math.abs(await topOf(head)-before)).toBeLessThanOrEqual(1); }
+ await expect(app.locator('#panel-price details[data-k="k14"]')).not.toHaveAttribute('open','');
+ // The spare room added at the end goes away again once the page is scrolled back up.
+ await app.locator('body').evaluate(()=>{window.scrollTo(0,0);return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
+ await expect.poll(()=>app.locator('#endSpace').evaluate(e=>e.getBoundingClientRect().height)).toBe(0);
+ // Closing an opened row at the end of a list keeps the row title in place as well.
+ await app.locator('#tab-talk').click();
+ const last=app.locator('#panel-talk [data-act="talk-open"]').last(),lastSel='#panel-talk li:last-child [data-act="talk-open"]';
+ await last.click();await last.evaluate(e=>e.scrollIntoView({block:'start'}));
+ const rowTop=await last.evaluate(e=>e.getBoundingClientRect().top),rb=await last.boundingBox();
+ await page.mouse.click(rb.x+30,rb.y+rb.height/2);
+ await app.locator('body').evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+ await expect(last).toHaveAttribute('aria-expanded','false');
+ expect(Math.abs(await last.evaluate(e=>e.getBoundingClientRect().top)-rowTop)).toBeLessThanOrEqual(1);
+ // The save-status line keeps its height on phones, so "저장됨" coming and going does not move the page.
+ const barH=()=>app.locator('.bar').evaluate(e=>e.getBoundingClientRect().height);
+ const withText=await barH();await app.locator('#status').evaluate(e=>{e.textContent='';});
+ expect(await barH()).toBe(withText);
+ expect(errors).toEqual([]);
+});
