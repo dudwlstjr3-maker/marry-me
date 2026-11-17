@@ -912,6 +912,8 @@ body{line-height:1.65}
 .fhead{display:flex;align-items:center;gap:8px;margin:0;color:var(--gold);font-size:13px;font-weight:600;line-height:1.5}
 .fhead::after{content:"";flex:1;height:1px;background:var(--gold-line)}
 .fhead:not(:first-child){margin-top:6px}
+/* 저장 상태 줄은 글자가 없어도 한 줄 높이를 지켜요. 안 그러면 '저장됨'이 떴다 사라질 때마다 화면 전체가 밀려요. */
+@media (max-width:430px){.status{min-height:1.65em}}
 /* 첫 화면: 날짜를 정한 뒤에는 얇은 띠 */
 .hero.compact{padding-top:12px}
 .hero-bar{appearance:none;display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:8px 10px 8px 14px;border:1px solid var(--gold-line);border-left:4px solid var(--gold);border-radius:8px;background:var(--surface);text-align:left;cursor:pointer;box-shadow:0 2px 8px var(--shadow)}
@@ -979,6 +981,7 @@ details:is(.price-picked-details,.price-custom,.price-compare,.trash)[open]>summ
   <section class="wrap panel" id="panel-honey" role="tabpanel" aria-labelledby="tab-honey" hidden></section>
   <section class="wrap panel" id="panel-know" role="tabpanel" aria-labelledby="tab-know" hidden></section>
   <section class="wrap panel" id="panel-talk" role="tabpanel" aria-labelledby="tab-talk" hidden></section>
+  <div id="endSpace" aria-hidden="true"></div>
 </main>
 
 <dialog id="settings" aria-labelledby="settings-title">
@@ -1521,6 +1524,7 @@ function render(){
   renderTabs();
   // 보고 있는 탭만 그려요. 탭 7개를 매번 다 그리면 휴대폰에서 글자 하나 넣을 때마다 느려져요.
   TABS.forEach(function(t){ document.getElementById('panel-'+t).innerHTML = t === ui.tab ? PANEL_HTML[t](list) : ''; });
+  if (endSpace && endSpaceTab !== ui.tab) setEndSpace(0);
   document.getElementById('openSettings').disabled = !Store.ready;
   lastSig = JSON.stringify(state);
 
@@ -3694,6 +3698,62 @@ document.addEventListener('toggle', function(e){
   var d = e.target;
   if (d && d.tagName === 'DETAILS' && d.hasAttribute('data-k')) ui.openKnow[d.getAttribute('data-k')] = d.open;
 }, true);
+/* 누른 자리가 밀리지 않게.
+   1) 체크·선택으로 화면을 다시 그리면 위쪽 내용의 높이가 바뀌어 누른 단추가 움직여요.
+   2) 묶음이나 줄을 닫으면 페이지가 짧아져서, 브라우저가 화면을 강제로 위로 올려요(누른 머리가 아래로 뚝 떨어져요).
+   누르기 전 위치를 적어 두었다가 같은 단추가 같은 자리에 오도록 화면을 옮기고, 페이지가 모자라면 맨 아래에 빈 자리를 잠깐 둬요.
+   빈 자리는 위로 올라가 보면 저절로 없어져요. 처리 중에 일부러 화면을 옮겼거나(탭 이동, 닫기 단추 등) 단추가 없어졌으면 건드리지 않아요. */
+var tapKeep = null, endSpace = 0, endSpaceTab = '';
+function setEndSpace(px){
+  endSpace = Math.max(0, Math.ceil(px)); endSpaceTab = ui.tab;
+  var sp = document.getElementById('endSpace'); if (sp) sp.style.height = endSpace ? endSpace + 'px' : '';
+}
+function tapSelector(el){
+  if (el.tagName === 'SUMMARY') { var dk = el.parentElement && el.parentElement.getAttribute('data-k'); return dk ? 'details[data-k="'+dk+'"] > summary' : ''; }
+  var fk = el.getAttribute('data-fk'); if (fk) return '[data-fk="'+fk+'"]';
+  if (!el.hasAttribute('data-act')) return '';
+  /* 같은 일을 하는 단추가 여러 개일 수 있으니(월 고르기 등) data- 속성을 모두 써서 가려내요. */
+  var sel = '';
+  Array.prototype.forEach.call(el.attributes, function(a){ if (a.name.indexOf('data-') === 0 && !/["\\\]]/.test(a.value)) sel += '['+a.name+'="'+a.value+'"]'; });
+  return sel;
+}
+/* 그 단추 하나만 가리킬 때에만 써요. 여럿이 걸리면 엉뚱한 단추를 기준으로 화면을 옮기게 돼요. */
+function tapOnly(sel){ try { var found = document.querySelectorAll(sel); return found.length === 1 ? found[0] : null; } catch(e10){ return null; } }
+function tapRemember(e){
+  tapKeep = null;
+  var el = e.target && e.target.closest && e.target.closest('[data-act],[data-fk],summary');
+  var sel = el ? tapSelector(el) : '';
+  if (sel && tapOnly(sel) === el) tapKeep = {sel:sel, top:el.getBoundingClientRect().top, y:window.scrollY, tab:ui.tab};
+}
+function tapFix(k){
+  if (ui.tab !== k.tab) return;
+  var el = tapOnly(k.sel);
+  if (!el || !el.getClientRects().length) return;
+  var moved = el.getBoundingClientRect().top - k.top;   /* 여기서 배치를 다시 계산하므로 아래의 scrollY는 최신이에요 */
+  var y = window.scrollY, max = document.documentElement.scrollHeight - window.innerHeight;
+  var clamped = y < k.y && Math.abs(y - max) < 2;       /* 페이지가 짧아져서 브라우저가 올린 경우 */
+  if (y !== k.y && !clamped) return;                    /* 처리 중에 일부러 옮긴 경우 */
+  if (Math.abs(moved) <= 1) return;
+  var want = y + moved;
+  if (want > max) setEndSpace(endSpace + (want - max));
+  window.scrollTo(0, want);
+}
+function tapRestore(){
+  var k = tapKeep; tapKeep = null;
+  if (!k) return;
+  tapFix(k);                                            /* 화면을 다시 그린 경우: 바로 */
+  if (window.requestAnimationFrame) window.requestAnimationFrame(function(){ tapFix(k); });   /* 묶음(details)은 누른 뒤에 접히므로: 그리기 직전에 */
+}
+['click','change'].forEach(function(type){
+  window.addEventListener(type, tapRemember, true);     /* 다른 처리보다 먼저 */
+  window.addEventListener(type, tapRestore);            /* 다른 처리가 끝난 뒤 */
+});
+window.addEventListener('scroll', function(){
+  if (!endSpace) return;
+  if (endSpaceTab !== ui.tab) { setEndSpace(0); return; }
+  var below = document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
+  if (below >= 1) setEndSpace(endSpace - Math.floor(below));
+}, {passive:true});
 /* toggle 이벤트는 조금 늦게 와요. 그 사이에 화면을 다시 그리면 방금 연 묶음이 도로 접히므로, 누르는 순간에 먼저 적어 둬요. */
 document.addEventListener('click', function(e){
   var sm = e.target.closest && e.target.closest('summary'), d = sm && sm.parentElement;
