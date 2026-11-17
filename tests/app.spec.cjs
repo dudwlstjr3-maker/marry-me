@@ -2,7 +2,7 @@ const {test,expect}=require('@playwright/test');
 const {SEED,openApp,stored}=require('./helpers.cjs');
 const fs=require('node:fs');
 const {execFileSync}=require('node:child_process');
-const tabs=['timeline','budget','price','guest','honey','know','talk'];
+const tabs=['timeline','cal','budget','price','guest','honey','know','talk'];
 function noArrays(value) { if(Array.isArray(value)) return false; return !value||typeof value!=='object'||Object.values(value).every(noArrays); }
 
 test('date/time and task save using clicks and Enter without forms',async({page})=>{
@@ -58,7 +58,7 @@ test('Kakao summary first line, keyboard tabs and reduced motion',async({page})=
  await page.emulateMedia({reducedMotion:'reduce'});const {app,errors}=await openApp(page);
  await app.locator('#openShare').click();const first=(await app.locator('#shareText').inputValue()).split('\n')[0];
  expect(first).toBe('[준호 ♥ 민지] 2027년 5월 8일 토요일 오후 12시 30분 (D-214)');
- await app.locator('#closeShare').click();await app.locator('#tab-timeline').focus();await page.keyboard.press('ArrowRight');await expect(app.locator('#tab-budget')).toBeFocused();await page.keyboard.press('ArrowRight');await expect(app.locator('#tab-price')).toBeFocused();await page.keyboard.press('End');await expect(app.locator('#tab-talk')).toBeFocused();await page.keyboard.press('Home');await expect(app.locator('#tab-timeline')).toBeFocused();
+ await app.locator('#closeShare').click();await app.locator('#tab-timeline').focus();await page.keyboard.press('ArrowRight');await expect(app.locator('#tab-cal')).toBeFocused();await page.keyboard.press('ArrowRight');await expect(app.locator('#tab-budget')).toBeFocused();await page.keyboard.press('End');await expect(app.locator('#tab-talk')).toBeFocused();await page.keyboard.press('Home');await expect(app.locator('#tab-timeline')).toBeFocused();
  const focus=await app.locator('#tab-timeline').evaluate(e=>getComputedStyle(e).outlineStyle);expect(focus).not.toBe('none');
  expect(await app.locator('.strand i').first().evaluate(e=>getComputedStyle(e).transitionDuration)).toBe('0s');expect(errors).toEqual([]);
 });
@@ -1141,7 +1141,7 @@ test('budget items take dated detail lines whose sum becomes the total; invitati
  expect(lines.map(l=>[l.name,l.date,l.amount])).toEqual([['대학 동기 모임','2026-10-17',24],['회사 팀 모임','2026-10-24',18],['고등학교 친구','','']]);
  expect(noArrays(st)).toBe(true);
  // Folded, the row says how many lines it holds.
- await li.locator('[data-act="close-row"]').click();await expect(li.locator('.row .bamt')).toContainText('세부 내역 3건');
+ await li.locator('[data-act="close-row"]').click();await expect(li.locator('.row .bamt')).toContainText('신랑 3번');
  await title.click();
  // Removing a line keeps it in storage as deleted and lowers the total; with no amounts left the total field comes back.
  await li.locator('[data-act="bl-del"]').first().click();
@@ -1189,10 +1189,11 @@ test('calendar view gathers dated tasks, payments and detail lines by month and 
  seed.budget.items.b05={plan:140,deposit:30,depositDate:'2026-10-12',balanceDate:'2026-10-28'};seed.tasks.t10={book:'2026-10-08'};
  seed.budget.items.b28={lines:{l1:{name:'대학 동기 모임',date:'2026-10-17',amount:24,created:1},l2:{name:'회사 팀 모임',date:'2026-10-24',amount:18,created:2},l3:{name:'지운 모임',date:'2026-10-20',amount:9,deleted:true}}};
  const {app,errors}=await openApp(page,seed);
- // The list is the default; the calendar is one tap away and the choice is remembered on this device.
- await expect(app.locator('[data-act="tl-view"][data-v="list"]')).toHaveAttribute('aria-pressed','true');
- await app.locator('[data-act="tl-view"][data-v="cal"]').click();
- expect(await app.locator('body').evaluate(()=>localStorage.getItem('wd-tlview'))).toBe('cal');
+ // The calendar has its own tab, right after 진행 순서, and the tab is remembered on this device.
+ expect(await app.locator('.tab').evaluateAll(els=>els.slice(0,3).map(e=>e.textContent))).toEqual(['진행 순서','달력','예산']);
+ await app.locator('#tab-cal').click();
+ expect(await app.locator('body').evaluate(()=>localStorage.getItem('wd-tab'))).toBe('cal');
+ await expect(app.locator('#panel-timeline .phase')).toHaveCount(0);
  await expect(app.locator('#calTitle')).toHaveText('2026년 10월');
  await expect(app.locator('.cal-day')).toHaveCount(31);
  await expect(app.locator('.cal-day.today')).toHaveAttribute('data-id','2026-10-06');
@@ -1207,7 +1208,7 @@ test('calendar view gathers dated tasks, payments and detail lines by month and 
  await expect(app.locator('.cal-day[data-id="2026-10-08"] .cal-dots i.b')).toHaveCount(1);
  await expect(app.locator('.cal-day[data-id="2026-10-06"]')).toHaveAttribute('aria-label','10월 6일 화요일, 오늘, 일정 0개');
  // Nothing overflows sideways and every control is at least 44px, also at 320px.
- const audit=await app.locator('body').evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,small:[...document.querySelectorAll('#panel-timeline button, #panel-timeline input')].filter(e=>e.getClientRects().length).map(e=>e.getBoundingClientRect()).filter(r=>r.width<43.9||r.height<43.9).length}));
+ const audit=await app.locator('body').evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,small:[...document.querySelectorAll('#panel-cal button, #panel-cal input')].filter(e=>e.getClientRects().length).map(e=>e.getBoundingClientRect()).filter(r=>r.width<43.9||r.height<43.9).length}));
  expect(audit).toEqual({overflow:false,small:0});
  // Pick a day: only that day is listed, and a schedule typed below lands on it.
  await d17.click();await expect(d17).toHaveAttribute('aria-pressed','true');
@@ -1226,11 +1227,11 @@ test('calendar view gathers dated tasks, payments and detail lines by month and 
  await expect(app.locator('.cal-day.wed')).toHaveAttribute('data-id','2027-05-08');
  await expect(app.locator('.cal-item.k-wed')).toContainText('결혼식 오후 12시 30분');
  await app.locator('[data-act="cal-move"][data-v="0"]').click();
- // A task opens in the list; a payment opens its budget item.
+ // A task opens in 진행 순서; a payment opens its budget item.
  await items.filter({hasText:'본식 스냅·영상 계약'}).locator('button').click();
- await expect(app.locator('[data-act="tl-view"][data-v="list"]')).toHaveAttribute('aria-pressed','true');
+ await expect(app.locator('#tab-timeline')).toHaveAttribute('aria-selected','true');
  await expect(app.locator('[data-act="open"][data-id="t11"]')).toHaveAttribute('aria-expanded','true');
- await app.locator('[data-act="tl-view"][data-v="cal"]').click();
+ await app.locator('#tab-cal').click();
  await items.filter({hasText:'대학 동기 모임'}).locator('button').click();
  await expect(app.locator('#tab-budget')).toHaveAttribute('aria-selected','true');
  await expect(app.locator('[data-act="b-open"][data-id="b28"]')).toHaveAttribute('aria-expanded','true');
@@ -1256,7 +1257,7 @@ test('text contrast AA also holds in opened rows, the calendar and detail lines'
  await app.locator('[data-act="open"][data-id="t04"]').click();await app.locator('[data-act="open"][data-id="t01"]').click();
  expect(await failures(),'tasks').toEqual([]);
  // Calendar: a picked Sunday, then the wedding month with a picked Sunday.
- await app.locator('[data-act="tl-view"][data-v="cal"]').click();
+ await app.locator('#tab-cal').click();
  await app.locator('[data-act="cal-day"][data-id="2026-10-18"]').click();expect(await failures(),'calendar').toEqual([]);
  for(let i=0;i<7;i++)await app.locator('[data-act="cal-move"][data-v="1"]').click();
  await app.locator('[data-act="cal-day"][data-id="2027-05-09"]').click();expect(await failures(),'wedding month').toEqual([]);
@@ -1270,5 +1271,44 @@ test('text contrast AA also holds in opened rows, the calendar and detail lines'
  expect(await failures(),'budget').toEqual([]);
  await app.locator('#tab-guest').click();await app.locator('[data-act="g-open"]').first().click();expect(await failures(),'guest').toEqual([]);
  await app.locator('#tab-talk').click();await app.locator('[data-act="talk-open"]').first().click();expect(await failures(),'talk').toEqual([]);
+ expect(errors).toEqual([]);
+});
+
+test('invitation gatherings are recorded per side with head counts and grouped by groom, bride and both',async({page})=>{
+ const {app,errors}=await openApp(page);
+ await app.locator('#tab-budget').click();
+ const cat=app.locator('details[data-k="bcat-card"]');if(!(await cat.evaluate(e=>e.open)))await cat.locator(':scope > summary').click();
+ await app.locator('[data-act="b-open"][data-id="b28"]').click();
+ const li=app.locator('li.bitem').filter({has:app.locator('[data-act="b-open"][data-id="b28"]')});
+ const who=v=>li.locator(`[data-act="bl-who"][data-v="${v}"]`);
+ await expect(who('groom')).toHaveAttribute('aria-checked','true');
+ const add=async(side,name,date,heads,amount)=>{
+  await li.locator('[data-bl="name"]').fill(name);if(date)await li.locator('[data-bl="date"]').fill(date);
+  if(heads)await li.locator('[data-bl="heads"]').fill(heads);if(amount)await li.locator('[data-bl="amount"]').fill(amount);
+  await who(side).click();await expect(who(side)).toHaveAttribute('aria-checked','true');
+  // Choosing the side keeps what was typed.
+  await expect(li.locator('[data-bl="name"]')).toHaveValue(name);
+  await li.locator('[data-act="bl-add"]').click();await expect(li.locator('[data-bl="name"]')).toHaveValue('');};
+ await add('groom','대학 동기','2026-10-17','6','24');
+ await add('bride','회사 팀','2026-10-24','8','32');
+ await add('groom','고등학교 친구','','4','16');
+ await add('both','양가 친척','2026-11-07','','');
+ // Grouped by side with count, people and subtotal; each line shows people and cost per person.
+ await expect(li.locator('.bl-head')).toHaveText([/신랑 쪽.*2번 · 10명 · 40만원/,/신부 쪽.*1번 · 8명 · 32만원/,/함께.*1번 · 0만원/]);
+ await expect(li.locator('.bl-groom .blines li').first()).toContainText('6명 · 1인 4만원');
+ await expect(li.locator('.bpay .calcval').first()).toContainText('72만원');
+ await li.locator('[data-act="close-row"]').click();await expect(li.locator('.row .bamt')).toContainText('신랑 2번 · 신부 1번 · 함께 1번');
+ await expect.poll(async()=>Object.keys((await stored(app))?.budget?.items?.b28?.lines||{}).length).toBe(4);
+ const lines=Object.values((await stored(app)).budget.items.b28.lines);
+ expect(lines.map(l=>[l.name,l.who,l.heads,l.amount])).toEqual([['대학 동기','groom',6,24],['회사 팀','bride',8,32],['고등학교 친구','groom',4,16],['양가 친척','both','','']]);
+ expect(noArrays(await stored(app))).toBe(true);
+ // The calendar tab names the side.
+ await app.locator('#tab-cal').click();
+ await expect(app.locator('.cal-item').filter({hasText:'대학 동기'})).toContainText('신랑 쪽 대학 동기 · 청첩장 모임');
+ await expect(app.locator('.cal-item').filter({hasText:'회사 팀'})).toContainText('신부 쪽 회사 팀 · 청첩장 모임');
+ // Other budget items keep the simple detail lines without sides.
+ await app.locator('#tab-budget').click();await app.locator('[data-act="b-open"][data-id="b01"]').click();
+ const hall=app.locator('li.bitem').filter({has:app.locator('[data-act="b-open"][data-id="b01"]')});
+ await expect(hall.locator('[data-act="bl-who"]')).toHaveCount(0);await expect(hall.locator('[data-bl="heads"]')).toHaveCount(0);
  expect(errors).toEqual([]);
 });
