@@ -973,7 +973,7 @@ test('open rows stand out in colour, show an arrow, and close from the bottom or
  // Tapping the amount on the right opens the row as well.
  await li.locator('.bamt').click();
  await expect(title).toHaveAttribute('aria-expanded','true');await expect(li).toHaveClass(/is-open/);
- await expect(li.locator('.fhead')).toHaveText(['금액과 날짜','그 밖']);
+ await expect(li.locator('.fhead')).toHaveText(['금액과 날짜','세부 내역','그 밖']);
  const head=await bgOf(li.locator('.row')),body=await bgOf(li.locator('.detail')),closed=await bgOf(app.locator('li.bitem:not(.is-open)').first());
  expect(head).not.toBe(closed);expect(body).not.toBe(closed);expect(head).not.toBe(body);
  expect((await li.locator('.detail').evaluate(e=>getComputedStyle(e).borderLeftWidth))).toBe('4px');
@@ -1112,4 +1112,107 @@ test('the pressed control stays where it was when a tick redraws the page or a s
  const withText=await barH();await app.locator('#status').evaluate(e=>{e.textContent='';});
  expect(await barH()).toBe(withText);
  expect(errors).toEqual([]);
+});
+
+test('budget items take dated detail lines whose sum becomes the total; invitation gatherings have their own item',async({page})=>{
+ const {app,errors}=await openApp(page);
+ await app.locator('#tab-budget').click();
+ await app.locator('details[data-k="bcat-card"] > summary').click();
+ const title=app.locator('[data-act="b-open"][data-id="b28"]');await expect(title).toHaveText('청첩장 모임');
+ await title.click();
+ const li=app.locator('li.bitem').filter({has:app.locator('[data-act="b-open"][data-id="b28"]')});
+ await expect(li.locator('.fhead')).toHaveText(['금액과 날짜','세부 내역','그 밖']);
+ await expect(li.locator('[data-fk="b-total-b28"]')).toBeVisible();
+ // Add three gatherings: with Enter, with the button, and one that has no amount yet.
+ const name=li.locator('[data-bl="name"]'),date=li.locator('[data-bl="date"]'),amount=li.locator('[data-bl="amount"]');
+ await name.fill('대학 동기 모임');await date.fill('2026-10-17');await amount.fill('2a4');await expect(amount).toHaveValue('24');await amount.press('Enter');
+ await expect(li.locator('.blines li')).toHaveCount(1);await expect(name).toBeFocused();await expect(name).toHaveValue('');
+ await name.fill('회사 팀 모임');await date.fill('2026-10-24');await amount.fill('18');await li.locator('[data-act="bl-add"]').click();
+ await name.fill('고등학교 친구');await li.locator('[data-act="bl-add"]').click();
+ await expect(li.locator('.blines li')).toHaveCount(3);
+ await expect(li.locator('.blines li').nth(0)).toContainText('대학 동기 모임');await expect(li.locator('.blines li').nth(0)).toContainText('10.17(토)');await expect(li.locator('.blines li').nth(0)).toContainText('24만원');
+ // The sum is the item's total: shown in place of the total field, on the folded row and in the category.
+ await expect(li.locator('.bpay .calcval').first()).toContainText('42만원');await expect(li.locator('.bpay .calcval').first()).toContainText('세부 내역 합계');
+ await expect(li.locator('[data-fk="b-total-b28"]')).toHaveCount(0);
+ await expect(li.locator('.row .bamt')).toContainText('42만원');
+ await expect(app.locator('details[data-k="bcat-card"] > summary .meta')).toContainText('42만원');
+ await expect.poll(async()=>Object.keys((await stored(app))?.budget?.items?.b28?.lines||{}).length).toBe(3);
+ let st=await stored(app);const lines=Object.values(st.budget.items.b28.lines);
+ expect(lines.map(l=>[l.name,l.date,l.amount])).toEqual([['대학 동기 모임','2026-10-17',24],['회사 팀 모임','2026-10-24',18],['고등학교 친구','','']]);
+ expect(noArrays(st)).toBe(true);
+ // Folded, the row says how many lines it holds.
+ await li.locator('[data-act="close-row"]').click();await expect(li.locator('.row .bamt')).toContainText('세부 내역 3건');
+ await title.click();
+ // Removing a line keeps it in storage as deleted and lowers the total; with no amounts left the total field comes back.
+ await li.locator('[data-act="bl-del"]').first().click();
+ await expect(li.locator('.blines li')).toHaveCount(2);await expect(li.locator('.bpay .calcval').first()).toContainText('18만원');
+ await li.locator('[data-act="bl-del"]').first().click();
+ await expect(li.locator('[data-fk="b-total-b28"]')).toBeVisible();
+ await expect.poll(async()=>Object.values((await stored(app)).budget.items.b28.lines).filter(l=>l.deleted).length).toBe(2);
+ // The per-guest meal item is calculated from heads × unit, so it has no detail lines.
+ await app.locator('[data-act="b-open"][data-id="b02"]').click();
+ await expect(app.locator('li.bitem').filter({has:app.locator('[data-act="b-open"][data-id="b02"]')}).locator('.bl-add')).toHaveCount(0);
+ // Items added by hand take detail lines too.
+ await app.locator('#bAddName').fill('부케');await app.locator('[data-act="b-add"]').click();
+ const own=app.locator('[data-act="b-open"]').filter({hasText:'부케'});await own.click();
+ const ownLi=app.locator('li.bitem.is-open').filter({hasText:'부케'});
+ await ownLi.locator('[data-bl="name"]').fill('본식 부케');await ownLi.locator('[data-bl="amount"]').fill('15');await ownLi.locator('[data-act="bl-add"]').click();
+ await expect(ownLi.locator('.bpay .calcval').first()).toContainText('15만원');
+ await expect.poll(async()=>Object.values((await stored(app)).budget.custom).some(c=>c.name==='부케'&&c.lines)).toBe(true);
+ st=await stored(app);const custom=Object.values(st.budget.custom).find(c=>c.name==='부케');
+ expect(Object.values(custom.lines).map(l=>[l.name,l.amount])).toEqual([['본식 부케',15]]);expect(noArrays(st)).toBe(true);
+ expect(errors).toEqual([]);
+});
+
+test('calendar view gathers dated tasks, payments and detail lines by month and adds schedules',async({page})=>{
+ const seed=structuredClone(SEED);
+ seed.budget.items.b05={plan:140,deposit:30,depositDate:'2026-10-12',balanceDate:'2026-10-28'};seed.tasks.t10={book:'2026-10-08'};
+ seed.budget.items.b28={lines:{l1:{name:'대학 동기 모임',date:'2026-10-17',amount:24,created:1},l2:{name:'회사 팀 모임',date:'2026-10-24',amount:18,created:2},l3:{name:'지운 모임',date:'2026-10-20',amount:9,deleted:true}}};
+ const {app,errors}=await openApp(page,seed);
+ // The list is the default; the calendar is one tap away and the choice is remembered on this device.
+ await expect(app.locator('[data-act="tl-view"][data-v="list"]')).toHaveAttribute('aria-pressed','true');
+ await app.locator('[data-act="tl-view"][data-v="cal"]').click();
+ expect(await app.locator('body').evaluate(()=>localStorage.getItem('wd-tlview'))).toBe('cal');
+ await expect(app.locator('#calTitle')).toHaveText('2026년 10월');
+ await expect(app.locator('.cal-day')).toHaveCount(31);
+ await expect(app.locator('.cal-day.today')).toHaveAttribute('data-id','2026-10-06');
+ // Everything with a date in October: a booking, a task, a deposit, two gatherings, another task and a balance.
+ await expect(app.locator('.cal-list h4')).toHaveText('10월 일정 7건');
+ const items=app.locator('.cal-item');
+ await expect(items).toHaveText([/예약.*예약 · 스드메 계약/,/할 일.*스드메 계약/,/지출.*예약금 · 스튜디오 촬영.*30만원/,/지출.*대학 동기 모임 · 청첩장 모임.*24만원/,/할 일.*본식 스냅·영상 계약/,/지출.*회사 팀 모임 · 청첩장 모임.*18만원/,/지출.*잔금 · 스튜디오 촬영.*110만원/]);
+ await expect(app.locator('.cal-list')).not.toContainText('지운 모임');
+ // The grid marks the kinds of things on each day and announces how many there are.
+ const d17=app.locator('.cal-day[data-id="2026-10-17"]');
+ await expect(d17).toHaveAttribute('aria-label','10월 17일 토요일, 일정 1개');await expect(d17.locator('.cal-dots i.p')).toHaveCount(1);
+ await expect(app.locator('.cal-day[data-id="2026-10-08"] .cal-dots i.b')).toHaveCount(1);
+ await expect(app.locator('.cal-day[data-id="2026-10-06"]')).toHaveAttribute('aria-label','10월 6일 화요일, 오늘, 일정 0개');
+ // Nothing overflows sideways and every control is at least 44px, also at 320px.
+ const audit=await app.locator('body').evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,small:[...document.querySelectorAll('#panel-timeline button, #panel-timeline input')].filter(e=>e.getClientRects().length).map(e=>e.getBoundingClientRect()).filter(r=>r.width<43.9||r.height<43.9).length}));
+ expect(audit).toEqual({overflow:false,small:0});
+ // Pick a day: only that day is listed, and a schedule typed below lands on it.
+ await d17.click();await expect(d17).toHaveAttribute('aria-pressed','true');
+ await expect(app.locator('.cal-list h4')).toHaveText('10월 17일 (토) 1건');await expect(items).toHaveCount(1);
+ await expect(app.locator('#addDate')).toHaveValue('2026-10-17');
+ await app.locator('#addTitle').fill('웨딩홀 시식');await app.locator('#addTitle').press('Enter');
+ await expect.poll(async()=>Object.values((await stored(app)).custom).some(x=>x.title==='웨딩홀 시식'&&x.date==='2026-10-17')).toBe(true);
+ await expect(app.locator('.cal-list h4')).toHaveText('10월 17일 (토) 2건');await expect(items.filter({hasText:'웨딩홀 시식'})).toHaveCount(1);
+ await expect(app.locator('.cal-day[data-id="2026-10-17"] .cal-dots i')).toHaveCount(2);
+ await app.locator('[data-act="cal-all"]').click();await expect(app.locator('.cal-list h4')).toHaveText('10월 일정 8건');
+ // Other months, and back to today. The wedding month shows the wedding day.
+ await app.locator('[data-act="cal-move"][data-v="-1"]').click();await expect(app.locator('#calTitle')).toHaveText('2026년 9월');
+ await app.locator('[data-act="cal-move"][data-v="0"]').click();await expect(app.locator('#calTitle')).toHaveText('2026년 10월');
+ for(let i=0;i<7;i++)await app.locator('[data-act="cal-move"][data-v="1"]').click();
+ await expect(app.locator('#calTitle')).toHaveText('2027년 5월');
+ await expect(app.locator('.cal-day.wed')).toHaveAttribute('data-id','2027-05-08');
+ await expect(app.locator('.cal-item.k-wed')).toContainText('결혼식 오후 12시 30분');
+ await app.locator('[data-act="cal-move"][data-v="0"]').click();
+ // A task opens in the list; a payment opens its budget item.
+ await items.filter({hasText:'본식 스냅·영상 계약'}).locator('button').click();
+ await expect(app.locator('[data-act="tl-view"][data-v="list"]')).toHaveAttribute('aria-pressed','true');
+ await expect(app.locator('[data-act="open"][data-id="t11"]')).toHaveAttribute('aria-expanded','true');
+ await app.locator('[data-act="tl-view"][data-v="cal"]').click();
+ await items.filter({hasText:'대학 동기 모임'}).locator('button').click();
+ await expect(app.locator('#tab-budget')).toHaveAttribute('aria-selected','true');
+ await expect(app.locator('[data-act="b-open"][data-id="b28"]')).toHaveAttribute('aria-expanded','true');
+ expect(noArrays(await stored(app))).toBe(true);expect(errors).toEqual([]);
 });
