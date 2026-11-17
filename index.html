@@ -927,12 +927,20 @@ body{line-height:1.65}
 .blines strong{flex:none;font-variant-numeric:tabular-nums}
 .bl-add{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
 .bl-add>:first-child,.bl-add>.btn{grid-column:1/-1}
+.bl-who .seg{margin:0;flex-wrap:wrap}
+.bl-who .mchip[aria-checked="true"]{background:var(--gold);color:var(--surface);border-color:var(--gold)}
+.bl-group+.bl-group{margin-top:10px}
+.bl-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0 2px 4px;font-size:14px}
+.bl-head span{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.bl-groom .blines{border-left:4px solid var(--chung)}
+.bl-bride .blines{border-left:4px solid var(--hong)}
+.bl-both .blines{border-left:4px solid var(--gold)}
 .bl-add input{width:100%;min-width:0}
 .calcval{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px}
 .calcval small{font-size:12px;font-weight:500}
 /* 진행 순서의 목록·달력 보기 */
 .seg{display:flex;gap:6px;margin:14px 0 0}
-.cal{margin-top:12px}
+.cal{margin-top:16px}
 .cal-head{display:flex;align-items:center;gap:6px}
 .cal-head h3{flex:1;min-width:0;margin:0;text-align:center;font-family:var(--serif);font-size:19px;color:var(--gold);white-space:nowrap}
 .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));margin-top:10px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
@@ -1101,6 +1109,7 @@ dialog{border-color:var(--gold-line);border-radius:16px;box-shadow:0 16px 48px v
   <nav class="tabs" aria-label="보기 선택">
     <div class="wrap" role="tablist">
       <button class="tab" role="tab" id="tab-timeline" aria-controls="panel-timeline" data-tab="timeline" type="button">진행 순서</button>
+      <button class="tab" role="tab" id="tab-cal" aria-controls="panel-cal" data-tab="cal" type="button">달력</button>
       <button class="tab" role="tab" id="tab-budget" aria-controls="panel-budget" data-tab="budget" type="button">예산</button>
       <button class="tab" role="tab" id="tab-price" aria-controls="panel-price" data-tab="price" type="button">가격 비교</button>
       <button class="tab" role="tab" id="tab-guest" aria-controls="panel-guest" data-tab="guest" type="button">하객</button>
@@ -1111,6 +1120,7 @@ dialog{border-color:var(--gold-line);border-radius:16px;box-shadow:0 16px 48px v
   </nav>
 
   <section class="wrap panel" id="panel-timeline" role="tabpanel" aria-labelledby="tab-timeline"></section>
+  <section class="wrap panel" id="panel-cal" role="tabpanel" aria-labelledby="tab-cal" hidden></section>
   <section class="wrap panel" id="panel-budget" role="tabpanel" aria-labelledby="tab-budget" hidden></section>
   <section class="wrap panel" id="panel-price" role="tabpanel" aria-labelledby="tab-price" hidden></section>
   <section class="wrap panel" id="panel-guest" role="tabpanel" aria-labelledby="tab-guest" hidden></section>
@@ -1335,7 +1345,7 @@ var TALKS = [
   ]}
 ];
 
-var TABS = ['timeline','budget','price','guest','honey','know','talk'];
+var TABS = ['timeline','cal','budget','price','guest','honey','know','talk'];
 
 var BUDGET_CATS = [
   {id:'wed', name:'예식'}, {id:'sdm', name:'스드메'}, {id:'gift', name:'예물·예단'}, {id:'wear', name:'예복·한복'},
@@ -1580,7 +1590,7 @@ function init(){
 var ui = {
   tab: lsGet('wd-tab') || 'timeline',
   heroOpen: lsGet('wd-hero') === '1',
-  tlView: lsGet('wd-tlview') === 'cal' ? 'cal' : 'list', calMonth: '', calDay: '', calDraft: '',
+  calMonth: '', calDay: '', calDraft: '', lineWho: 'groom',
   hideDone: lsGet('wd-hideDone') === '1',
   showHidden: false,
   open: {},
@@ -1672,7 +1682,7 @@ function render(){
 }
 
 var PANEL_HTML = {
-  timeline: function(list){ return timelineHTML(list); }, budget: function(){ return budgetHTML(); }, price: function(){ return priceHTML(); },
+  timeline: function(list){ return timelineHTML(list); }, cal: function(list){ return upcomingNoteHTML() + calendarHTML(list); }, budget: function(){ return budgetHTML(); }, price: function(){ return priceHTML(); },
   guest: function(){ return guestHTML(); }, honey: function(){ return honeyHTML(); }, know: function(){ return knowHTML(); }, talk: function(){ return talkHTML(); }
 };
 function dis(){ return (!Store.ready || Store.readOnly) ? ' disabled' : ''; }
@@ -1970,7 +1980,7 @@ function calEntries(list){
     if (r.hidden) return;
     if (r.depositDate && r.depositShown) push(r.depositDate, {type:'pay', title:'예약금 · ' + r.name, amount:r.depositShown, bid:r.id, cat:r.cat});
     if (r.balanceDate && r.balance > 0) push(r.balanceDate, {type:'pay', title:'잔금 · ' + r.name, amount:r.balance, done:r.balancePaid, bid:r.id, cat:r.cat});
-    r.lines.forEach(function(l){ if (l.date) push(l.date, {type:'pay', title:l.name + ' · ' + r.name, amount:l.amount, bid:r.id, cat:r.cat}); });
+    r.lines.forEach(function(l){ if (l.date) push(l.date, {type:'pay', title:(l.who ? lineWhoText(l.who) + ' ' : '') + l.name + ' · ' + r.name, amount:l.amount, bid:r.id, cat:r.cat}); });
   });
   var rank = {wed:0, pay:1, book:2, task:3};
   return out.sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : rank[a.type] - rank[b.type]; });
@@ -2040,11 +2050,7 @@ function timelineHTML(list){
     var progress = taskProgress(i);
     return total + progress.total - progress.done;
   }, 0);
-  var viewSeg = '<div class="seg" role="group" aria-label="보기 방식">' +
-    '<button class="mchip" type="button" aria-pressed="'+(ui.tlView === 'cal' ? 'false' : 'true')+'" data-act="tl-view" data-v="list" data-fk="tl-view-list">목록</button>' +
-    '<button class="mchip" type="button" aria-pressed="'+(ui.tlView === 'cal' ? 'true' : 'false')+'" data-act="tl-view" data-v="cal" data-fk="tl-view-cal">달력</button></div>';
-  if (ui.tlView === 'cal') return upcomingNoteHTML() + viewSeg + calendarHTML(list) + trashHTML('task', '지운 할 일', deletedOf(state.custom, 'title', 'task'));
-  var h = upcomingNoteHTML() + viewSeg + (catchN ? '<p class="lead-note">결혼식까지 남은 기간보다 앞선 일 '+catchN+'개는 ‘지금 챙기기’로 표시했어요. 이미 끝낸 일은 체크하고, 필요 없는 일은 열어서 숨기세요.</p>' : '') +
+  var h = upcomingNoteHTML() + (catchN ? '<p class="lead-note">결혼식까지 남은 기간보다 앞선 일 '+catchN+'개는 ‘지금 챙기기’로 표시했어요. 이미 끝낸 일은 체크하고, 필요 없는 일은 열어서 숨기세요.</p>' : '') +
     '<div class="tools">' +
     '<button class="toggle" type="button" aria-pressed="'+(ui.hideDone?'true':'false')+'" data-act="hide-done" data-fk="hide-done">완료한 일 숨기기</button>' +
     (hiddenCount ? '<button class="toggle" type="button" aria-pressed="'+(ui.showHidden?'true':'false')+'" data-act="show-hidden">숨긴 일 보기 ('+hiddenCount+')</button>' : '') +
@@ -2829,10 +2835,15 @@ function budgetRows(){
 }
 /* 예산 항목의 세부 내역: 모임·구매처럼 여러 번에 나눠 드는 돈을 한 줄씩 적어요.
    저장: budget.items|custom[id].lines[줄 id] = {name, date(YYYY-MM-DD, 없어도 됨), amount(만원, 없어도 됨), created}. 지우면 deleted:true. */
+/* 청첩장 모임(b28)은 줄마다 누가 하는 모임인지(신랑 쪽·신부 쪽·함께)와 인원을 적어요. */
+var LINE_WHO = [{v:'groom',t:'신랑 쪽'},{v:'bride',t:'신부 쪽'},{v:'both',t:'함께'}];
+function isGathering(r){ return r.kind === 't' && r.id === 'b28'; }
+function lineWhoText(v){ var w = LINE_WHO.filter(function(x){ return x.v === v; })[0]; return w ? w.t : ''; }
 function budgetLines(s){
   var ls = isObj(s.lines) ? s.lines : {};
   return Object.keys(ls).filter(function(k){ return isObj(ls[k]) && !ls[k].deleted; }).map(function(k){
-    var l = ls[k]; return {id:k, name:l.name || '(이름 없음)', date:parseYMD(l.date) ? l.date : '', amount:num(l.amount), created:l.created || 0};
+    var l = ls[k]; return {id:k, name:l.name || '(이름 없음)', date:parseYMD(l.date) ? l.date : '', amount:num(l.amount), created:l.created || 0,
+      who:LINE_WHO.some(function(w){ return w.v === l.who; }) ? l.who : '', heads:num(l.heads)};
   }).sort(function(a, b){ var x = a.date || '9999', y = b.date || '9999'; return x < y ? -1 : x > y ? 1 : a.created - b.created; });
 }
 function payFields(row, s){
@@ -3400,19 +3411,43 @@ function budgetRefHTML(r){
   }
   return '<p class="refline">'+esc(ref.t)+tail+'</p>';
 }
+function lineLiHTML(r, l, y){
+  var meta = [];
+  if (l.date) meta.push(fmtTiny(parseYMD(l.date), y));
+  if (l.heads != null) meta.push(l.heads.toLocaleString('ko-KR')+'명' + (l.amount != null && l.heads > 0 ? ' · 1인 '+(Math.round(l.amount / l.heads * 10) / 10)+'만원' : ''));
+  return '<li><span class="bl-what">'+esc(l.name)+(meta.length ? '<small>'+esc(meta.join(' · '))+'</small>' : '')+'</span><strong>'+(l.amount != null ? fmtMan(l.amount) : '-')+'</strong>' +
+    (Store.readOnly ? '' : '<button class="link" type="button" data-act="bl-del" data-kind="'+r.kind+'" data-id="'+esc(r.id)+'" data-c="'+esc(l.id)+'" aria-label="'+esc(l.name)+' 지우기">지우기</button>') + '</li>';
+}
 function budgetLinesHTML(r){
-  var y = today().getFullYear();
-  var h = r.lines.length
-    ? '<ul class="blines">' + r.lines.map(function(l){
-        return '<li><span class="bl-what">'+esc(l.name)+(l.date ? '<small>'+esc(fmtTiny(parseYMD(l.date), y))+'</small>' : '')+'</span><strong>'+(l.amount != null ? fmtMan(l.amount) : '-')+'</strong>' +
-          (Store.readOnly ? '' : '<button class="link" type="button" data-act="bl-del" data-kind="'+r.kind+'" data-id="'+esc(r.id)+'" data-c="'+esc(l.id)+'" aria-label="'+esc(l.name)+' 지우기">지우기</button>') + '</li>';
-      }).join('') + '</ul>' + (r.byLines ? '<p class="tip">합계 <b>'+fmtMan(r.lineSum)+'</b>('+r.lines.length+'건)를 총비용으로 써요.</p>' : '')
-    : '<p class="tip">모임이나 구매처럼 여러 번에 나눠 드는 돈은 한 줄씩 적으세요. 합계가 총비용이 되고, 날짜를 넣으면 진행 순서의 달력에도 보여요.</p>';
-  if (!Store.readOnly) h += '<div class="bl-add">' +
-    '<label class="field">내용<input type="text" maxlength="40" placeholder="예: 대학 동기 모임" data-bl="name" data-fk="bl-name-'+esc(r.id)+'"'+dis()+'></label>' +
-    '<label class="field">날짜(선택)<input type="date" data-bl="date" data-fk="bl-date-'+esc(r.id)+'"'+dis()+'></label>' +
-    '<label class="field">금액(만원)<input type="text" inputmode="numeric" placeholder="예: 24" data-bl="amount" data-fk="bl-amount-'+esc(r.id)+'"'+dis()+'></label>' +
-    '<button class="btn" type="button" data-act="bl-add" data-kind="'+r.kind+'" data-id="'+esc(r.id)+'"'+dis()+'>내역 추가</button></div>';
+  var y = today().getFullYear(), gather = isGathering(r), h = '';
+  if (r.lines.length && gather) {
+    /* 신랑 쪽·신부 쪽·함께로 나눠 묶고, 묶음마다 건수와 합계를 보여 줘요. */
+    LINE_WHO.concat([{v:'',t:'누구 모임인지 안 정함'}]).forEach(function(w){
+      var ls = r.lines.filter(function(l){ return l.who === w.v; });
+      if (!ls.length) return;
+      var sum = ls.reduce(function(a, l){ return a + (l.amount || 0); }, 0), heads = ls.reduce(function(a, l){ return a + (l.heads || 0); }, 0);
+      h += '<div class="bl-group bl-'+(w.v || 'none')+'"><p class="bl-head"><b>'+esc(w.t)+'</b><span>'+ls.length+'번'+(heads ? ' · '+heads.toLocaleString('ko-KR')+'명' : '')+' · '+fmtMan(sum)+'</span></p>' +
+        '<ul class="blines">' + ls.map(function(l){ return lineLiHTML(r, l, y); }).join('') + '</ul></div>';
+    });
+    h += r.byLines ? '<p class="tip">모임 '+r.lines.length+'번, 합계 <b>'+fmtMan(r.lineSum)+'</b>를 총비용으로 써요.</p>' : '';
+  } else if (r.lines.length) {
+    h += '<ul class="blines">' + r.lines.map(function(l){ return lineLiHTML(r, l, y); }).join('') + '</ul>' + (r.byLines ? '<p class="tip">합계 <b>'+fmtMan(r.lineSum)+'</b>('+r.lines.length+'건)를 총비용으로 써요.</p>' : '');
+  } else {
+    h += gather
+      ? '<p class="tip">청첩장 모임을 한 번씩 적으세요. 신랑 쪽·신부 쪽 모임을 나눠 보여 주고, 합계가 총비용이 돼요. 날짜를 넣으면 달력 탭에도 보여요.</p>'
+      : '<p class="tip">모임이나 구매처럼 여러 번에 나눠 드는 돈은 한 줄씩 적으세요. 합계가 총비용이 되고, 날짜를 넣으면 달력 탭에도 보여요.</p>';
+  }
+  if (!Store.readOnly) {
+    var whoPick = gather ? '<div class="field bl-who">누구 모임<div class="seg" role="radiogroup" aria-label="누구 모임">' + LINE_WHO.map(function(w){
+        return '<button class="mchip" type="button" role="radio" aria-checked="'+(ui.lineWho === w.v ? 'true' : 'false')+'" data-act="bl-who" data-v="'+w.v+'" data-id="'+esc(r.id)+'" data-fk="bl-who-'+w.v+'-'+esc(r.id)+'"'+dis()+'>'+w.t+'</button>';
+      }).join('') + '</div></div>' : '';
+    h += '<div class="bl-add'+(gather ? ' gather' : '')+'">' + whoPick +
+      '<label class="field">'+(gather ? '모임 이름' : '내용')+'<input type="text" maxlength="40" placeholder="'+(gather ? '예: 대학 동기' : '예: 대학 동기 모임')+'" data-bl="name" data-fk="bl-name-'+esc(r.id)+'"'+dis()+'></label>' +
+      '<label class="field">날짜(선택)<input type="date" data-bl="date" data-fk="bl-date-'+esc(r.id)+'"'+dis()+'></label>' +
+      (gather ? '<label class="field">인원(명)<input type="text" inputmode="numeric" placeholder="예: 6" data-bl="heads" data-fk="bl-heads-'+esc(r.id)+'"'+dis()+'></label>' : '') +
+      '<label class="field">금액(만원)<input type="text" inputmode="numeric" placeholder="예: 24" data-bl="amount" data-fk="bl-amount-'+esc(r.id)+'"'+dis()+'></label>' +
+      '<button class="btn" type="button" data-act="bl-add" data-kind="'+r.kind+'" data-id="'+esc(r.id)+'"'+dis()+'>'+(gather ? '모임 추가' : '내역 추가')+'</button></div>';
+  }
   return h;
 }
 function budgetItemHTML(r){
@@ -3424,6 +3459,7 @@ function budgetItemHTML(r){
     if (!r.byLines && r.actual != null && r.plan != null && r.actual > r.plan) sub = '<small class="over">예산보다 '+fmtMan(r.actual - r.plan)+' 많음</small>';
     else if (r.balancePaid) sub = '<small>다 냈어요</small>';
     else if (r.depositShown != null && r.depositShown > 0) sub = '<small>잔금 '+fmtMan(r.balance)+(r.balanceDate ? ' · '+esc(fmtTiny(parseYMD(r.balanceDate), today().getFullYear())) : '')+'</small>';
+    else if (r.byLines && isGathering(r)) sub = '<small>'+LINE_WHO.map(function(w){ var n = r.lines.filter(function(l){ return l.who === w.v; }).length; return n ? w.t.replace(' 쪽', '')+' '+n+'번' : ''; }).filter(Boolean).join(' · ')+'</small>';
     else if (r.byLines && !r.perHead) sub = '<small>세부 내역 '+r.lines.length+'건</small>';
     else if (r.calc && r.actual == null) sub = '<small>'+r.heads.toLocaleString('ko-KR')+'명 × '+r.unit.toLocaleString('ko-KR')+'원</small>';
     else sub = '<small>총비용</small>';
@@ -3787,8 +3823,6 @@ document.addEventListener('click', function(e){
       var tx = document.querySelector('[data-fk="talk-'+id+'"]');
       if (tx) { tx.focus({preventScroll:true}); try { tx.setSelectionRange(tx.value.length, tx.value.length); } catch(e3){} }
     }
-  } else if (act === 'tl-view') {
-    ui.tlView = b.getAttribute('data-v') === 'cal' ? 'cal' : 'list'; lsSet('wd-tlview', ui.tlView); render();
   } else if (act === 'cal-move') {
     var cv = Number(b.getAttribute('data-v')), cm = calMonthNow();
     ui.calMonth = cv === 0 ? ymd(today()).slice(0, 7) : ymd(new Date(Number(cm.slice(0, 4)), Number(cm.slice(5, 7)) - 1 + cv, 1)).slice(0, 7);
@@ -3797,17 +3831,25 @@ document.addEventListener('click', function(e){
     var draftEl = document.getElementById('addTitle'); ui.calDraft = draftEl ? draftEl.value : '';
     ui.calDay = act === 'cal-all' || ui.calDay === id ? '' : id; render();
   } else if (act === 'cal-go') {
-    /* 달력의 할 일을 누르면 목록 보기로 가서 그 일을 펼쳐요. */
-    ui.tlView = 'list'; lsSet('wd-tlview', 'list'); ui.open[id] = true; render();
+    /* 달력의 할 일을 누르면 진행 순서 탭으로 가서 그 일을 펼쳐요. */
+    ui.tab = 'timeline'; lsSet('wd-tab', 'timeline'); ui.open[id] = true; render();
     var calSel = '[data-act="open"][data-id="'+id+'"]', calTo = document.querySelector(calSel);
     if (!calTo && ui.hideDone) { ui.hideDone = false; lsSet('wd-hideDone', '0'); render(); calTo = document.querySelector(calSel); }
     if (calTo) { calTo.scrollIntoView({block:'center'}); try { calTo.focus({preventScroll:true}); } catch(e11){} }
+  } else if (act === 'bl-who') {
+    /* 입력 중인 모임 이름·날짜·금액은 다시 그려도 남도록 옮겨 담아요. */
+    var whoBox = b.closest('.bl-add'), keep = {};
+    if (whoBox) Array.prototype.forEach.call(whoBox.querySelectorAll('[data-bl]'), function(x){ keep[x.getAttribute('data-bl')] = x.value; });
+    ui.lineWho = b.getAttribute('data-v'); render();
+    var whoBox2 = document.querySelector('[data-act="bl-add"][data-id="'+id+'"]'); whoBox2 = whoBox2 && whoBox2.closest('.bl-add');
+    if (whoBox2) Array.prototype.forEach.call(whoBox2.querySelectorAll('[data-bl]'), function(x){ var v = keep[x.getAttribute('data-bl')]; if (v) x.value = v; });
   } else if (act === 'bl-add') {
-    var lineBox = b.closest('.bl-add'), lineName = lineBox.querySelector('[data-bl="name"]'), lineDate = lineBox.querySelector('[data-bl="date"]'), lineAmt = lineBox.querySelector('[data-bl="amount"]');
-    var lname = lineName.value.trim(), lamt = lineAmt.value.replace(/[^0-9]/g, '');
+    var lineBox = b.closest('.bl-add'), lineName = lineBox.querySelector('[data-bl="name"]'), lineDate = lineBox.querySelector('[data-bl="date"]'), lineAmt = lineBox.querySelector('[data-bl="amount"]'), lineHeads = lineBox.querySelector('[data-bl="heads"]');
+    var lname = lineName.value.trim(), lamt = lineAmt.value.replace(/[^0-9]/g, ''), lheads = lineHeads ? lineHeads.value.replace(/[^0-9]/g, '') : '';
     if (!lname) { lineName.focus(); return; }
     var lid = 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), linePatch = {lines:{}};
     linePatch.lines[lid] = {name:lname, date:parseYMD(lineDate.value) ? lineDate.value : '', amount:lamt === '' ? '' : Number(lamt), created:Date.now()};
+    if (lineBox.classList.contains('gather')) { linePatch.lines[lid].who = ui.lineWho; linePatch.lines[lid].heads = lheads === '' ? '' : Number(lheads); }
     commit(bPatch(kind, id, linePatch));
     var lineAgain = document.querySelector('[data-fk="bl-name-'+id+'"]'); if (lineAgain) lineAgain.focus({preventScroll:true});
   } else if (act === 'bl-del') {
@@ -4035,7 +4077,7 @@ document.addEventListener('input', function(e){
   var t = e.target;
   if (t.matches('textarea[data-memo]')) {
     commit(patchItem(t.getAttribute('data-memo'), t.getAttribute('data-id'), {memo: t.value}), {render:false, delay:700});
-  } else if (t.matches('input[data-bl="amount"]')) {
+  } else if (t.matches('input[data-bl="amount"], input[data-bl="heads"]')) {
     var lineDigits = t.value.replace(/[^0-9]/g, '');
     if (lineDigits !== t.value) t.value = lineDigits;
   } else if (t.matches('input[data-bnum]')) {
@@ -4161,7 +4203,7 @@ function doTaskAdd(){
   var bk = document.getElementById('addBook'), book = bk && parseYMD(bk.value) ? bk.value : '';
   var p = {custom:{}}; p.custom[id] = {title:title, date:date, book:book, created:Date.now()};
   ui.calDraft = '';
-  if (ui.tlView === 'cal') { ui.calMonth = date.slice(0, 7); ui.calDay = date; }   /* 달력에서 추가하면 그 날이 보이게 */
+  if (ui.tab === 'cal') { ui.calMonth = date.slice(0, 7); ui.calDay = date; }   /* 달력에서 추가하면 그 날이 보이게 */
   commit(p);
 }
 function doBudgetAdd(){
@@ -4224,7 +4266,7 @@ document.addEventListener('keydown', function(e){
   var box = e.target.closest('#addForm, #bAddForm, #qAddForm, #heroForm, #settingsForm, #gAddForm, #gGiftAdd, #priceGroupAddForm, #priceCustomAddForm, .bl-add');
   if (!box) return;
   e.preventDefault();
-  var btn = box.id === 'settingsForm' ? document.getElementById('saveSettings') : box.querySelector('button[data-act]');
+  var btn = box.id === 'settingsForm' ? document.getElementById('saveSettings') : (box.querySelector('button[data-act="bl-add"]') || box.querySelector('button[data-act]'));
   if (btn && !btn.disabled) btn.click();
 });
 
