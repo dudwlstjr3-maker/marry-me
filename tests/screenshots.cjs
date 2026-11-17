@@ -43,6 +43,41 @@ function priceBudgetSeed(){
   await page.screenshot({path:`docs/screenshots/${stage}-${colorScheme}-${name}.png`,animations:'disabled'});count++;
  }
  for(const colorScheme of ['light','dark']) {
+  // Cross-tab surface refresh: retain all earlier screenshot comparisons.
+  if(process.argv[3]==='surfaces'){
+   const page=await newPage(colorScheme);const {app,errors}=await openApp(page,priceBudgetSeed());
+   const shot=(name,target)=>capture(page,app,colorScheme,'surfaces-'+name,target);
+   await shot('home');
+   await app.locator('.hero-bar').click();
+   await app.locator('body').evaluate(()=>window.scrollTo(0,0));
+   await shot('invitation');
+   await app.locator('.hero-fold').click();
+   await app.locator('[data-act="open"][data-id="t04"]').click();
+   await shot('timeline',app.locator('.phase').filter({has:app.locator('.task.is-open')}));
+   await app.locator('#tab-budget').click();
+   await shot('budget',app.locator('.glance'));
+   await app.locator('[data-act="b-open"][data-id="b01"]').click();
+   await app.locator('[data-fk="b-total-b01"]').focus();
+   await shot('budget-input',app.locator('.bcat').filter({has:app.locator('.bitem.is-open')}));
+   await app.locator('#tab-price').click();
+   await app.locator('details[data-k="k13"],details[data-k="pt-hall"]').evaluateAll(els=>els.forEach(el=>el.open=true));
+   await app.locator('[data-price-mine="hall-rent-1"]').focus();
+   await shot('price-input',app.locator('tr.price-pick').filter({has:app.locator('[data-price-mine="hall-rent-1"]')}));
+   await app.locator('#tab-guest').click();
+   await app.locator('[data-act="g-open"][data-id="g1"]').click();
+   await shot('guest',app.locator('.bcat').filter({has:app.locator('.gitem.is-open')}));
+   await app.locator('#tab-honey').click();
+   await shot('honeymoon',app.locator('.months'));
+   await app.locator('#tab-know').click();
+   await app.locator('#panel-know details').first().locator('summary').first().click();
+   await shot('knowledge',app.locator('#panel-know details').first());
+   await app.locator('#tab-talk').click();
+   await app.locator('[data-act="talk-open"]').first().click();
+   await shot('talk',app.locator('.tgroup').filter({has:app.locator('.titem.is-open')}));
+   await app.locator('#openSettings').click();
+   await shot('settings');
+   if(errors.length)throw new Error(errors.join('\n'));await page.close();continue;
+  }
   // Input/disclosure styling, without overwriting earlier design comparisons.
   if(process.argv[3]==='controls'){
    const page=await newPage(colorScheme);const {app,errors}=await openApp(page,priceBudgetSeed());
