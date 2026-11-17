@@ -1,3 +1,31 @@
+# 종이 배경·카드·입력칸 디자인
+
+- 기준: main `6d4199d`(D-day 띠·누른 위치 유지 반영 후), 변경 후: `design/paper-surfaces`.
+- 390 × 844px, 라이트·다크, 11개 화면의 전후 총 44장. 기존 비교 이미지는 덮어쓰지 않는다.
+- 배경은 아이보리·블러시 그라데이션과 옅은 금색 빛, 카드는 밝은 종이색으로 분리했다. 다크 모드는 남색 배경·카드·입력칸의 밝기를 나눴다. 외부 이미지·새 애니메이션은 없다.
+- 입력칸은 48px 이상으로, 포커스는 청색 테두리와 옅은 바탕으로 표시한다. 펼친 제목·내용·입력칸, 자동 계산된 값은 서로 다른 면으로 구분한다.
+- 신혼여행·알아둘 것·예산 요약·목록·설정 창의 모서리와 그림자를 맞췄다. D-day 띠의 날짜는 이름·D-day 아래 전체 폭을 써서 320px에서도 시간을 읽을 수 있다.
+- `priceBudgetSeed()`와 고정 시각 2026-10-06 12:00 KST를 사용한다. 정보의 현재 기준일을 뜻하지 않는다. 예산·가격 입력은 동일 칸에 포커스를 둔 상태다.
+- Google Fonts 요청은 시험 도우미에서 비워 시스템 대체 글꼴을 사용한다. 앱의 실제 글꼴 설정은 유지했다. 꽃잎 애니메이션은 촬영 시 비활성화한다.
+- 재현: `node tests/server.cjs` 실행 후 `SCREENSHOT_BEFORE_REF=6d4199d npm run screenshots -- before surfaces`, `npm run screenshots -- after surfaces`.
+- 브라우저: 시스템 Chromium 151.0.7922.173. Playwright 브라우저 다운로드가 환경에서 403으로 차단되어 AGENTS.md에 허용된 시스템 실행 파일을 사용했다.
+- 최신 main 반영 후 `npm test -- --workers=4`: 344개 중 338개 통과·6개 실패. 견적 사진 시험에서 300ms 동안 보이는 진행 문구·중지 버튼 포커스 검사가 실패했다. 코드·시험 수정 없이 `npm test -- --last-failed --workers=1`로 실패 6개를 모두 통과했다. 전체 344개 각각의 통과 결과를 확인했으나 단일 전체 실행이 모두 통과한 것은 아니다. 기능 시험·선택자·시간 제한은 최신 main 그대로다.
+- 별도 확인: 320·390·430·1024px에서 설정 창 가로 넘침 0, 시스템 테마와 명시적 테마 값 일치. 설정 입력 글자 대비 최저 5.53:1, placeholder 최저 7.31:1. 배경 그라데이션 양 끝과 금색 빛의 최대 합성색에 대한 본문 색상 최저 대비 4.71:1.
+
+| 화면 | 라이트 전 | 라이트 후 | 다크 전 | 다크 후 |
+| --- | --- | --- | --- | --- |
+| 첫 화면·D-day 띠·배경 | [전](before-light-surfaces-home.png) | [후](after-light-surfaces-home.png) | [전](before-dark-surfaces-home.png) | [후](after-dark-surfaces-home.png) |
+| 펼친 청첩장 | [전](before-light-surfaces-invitation.png) | [후](after-light-surfaces-invitation.png) | [전](before-dark-surfaces-invitation.png) | [후](after-dark-surfaces-invitation.png) |
+| 진행 순서·펼친 항목 | [전](before-light-surfaces-timeline.png) | [후](after-light-surfaces-timeline.png) | [전](before-dark-surfaces-timeline.png) | [후](after-dark-surfaces-timeline.png) |
+| 예산 요약 | [전](before-light-surfaces-budget.png) | [후](after-light-surfaces-budget.png) | [전](before-dark-surfaces-budget.png) | [후](after-dark-surfaces-budget.png) |
+| 예산 금액 입력·계산값 | [전](before-light-surfaces-budget-input.png) | [후](after-light-surfaces-budget-input.png) | [전](before-dark-surfaces-budget-input.png) | [후](after-dark-surfaces-budget-input.png) |
+| 가격 비교 직접 금액·참고 시세 | [전](before-light-surfaces-price-input.png) | [후](after-light-surfaces-price-input.png) | [전](before-dark-surfaces-price-input.png) | [후](after-dark-surfaces-price-input.png) |
+| 하객 정보 펼침 | [전](before-light-surfaces-guest.png) | [후](after-light-surfaces-guest.png) | [전](before-dark-surfaces-guest.png) | [후](after-dark-surfaces-guest.png) |
+| 신혼여행 월 선택·목적지 카드 | [전](before-light-surfaces-honeymoon.png) | [후](after-light-surfaces-honeymoon.png) | [전](before-dark-surfaces-honeymoon.png) | [후](after-dark-surfaces-honeymoon.png) |
+| 알아둘 것 펼침·접힘 | [전](before-light-surfaces-knowledge.png) | [후](after-light-surfaces-knowledge.png) | [전](before-dark-surfaces-knowledge.png) | [후](after-dark-surfaces-knowledge.png) |
+| 둘이 정할 것 펼침 | [전](before-light-surfaces-talk.png) | [후](after-light-surfaces-talk.png) | [전](before-dark-surfaces-talk.png) | [후](after-dark-surfaces-talk.png) |
+| 날짜 설정 창 | [전](before-light-surfaces-settings.png) | [후](after-light-surfaces-settings.png) | [전](before-dark-surfaces-settings.png) | [후](after-dark-surfaces-settings.png) |
+
 # 가격 비교 금액 입력·접기 구분
 
 - 기준: main `47fc0f3`, 변경 후: `design/price-input-disclosure`.
