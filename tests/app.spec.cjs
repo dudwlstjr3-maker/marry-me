@@ -1216,3 +1216,39 @@ test('calendar view gathers dated tasks, payments and detail lines by month and 
  await expect(app.locator('[data-act="b-open"][data-id="b28"]')).toHaveAttribute('aria-expanded','true');
  expect(noArrays(await stored(app))).toBe(true);expect(errors).toEqual([]);
 });
+
+test('text contrast AA also holds in opened rows, the calendar and detail lines',async({page})=>{
+ const seed=structuredClone(SEED);seed.budget.region='서울 강남';
+ seed.budget.items.b05={plan:140,deposit:30,depositDate:'2026-10-12',balanceDate:'2026-10-25',balancePaid:true};seed.budget.items.b01={plan:350,actual:420,deposit:100,balanceDate:'2026-09-01'};
+ seed.tasks.t10={book:'2026-10-04'};seed.tasks.t09={date:'2026-10-11',done:true};
+ seed.budget.items.b28={lines:{l1:{name:'대학 동기 모임',date:'2026-10-18',amount:24,created:1}}};
+ seed.budget.custom={x1:{cat:'wed',name:'부케',plan:30,created:5}};
+ seed.budget.quotes={q1:{name:'라온홀',heads:200,unit:65000,hall:300,extra:50,created:1},q2:{name:'비싼홀',heads:200,unit:120000,hall:900,extra:50,created:2}};
+ const {app,errors}=await openApp(page,seed);
+ const failures=()=>app.locator('body').evaluate(()=>{
+  function rgba(s){return s.match(/[\d.]+/g).map(Number)}
+  function blend(a,b){const alpha=a[3]??1;return a.slice(0,3).map((x,i)=>x*alpha+b[i]*(1-alpha))}
+  function bg(e){let c=[255,255,255];const chain=[];for(let n=e;n;n=n.parentElement)chain.unshift(n);for(const n of chain)c=blend(rgba(getComputedStyle(n).backgroundColor),c);return c}
+  function lum(c){return c.map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4}).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0)}
+  const out=[];for(const e of document.querySelectorAll('body *')){if(!e.getClientRects().length||e.closest('[hidden]')||e.matches(':disabled')||['SCRIPT','STYLE','OPTION','SVG','PATH'].includes(e.tagName))continue;const text=[...e.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent.trim()).join('');if(!text)continue;const st=getComputedStyle(e),background=bg(e),foreground=blend(rgba(st.color),background),l=[lum(background),lum(foreground)].sort((a,b)=>b-a),ratio=(l[0]+.05)/(l[1]+.05);if(ratio<4.5)out.push({text:text.slice(0,40),ratio:Math.round(ratio*100)/100});}return out;
+ });
+ // An overdue task and a done one, opened: red and blue text sits on the tinted band.
+ await app.locator('[data-act="open"][data-id="t04"]').click();await app.locator('[data-act="open"][data-id="t01"]').click();
+ expect(await failures(),'tasks').toEqual([]);
+ // Calendar: a picked Sunday, then the wedding month with a picked Sunday.
+ await app.locator('[data-act="tl-view"][data-v="cal"]').click();
+ await app.locator('[data-act="cal-day"][data-id="2026-10-18"]').click();expect(await failures(),'calendar').toEqual([]);
+ for(let i=0;i<7;i++)await app.locator('[data-act="cal-move"][data-v="1"]').click();
+ await app.locator('[data-act="cal-day"][data-id="2027-05-09"]').click();expect(await failures(),'wedding month').toEqual([]);
+ // Budget: detail lines, an over-budget item, a calculated one, a paid one, one added by hand, and both quotes.
+ await app.locator('#tab-budget').click();
+ for(const k of ['bcat-card','bcat-wed','bcat-sdm']){const c=app.locator(`details[data-k="${k}"]`);if(!(await c.evaluate(e=>e.open)))await c.locator(':scope > summary').click();}
+ for(const id of ['b28','b01','b02','b05'])await app.locator(`[data-act="b-open"][data-id="${id}"]`).click();
+ await app.locator('[data-act="b-open"]').filter({hasText:'부케'}).click();
+ for(const q of await app.locator('[data-act="q-open"]').all())await q.click();
+ await app.locator('details.glance-more > summary').click();
+ expect(await failures(),'budget').toEqual([]);
+ await app.locator('#tab-guest').click();await app.locator('[data-act="g-open"]').first().click();expect(await failures(),'guest').toEqual([]);
+ await app.locator('#tab-talk').click();await app.locator('[data-act="talk-open"]').first().click();expect(await failures(),'talk').toEqual([]);
+ expect(errors).toEqual([]);
+});
