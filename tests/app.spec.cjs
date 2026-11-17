@@ -1164,6 +1164,26 @@ test('budget items take dated detail lines whose sum becomes the total; invitati
  expect(errors).toEqual([]);
 });
 
+test('plan review shows a line-derived total as calculated instead of offering edits that cannot take effect',async({page})=>{
+ const seed=structuredClone(SEED);
+ seed.budget.planGroup='pa';seed.budget.items.b28={plan:10,lines:{l1:{name:'대학 동기 모임',date:'2026-10-17',amount:24,created:1}}};
+ seed.pricePlan={activeGroup:'pa',groups:{pa:{name:'모임 비교안',items:{'x-card-meet':true,'x-bouquet':true},amounts:{'x-card-meet':60,'x-bouquet':35},apply:{'x-card-meet':true,'x-bouquet':true}}}};
+ const {app,errors}=await openApp(page,seed);
+ await app.locator('#tab-budget').click();await app.locator('details[data-k="pr-box"] > summary').click();
+ const row=key=>app.locator(`details[data-k="pr-row-${key}"]`);
+ // 청첩장 모임 has a 24만원 detail line: its budget is that sum, compared with the plan's 60만원.
+ await expect(row('b28').locator('.pr-row-nums')).toHaveText('비교안 60만원 · 내 예산 24만원');
+ await row('b28').locator('summary').click();
+ await expect(row('b28').locator('[data-fk="pr-plan-b28"]')).toHaveCount(0);
+ await expect(row('b28').locator('.calcval')).toContainText('24만원');await expect(row('b28').locator('.calcval')).toContainText('세부 내역 합계');
+ await expect(row('b28').locator('.pr-keep')).toContainText('세부 내역의 합계가 총비용이에요');
+ await expect(row('b28').locator('[data-act="b-plan-import"]')).toHaveCount(0);
+ // An item without detail lines keeps its editable budget and the import button.
+ await row('b27').locator('summary').click();
+ await expect(row('b27').locator('[data-fk="pr-plan-b27"]')).toBeVisible();await expect(row('b27').locator('[data-act="b-plan-import"]')).toHaveCount(1);
+ expect(errors).toEqual([]);
+});
+
 test('calendar view gathers dated tasks, payments and detail lines by month and adds schedules',async({page})=>{
  const seed=structuredClone(SEED);
  seed.budget.items.b05={plan:140,deposit:30,depositDate:'2026-10-12',balanceDate:'2026-10-28'};seed.tasks.t10={book:'2026-10-08'};

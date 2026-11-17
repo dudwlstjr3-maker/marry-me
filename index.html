@@ -2963,6 +2963,8 @@ function planDiff(mine, ref, own){
 function planImportHTML(t){
   if (Store.readOnly) return '';
   if (t.rows.length !== 1) return '<p class="tip">여러 예산 항목을 묶은 가격이라 한 칸에 넣지 않아요. 위에서 항목마다 직접 입력하세요.</p>';
+  /* 세부 내역 합계가 총비용인 항목은 plan을 고쳐도 화면에 반영되지 않으므로 넣기·바꾸기를 내놓지 않아요. */
+  if (t.rows[0].byLines && !t.rows[0].perHead) return '';
   if (!t.priced) return '<p class="tip">금액을 넣지 않은 항목이 있어 예산에 넣을 값이 없어요. 가격 비교 탭에서 금액을 넣어 주세요.</p>';
   var r = t.rows[0], line = t.lines[0];
   if (r.perHead) {
@@ -2996,6 +2998,9 @@ function planTargetHTML(t){
     if (r.perHead) {
       h += '<div class="bedit two">' + f('heads', nm+'인원(명)', r.heads, '예: 200') + f('unit', '1인 금액(원)', r.unit, '예: 65000') + '</div>' +
         (r.calc ? '<div class="field">'+esc(nm)+'내 예산(만원)<div class="calcval">'+fmtMan(r.plan)+'</div></div>' : f('plan', nm+'내 예산(만원)', r.plan));
+    } else if (r.byLines) {
+      h += '<div class="field">'+esc(nm)+'내 예산(만원)<div class="calcval">'+fmtMan(r.lineSum)+' <small>세부 내역 합계</small></div></div>' +
+        '<p class="pr-keep">'+esc(nm)+'세부 내역의 합계가 총비용이에요. 금액을 바꾸려면 예산 항목을 열어 세부 내역을 고치세요.</p>';
     } else h += f('plan', nm+'내 예산(만원)', r.plan);
     var kept = [];
     if (r.actual != null) kept.push('확정 '+fmtMan(r.actual));
