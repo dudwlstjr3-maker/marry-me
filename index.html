@@ -9,9 +9,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --paper:#FAF7F0; --surface:#FFFDF9; --ink:#34312F; --muted:#6D625B; --line:#DED4C4; --focus:var(--chung); --on-knot:#FFFFFF; --backdrop:rgba(10,14,22,.45); --tabs-height:64px;
+  --paper:#F3EEE5; --surface:#FFFDFA; --ink:#352F2A; --muted:#6D625B; --line:#D9CEBD; --focus:var(--chung); --on-knot:#FFFFFF; --backdrop:rgba(10,14,22,.45); --tabs-height:64px;
   --chung:#365B74; --hong:#963F53; --chung-soft:rgba(54,91,116,.07); --hong-soft:rgba(150,63,83,.06);
-  --blush:#F5E9E6; --gold:#80612E; --gold-line:#BEA578; --gold-soft:#F1E8D8; --leaf:#9CA78F; --flower:#FFFDF7; --petal-line:#D9CCB6; --shadow:rgba(91,66,33,.06);
+  --blush:#EDE1DB; --gold:#76552B; --gold-line:#B69A70; --gold-soft:#EDE2CF; --leaf:#9CA78F; --flower:#FFFDF7; --petal-line:#D9CCB6; --shadow:rgba(91,66,33,.09);
+  --canvas-glow:rgba(190,165,120,.15); --canvas-clear:rgba(190,165,120,0);
+  --field-bg:#FFFEFC; --field-line:#A58C6A; --field-focus:#EDF4F7;
   --serif:"Hahmlet","Noto Serif KR","Noto Serif CJK KR","AppleMyungjo",serif;
   --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR","Noto Sans CJK KR",sans-serif;
   color-scheme:light;
@@ -21,15 +23,19 @@
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --paper:#111B2D; --surface:#19253A; --ink:#F2EBDE; --muted:#C0B8AB; --line:#3F4959;
-    --blush:#21283A; --gold:#E5C287; --gold-line:#9F845C; --gold-soft:#303344; --leaf:#7C9087; --flower:#D8D5C9; --petal-line:#A79C85; --shadow:rgba(0,0,0,.12);
+    --paper:#121C29; --surface:#202C3D; --ink:#F4EEE3; --muted:#C0B8AB; --line:#465366;
+    --blush:#252735; --gold:#E5C287; --gold-line:#9F845C; --gold-soft:#343C49; --leaf:#7C9087; --flower:#D8D5C9; --petal-line:#A79C85; --shadow:rgba(0,0,0,.22);
+    --canvas-glow:rgba(159,132,92,.12); --canvas-clear:rgba(159,132,92,0);
+    --field-bg:#152233; --field-line:#8898AF; --field-focus:#1C3046;
     --chung:#86A5EE; --hong:#F2788C; --chung-soft:rgba(134,165,238,.12); --hong-soft:rgba(242,120,140,.12);
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --paper:#111B2D; --surface:#19253A; --ink:#F2EBDE; --muted:#C0B8AB; --line:#3F4959;
-    --blush:#21283A; --gold:#E5C287; --gold-line:#9F845C; --gold-soft:#303344; --leaf:#7C9087; --flower:#D8D5C9; --petal-line:#A79C85; --shadow:rgba(0,0,0,.12);
+  --paper:#121C29; --surface:#202C3D; --ink:#F4EEE3; --muted:#C0B8AB; --line:#465366;
+    --blush:#252735; --gold:#E5C287; --gold-line:#9F845C; --gold-soft:#343C49; --leaf:#7C9087; --flower:#D8D5C9; --petal-line:#A79C85; --shadow:rgba(0,0,0,.22);
+  --canvas-glow:rgba(159,132,92,.12); --canvas-clear:rgba(159,132,92,0);
+  --field-bg:#152233; --field-line:#8898AF; --field-focus:#1C3046;
   --chung:#86A5EE; --hong:#F2788C; --chung-soft:rgba(134,165,238,.12); --hong-soft:rgba(242,120,140,.12);
   color-scheme:dark;
 }
@@ -867,9 +873,9 @@ body{line-height:1.65}
 #panel-price .price-pick-src{padding-top:6px;border-top:1px solid var(--line)}
 
 /* v28 — 펼친 줄은 색과 테두리로 구분하고, 여닫는 자리는 화살표와 닫기 단추로 알려 줘요. */
-:root{--open-head:#F1E8D8;--open-bg:#F8F2E6}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--open-head:#283048;--open-bg:#1E2A42}}
-:root[data-theme="dark"]{--open-head:#283048;--open-bg:#1E2A42}
+:root{--open-head:#E9DCC2;--open-bg:#F7F0E3}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--open-head:#2B3649;--open-bg:#253042}}
+:root[data-theme="dark"]{--open-head:#2B3649;--open-bg:#253042}
 /* 줄의 화살표: 접혀 있으면 아래, 펼치면 위 */
 .chev,.close-row::before{content:"";flex:none;box-sizing:border-box;width:10px;height:10px;margin-inline:4px 3px;align-self:center;border:solid var(--gold);border-width:0 2px 2px 0;transform:translateY(-3px) rotate(45deg);transition:transform .15s ease}
 .is-open>.row>.chev,.is-open>.t-row>.chev,.close-row::before{transform:translateY(2px) rotate(-135deg)}
@@ -906,12 +912,64 @@ body{line-height:1.65}
 @media (max-width:360px){.is-open>.row~*,.is-open>.t-row~*{padding-inline:10px}.is-open>.row,.is-open>.t-row{padding-inline:8px}}
 .is-open .detail .field{color:var(--ink)}
 .is-open .detail :is(input[type=text],input[type=date],textarea,select){border-color:var(--gold-line);background:var(--surface)}
-.is-open .calcval{border:1px dashed var(--chung);background:var(--chung-soft);color:var(--chung)}
+.is-open .calcval{border:1px dashed var(--chung);background:var(--chung-soft);color:var(--ink)}
 .is-open .subtasks,.is-open .shootcl{border-color:var(--gold-line)}
 /* 펼친 상자 안의 묶음 제목 */
 .fhead{display:flex;align-items:center;gap:8px;margin:0;color:var(--gold);font-size:13px;font-weight:600;line-height:1.5}
 .fhead::after{content:"";flex:1;height:1px;background:var(--gold-line)}
 .fhead:not(:first-child){margin-top:6px}
+/* 예산 항목의 세부 내역 */
+.blines{list-style:none;margin:0;padding:0 10px;border:1px solid var(--gold-line);border-radius:6px;background:var(--surface)}
+.blines li{display:flex;align-items:center;gap:10px;min-height:48px;border-bottom:1px solid var(--line);font-size:14px;line-height:1.45}
+.blines li:last-child{border-bottom:0}
+.bl-what{flex:1;min-width:0}
+.bl-what small{display:block;color:var(--muted);font-size:13px}
+.blines strong{flex:none;font-variant-numeric:tabular-nums}
+.bl-add{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
+.bl-add>:first-child,.bl-add>.btn{grid-column:1/-1}
+.bl-add input{width:100%;min-width:0}
+.calcval{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px}
+.calcval small{font-size:12px;font-weight:500}
+/* 진행 순서의 목록·달력 보기 */
+.seg{display:flex;gap:6px;margin:14px 0 0}
+.cal{margin-top:12px}
+.cal-head{display:flex;align-items:center;gap:6px}
+.cal-head h3{flex:1;min-width:0;margin:0;text-align:center;font-family:var(--serif);font-size:19px;color:var(--gold);white-space:nowrap}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));margin-top:10px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.cal-wd{padding:6px 0 4px;text-align:center;font-size:13px;color:var(--muted)}
+.cal-wd.sun,.cal-day.sun .cal-num{color:var(--hong)}
+.cal-day{appearance:none;display:grid;justify-items:center;align-content:start;gap:4px;min-width:0;min-height:50px;padding:7px 0 5px;border:1px solid transparent;border-radius:6px;background:none;cursor:pointer}
+.cal-num{font-size:15px;line-height:1.3;font-variant-numeric:tabular-nums}
+.cal-day.today{border-color:var(--gold-line)}
+.cal-day.today .cal-num{font-weight:700}
+.cal-day.wed{background:var(--gold-soft)}
+.cal-day[aria-pressed="true"]{border-color:var(--gold);background:var(--open-head);box-shadow:inset 0 0 0 1px var(--gold)}
+.cal-day.wed .cal-num,.cal-day[aria-pressed="true"] .cal-num{color:var(--ink)}
+.cal-dots{display:flex;gap:3px;height:6px}
+.cal-dots i,.cal-legend i{display:block;width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.cal-dots i.p,.cal-legend i.p{background:var(--hong)}
+.cal-dots i.b,.cal-legend i.b{background:var(--chung)}
+.cal-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 2px 0;font-size:13px;color:var(--muted)}
+.cal-legend span{display:inline-flex;align-items:center;gap:5px}
+.cal-list{margin-top:18px}
+.cal-list h4{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0;font-family:var(--serif);font-size:17px;color:var(--gold)}
+.cal-list h4 span{font-family:var(--sans);font-size:13px;font-weight:500;color:var(--muted)}
+.cal-date{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:12px 2px 4px;font-size:14px}
+.cal-date span{color:var(--muted);font-size:13px}
+.cal-group ul{list-style:none;margin:0;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.cal-item{border-bottom:1px solid var(--line)}
+.cal-item:last-child{border-bottom:0}
+.cal-item button{appearance:none;display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:6px 0;border:0;background:none;text-align:left;font-size:15px;line-height:1.45;cursor:pointer}
+.cal-chip{flex:none;min-width:44px;padding:2px 6px;border:1px solid var(--gold-line);border-radius:4px;background:var(--surface);color:var(--gold);font-size:12px;font-weight:600;line-height:1.5;text-align:center}
+.cal-item.k-pay .cal-chip{border-color:var(--hong);color:var(--hong)}
+.cal-item.k-book .cal-chip{border-color:var(--chung);color:var(--chung)}
+.cal-item.k-wed .cal-chip{border-color:var(--gold);background:var(--gold);color:var(--surface)}
+.cal-what{flex:1;min-width:0}
+.cal-what small{display:block;color:var(--muted);font-size:13px}
+.cal-item.k-done .cal-what{color:var(--muted)}
+.cal-item strong{flex:none;font-size:14px;font-variant-numeric:tabular-nums}
+.cal .add{margin-top:24px}
+@media (max-width:359px){.cal-grid{margin-inline:-16px;padding-inline:0;border-inline:0;border-radius:0}}
 /* 저장 상태 줄은 글자가 없어도 한 줄 높이를 지켜요. 안 그러면 '저장됨'이 떴다 사라질 때마다 화면 전체가 밀려요. */
 @media (max-width:430px){.status{min-height:1.65em}}
 /* 첫 화면: 날짜를 정한 뒤에는 얇은 띠 */
@@ -947,6 +1005,84 @@ details:is(.price-picked-details,.price-custom,.price-compare,.trash)[open]{bord
 details:is(.price-picked-details,.price-custom,.price-compare,.trash)[open]>summary{border-bottom-color:var(--gold-line);background:var(--open-head)}
 .glance-more>summary::after,.q-paste>summary::after,.n-fold>summary::after{content:"";flex:none;box-sizing:border-box;width:9px;height:9px;margin-left:8px;border:solid var(--chung);border-width:0 2px 2px 0;transform:translateY(-3px) rotate(45deg)}
 .glance-more[open]>summary::after,.q-paste[open]>summary::after,.n-fold[open]>summary::after{transform:translateY(2px) rotate(-135deg)}
+
+/* Paper surfaces: quiet background, raised reading cards, distinct writing fields. */
+body{background:radial-gradient(ellipse at 100% 0,var(--canvas-glow),var(--canvas-clear) 65%),linear-gradient(165deg,var(--paper) 45%,var(--blush)) fixed;background-color:var(--paper)}
+.panel{background:none}
+.bar{background:var(--surface)}
+.bar-in .btn{background:var(--paper)}
+.btn,.close-row{border-radius:8px}
+.btn:not(.primary){border-color:var(--line)}
+.btn.primary{box-shadow:0 2px 6px var(--shadow)}
+.tabs{box-shadow:0 3px 12px var(--shadow)}
+.tab{border-radius:8px 8px 0 0}
+.tab[aria-selected="true"]{box-shadow:inset 0 -2px var(--gold)}
+.hero-bar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 10px;border-radius:12px;box-shadow:0 4px 14px var(--shadow)}
+.hero-bar-main{display:contents}
+.hero-bar .names{grid-column:1;grid-row:1}
+.hero-bar .when{grid-column:1/-1;grid-row:2}
+.hero-dday{grid-column:2;grid-row:1}
+.hero-bar>.chev{grid-column:3;grid-row:1}
+.hero-bar .when,.hero.compact .stats{font-size:14px}
+.hero-prog{gap:4px}
+.hero.compact .stats{gap:4px 12px}
+.invitation{background:linear-gradient(165deg,var(--surface) 60%,var(--open-bg));box-shadow:0 10px 32px var(--shadow)}
+.notice{border-radius:8px}
+.rail,.blist,.glist,.tlist,.glance,.price-builder-main,.plan-review{border-radius:12px;box-shadow:0 3px 12px var(--shadow)}
+.phase-head{border-bottom:0;border-radius:8px 8px 0 0}
+.phase-head .count{color:var(--gold)}
+.bcat>summary.bcat-head{border-radius:10px;box-shadow:0 2px 6px var(--shadow)}
+.bcat[open]>summary.bcat-head{border-radius:10px 10px 0 0;border-bottom:2px solid var(--gold-line)}
+.bcat[open]>.blist{border-radius:0 0 12px 12px}
+.glance{border-top:3px solid var(--gold);padding:16px 12px}
+.glance .sum{border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+.glance .sum .k{color:var(--ink)}
+.glance-more>summary{justify-content:space-between}
+.who.net{border-radius:8px}
+.is-open>.row,.is-open>.t-row{border-radius:10px 10px 0 0}
+.is-open>:last-child{border-radius:0 0 10px 10px}
+.fhead,.bcat-head .meta small,.subtasks h4 span,.cl-group h5,.shootcl>summary .cl-count{font-size:14px}
+.close-row{background:var(--surface);border-color:var(--gold-line)}
+input[type=text],input[type=date],textarea,select,
+.is-open .detail :is(input[type=text],input[type=date],textarea,select),
+#panel-price :is(input,select,textarea){border-color:var(--field-line);border-radius:8px;background:var(--field-bg)}
+input[type=text],input[type=date],textarea,select{min-height:48px}
+input[inputmode=numeric],input[inputmode=decimal]{font-variant-numeric:tabular-nums}
+#panel-price .price-mine input{background:var(--field-bg);border-radius:8px}
+input:focus,textarea:focus,select:focus,
+.is-open .detail :is(input,textarea,select):focus,
+#panel-price :is(input,textarea,select):focus{background:var(--field-focus);border-color:var(--focus);outline:2px solid var(--focus);outline-offset:2px}
+.field:focus-within{color:var(--focus)}
+.calcval{min-height:48px;border-radius:8px}
+.price-group-tab,.price-group-summary,.price-mine,.price-pick-in,.pr-row,.pr-pick{border-radius:8px}
+#panel-price .know details{border-radius:10px}
+#panel-price .know details>summary{border-radius:9px;background:var(--surface)}
+#panel-price .know details[open]>summary{border-radius:9px 9px 0 0;background:var(--open-head)}
+#panel-price .know .price-category>summary{background:var(--gold-soft)}
+#panel-price .price-mine{border-radius:8px;background:var(--open-bg)}
+#panel-price .price-refs{border-radius:8px}
+#panel-know .know>details{padding:0;border-radius:12px;box-shadow:0 3px 12px var(--shadow)}
+#panel-know .know>details>summary{padding:14px;border-radius:11px}
+#panel-know .know>details[open]>summary{background:var(--open-head);border-bottom:1px solid var(--gold-line);border-radius:11px 11px 0 0}
+#panel-know .know>details>.body{margin-top:0;padding:14px}
+.months{gap:8px}
+.mchip{border-radius:8px}
+.mchip[aria-pressed="true"]{background:var(--gold);color:var(--surface);border-color:var(--gold)}
+.dests{display:grid;gap:12px;margin-top:16px}
+.dest{padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 3px 12px var(--shadow)}
+.dest h4{color:var(--gold)}
+.dest p.note{padding-top:10px;border-top:1px solid var(--line)}
+.avoid{border-radius:8px}
+dialog{border-color:var(--gold-line);border-radius:16px;box-shadow:0 16px 48px var(--shadow)}
+.dlg h2{color:var(--gold);padding-bottom:10px;border-bottom:1px solid var(--line)}
+.dlg .hint,.share-sec .hint{font-size:14px}
+#backupSec{border-radius:10px}
+@media (hover:hover){
+  .btn:not(:disabled):hover,.close-row:hover,.hero-bar:hover{border-color:var(--gold);box-shadow:0 3px 10px var(--shadow)}
+  .tab:not([aria-selected="true"]):hover,.mchip:not([aria-pressed="true"]):hover{background:var(--paper);color:var(--gold)}
+  .bcat>summary:hover,#panel-know .know>details>summary:hover{box-shadow:inset 3px 0 var(--gold)}
+  input:not(:disabled):hover,textarea:not(:disabled):hover,select:not(:disabled):hover{border-color:var(--gold)}
+}
 </style>
 </head>
 <body>
@@ -1210,7 +1346,7 @@ var BUDGET_ITEMS = [
   {id:'b05',cat:'sdm',name:'스튜디오 촬영'}, {id:'b06',cat:'sdm',name:'드레스'}, {id:'b07',cat:'sdm',name:'메이크업'}, {id:'b08',cat:'sdm',name:'추가요금(피팅비·헬퍼비 등)'},
   {id:'b09',cat:'gift',name:'예물(반지 등)'}, {id:'b10',cat:'gift',name:'예단'}, {id:'b11',cat:'gift',name:'함·폐백'},
   {id:'b12',cat:'wear',name:'예복'}, {id:'b13',cat:'wear',name:'한복(혼주 포함)'},
-  {id:'b14',cat:'card',name:'청첩장(종이·모바일)'}, {id:'b15',cat:'card',name:'답례품'},
+  {id:'b14',cat:'card',name:'청첩장(종이·모바일)'}, {id:'b28',cat:'card',name:'청첩장 모임'}, {id:'b15',cat:'card',name:'답례품'},
   {id:'b16',cat:'trip',name:'항공'}, {id:'b17',cat:'trip',name:'숙소'}, {id:'b18',cat:'trip',name:'현지 경비'},
   {id:'b19',cat:'home',name:'가전'}, {id:'b20',cat:'home',name:'가구'}, {id:'b21',cat:'home',name:'생활용품'},
   {id:'b22',cat:'house',name:'보증금·계약금'}, {id:'b23',cat:'house',name:'이사·입주청소'}, {id:'b24',cat:'house',name:'중개보수'},
@@ -1444,6 +1580,7 @@ function init(){
 var ui = {
   tab: lsGet('wd-tab') || 'timeline',
   heroOpen: lsGet('wd-hero') === '1',
+  tlView: lsGet('wd-tlview') === 'cal' ? 'cal' : 'list', calMonth: '', calDay: '', calDraft: '',
   hideDone: lsGet('wd-hideDone') === '1',
   showHidden: false,
   open: {},
@@ -1819,6 +1956,73 @@ function taskHTML(it, wd, t0){
   return h + '</li>';
 }
 
+/* 달력: 날짜가 있는 것을 한 달씩 모아 봐요. 할 일(진행일·예약일), 예약금 납부일, 잔금일, 예산 세부 내역, 혼인신고 예정일. */
+function calEntries(list){
+  var out = [];
+  function push(dateStr, o){ o.date = dateStr; out.push(o); }
+  list.forEach(function(it){
+    if (it.hidden) return;
+    if (it.due) push(ymd(it.due), {type:it.wedding ? 'wed' : 'task', title:it.title + (it.wedding && state.weddingTime ? ' ' + fmtTime(state.weddingTime) : ''), done:it.done, id:it.id});
+    if (it.book) push(ymd(it.book), {type:'book', title:'예약 · ' + it.title, done:it.done, id:it.id});
+  });
+  if (parseYMD(state.regDate)) push(state.regDate, {type:'task', title:'혼인신고 예정일', know:'k1'});
+  budgetRows().forEach(function(r){
+    if (r.hidden) return;
+    if (r.depositDate && r.depositShown) push(r.depositDate, {type:'pay', title:'예약금 · ' + r.name, amount:r.depositShown, bid:r.id, cat:r.cat});
+    if (r.balanceDate && r.balance > 0) push(r.balanceDate, {type:'pay', title:'잔금 · ' + r.name, amount:r.balance, done:r.balancePaid, bid:r.id, cat:r.cat});
+    r.lines.forEach(function(l){ if (l.date) push(l.date, {type:'pay', title:l.name + ' · ' + r.name, amount:l.amount, bid:r.id, cat:r.cat}); });
+  });
+  var rank = {wed:0, pay:1, book:2, task:3};
+  return out.sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : rank[a.type] - rank[b.type]; });
+}
+function calEntryHTML(e){
+  var chip = {wed:'결혼식', pay:'지출', book:'예약', task:'할 일'}[e.type];
+  var go = e.bid ? 'data-act="b-go" data-id="'+esc(e.bid)+'" data-cat="'+esc(e.cat)+'"' : e.know ? 'data-act="goto-know" data-k="'+e.know+'"' : 'data-act="cal-go" data-id="'+esc(e.id)+'"';
+  return '<li class="cal-item k-'+e.type+(e.done ? ' k-done' : '')+'"><button type="button" '+go+'><span class="cal-chip">'+chip+'</span>' +
+    '<span class="cal-what">'+esc(e.title)+(e.done ? '<small>'+(e.type === 'pay' ? '냈어요' : '완료')+'</small>' : '')+'</span>'+(e.amount != null ? '<strong>'+fmtMan(e.amount)+'</strong>' : '')+'</button></li>';
+}
+function calMonthNow(){ return /^\d{4}-\d{2}$/.test(ui.calMonth) ? ui.calMonth : ymd(today()).slice(0, 7); }
+function calendarHTML(list){
+  var t0 = today(), todayStr = ymd(t0), m = calMonthNow();
+  var yy = Number(m.slice(0, 4)), mm = Number(m.slice(5, 7)), days = new Date(yy, mm, 0).getDate(), lead = new Date(yy, mm - 1, 1).getDay();
+  var byDay = {}, total = 0;
+  calEntries(list).forEach(function(e){ if (e.date.slice(0, 7) === m) { (byDay[e.date] = byDay[e.date] || []).push(e); total++; } });
+  var sel = ui.calDay && ui.calDay.slice(0, 7) === m ? ui.calDay : '';
+  var h = '<div class="cal"><div class="cal-head"><button class="btn" type="button" data-act="cal-move" data-v="-1" aria-label="이전 달">‹</button>' +
+    '<h3 id="calTitle">'+yy+'년 '+mm+'월</h3>' +
+    '<button class="btn" type="button" data-act="cal-move" data-v="1" aria-label="다음 달">›</button>' +
+    '<button class="btn" type="button" data-act="cal-move" data-v="0"'+(m === todayStr.slice(0, 7) ? ' disabled' : '')+'>오늘</button></div>' +
+    '<div class="cal-grid" role="group" aria-labelledby="calTitle">' + WD.map(function(w, i){ return '<span class="cal-wd'+(i === 0 ? ' sun' : '')+'" aria-hidden="true">'+w+'</span>'; }).join('');
+  for (var blank = 0; blank < lead; blank++) h += '<span class="cal-blank" aria-hidden="true"></span>';
+  for (var d = 1; d <= days; d++) {
+    var ds = m + '-' + (d < 10 ? '0' : '') + d, es = byDay[ds] || [], types = {}, dow = (lead + d - 1) % 7;
+    es.forEach(function(e){ types[e.type] = 1; });
+    h += '<button class="cal-day'+(ds === todayStr ? ' today' : '')+(types.wed ? ' wed' : '')+(dow === 0 ? ' sun' : '')+'" type="button" data-act="cal-day" data-id="'+ds+'" aria-pressed="'+(ds === sel ? 'true' : 'false')+'"' +
+      ' aria-label="'+mm+'월 '+d+'일 '+WD[dow]+'요일'+(ds === todayStr ? ', 오늘' : '')+(types.wed ? ', 결혼식' : '')+', 일정 '+es.length+'개">' +
+      '<span class="cal-num">'+d+'</span><span class="cal-dots" aria-hidden="true">'+(types.pay ? '<i class="p"></i>' : '')+(types.book ? '<i class="b"></i>' : '')+(types.task ? '<i class="t"></i>' : '')+'</span></button>';
+  }
+  h += '</div><p class="cal-legend" aria-hidden="true"><span><i class="p"></i>돈 나가는 날</span><span><i class="b"></i>예약일</span><span><i class="t"></i>할 일</span></p>';
+  var groupHTML = function(k){
+    var dd = parseYMD(k);
+    return '<div class="cal-group"><p class="cal-date"><b>'+dd.getDate()+'일 ('+WD[dd.getDay()]+')</b><span>'+dueLabel(diffDays(dd, t0))+'</span></p><ul>'+byDay[k].map(calEntryHTML).join('')+'</ul></div>';
+  };
+  if (sel) {
+    var sd = parseYMD(sel), sn = (byDay[sel] || []).length;
+    h += '<section class="cal-list" aria-label="고른 날 일정"><h4>'+mm+'월 '+sd.getDate()+'일 ('+WD[sd.getDay()]+') <span>'+sn+'건</span></h4>' +
+      (sn ? groupHTML(sel) : '<p class="tip">이 날은 잡힌 일정이 없어요. 아래에서 바로 추가할 수 있어요.</p>') +
+      '<div class="detail-actions"><button class="link" type="button" data-act="cal-all">'+mm+'월 전체 보기 ('+total+'건)</button></div></section>';
+  } else {
+    h += '<section class="cal-list" aria-label="'+mm+'월 일정"><h4>'+mm+'월 일정 <span>'+total+'건</span></h4>' +
+      (total ? Object.keys(byDay).sort().map(groupHTML).join('') : '<p class="tip">이 달에는 날짜가 잡힌 일정이 없어요.'+(state.weddingDate ? '' : ' 결혼식 날짜를 넣으면 할 일마다 날짜가 붙어요.')+'</p>') + '</section>';
+  }
+  if (!Store.readOnly) h += '<div class="add"><h3>일정 추가</h3><div id="addForm" class="addrow">' +
+    '<label class="sr" for="addTitle">일정</label><input type="text" id="addTitle" maxlength="60" placeholder="예: 대학 동기 청첩장 모임" value="'+esc(ui.calDraft || '')+'" data-fk="add-title"'+dis()+'>' +
+    '<label class="field">날짜<input type="date" id="addDate" value="'+esc(sel || (m === todayStr.slice(0, 7) ? todayStr : ''))+'" data-fk="add-date"'+dis()+'></label>' +
+    '<button class="btn primary" type="button" data-act="task-add"'+dis()+'>추가</button></div>' +
+    '<p class="tip">돈이 드는 일정은 예산 탭에서 항목을 열고 ‘세부 내역’에 금액과 날짜를 적으면 여기에도 보여요.</p></div>';
+  return h + '</div>';
+}
+
 function timelineHTML(list){
   var wd = parseYMD(state.weddingDate), t0 = today();
   var hiddenCount = list.filter(function(i){ return i.hidden; }).length;
@@ -1836,7 +2040,11 @@ function timelineHTML(list){
     var progress = taskProgress(i);
     return total + progress.total - progress.done;
   }, 0);
-  var h = upcomingNoteHTML() + (catchN ? '<p class="lead-note">결혼식까지 남은 기간보다 앞선 일 '+catchN+'개는 ‘지금 챙기기’로 표시했어요. 이미 끝낸 일은 체크하고, 필요 없는 일은 열어서 숨기세요.</p>' : '') +
+  var viewSeg = '<div class="seg" role="group" aria-label="보기 방식">' +
+    '<button class="mchip" type="button" aria-pressed="'+(ui.tlView === 'cal' ? 'false' : 'true')+'" data-act="tl-view" data-v="list" data-fk="tl-view-list">목록</button>' +
+    '<button class="mchip" type="button" aria-pressed="'+(ui.tlView === 'cal' ? 'true' : 'false')+'" data-act="tl-view" data-v="cal" data-fk="tl-view-cal">달력</button></div>';
+  if (ui.tlView === 'cal') return upcomingNoteHTML() + viewSeg + calendarHTML(list) + trashHTML('task', '지운 할 일', deletedOf(state.custom, 'title', 'task'));
+  var h = upcomingNoteHTML() + viewSeg + (catchN ? '<p class="lead-note">결혼식까지 남은 기간보다 앞선 일 '+catchN+'개는 ‘지금 챙기기’로 표시했어요. 이미 끝낸 일은 체크하고, 필요 없는 일은 열어서 숨기세요.</p>' : '') +
     '<div class="tools">' +
     '<button class="toggle" type="button" aria-pressed="'+(ui.hideDone?'true':'false')+'" data-act="hide-done" data-fk="hide-done">완료한 일 숨기기</button>' +
     (hiddenCount ? '<button class="toggle" type="button" aria-pressed="'+(ui.showHidden?'true':'false')+'" data-act="show-hidden">숨긴 일 보기 ('+hiddenCount+')</button>' : '') +
@@ -2066,7 +2274,7 @@ var PRICE_EXTRA_GROUPS = [
     ['x-card-print','종이 청첩장','b14','인쇄비와 봉투·스티커·추가 인쇄예요. 명단보다 넉넉히 잡으세요.'],
     ['x-card-mobile','모바일 청첩장','b14','템플릿 이용료나 제작비예요.'],
     ['x-card-post','청첩장 우편 발송','b14','우편으로 보낼 청첩장의 우표·등기 비용이에요.'],
-    ['x-card-meet','청첩장 모임 식사','b14','청첩장을 건네며 갖는 식사 자리예요. 모임이 많으면 큰돈이 돼요.'],
+    ['x-card-meet','청첩장 모임 식사','b28','청첩장을 건네며 갖는 식사 자리예요. 모임이 많으면 큰돈이 돼요.'],
     ['x-guest-gift','하객 답례품','b15','하객에게 드리는 답례품이에요. 수량은 보증인원을 기준으로 잡으세요.'],
     ['x-after-thanks','결혼 후 감사 인사','b15','식 뒤에 도와준 사람과 하객에게 하는 감사 선물이나 식사예요.']
   ]},
@@ -2609,7 +2817,9 @@ function budgetRows(){
     rows.push(payFields({kind:'c', id:id, cat:cat, name:c.name || '(이름 없음)', plan:num(c.plan), actual:num(c.actual), paid:num(c.paid), who:c.who || '', memo:c.memo || '', hidden:false, order:1000 + (c.created || 0)/1e13}, c));
   });
   rows.forEach(function(r){
-    r.expect = r.actual != null ? r.actual : r.plan;
+    /* 세부 내역에 금액이 있으면 그 합계가 총비용이에요. 따로 적어 둔 총비용은 지우지 않고, 내역을 다 지우면 다시 써요. */
+    if (r.byLines && !r.perHead) { r.plan = r.lineSum; r.expect = r.lineSum; }
+    else r.expect = r.actual != null ? r.actual : r.plan;
     /* 총비용 = 예약금 + 잔금. 예전에 넣은 ‘낸 돈’은 예약금으로 봐요. 낸 돈 = 예약금 (+ 잔금을 냈으면 잔금). */
     r.depositShown = r.hasDeposit ? r.deposit : r.paidOld;
     r.balance = r.expect != null ? Math.max(r.expect - (r.depositShown || 0), 0) : null;
@@ -2617,7 +2827,18 @@ function budgetRows(){
   });
   return rows;
 }
+/* 예산 항목의 세부 내역: 모임·구매처럼 여러 번에 나눠 드는 돈을 한 줄씩 적어요.
+   저장: budget.items|custom[id].lines[줄 id] = {name, date(YYYY-MM-DD, 없어도 됨), amount(만원, 없어도 됨), created}. 지우면 deleted:true. */
+function budgetLines(s){
+  var ls = isObj(s.lines) ? s.lines : {};
+  return Object.keys(ls).filter(function(k){ return isObj(ls[k]) && !ls[k].deleted; }).map(function(k){
+    var l = ls[k]; return {id:k, name:l.name || '(이름 없음)', date:parseYMD(l.date) ? l.date : '', amount:num(l.amount), created:l.created || 0};
+  }).sort(function(a, b){ var x = a.date || '9999', y = b.date || '9999'; return x < y ? -1 : x > y ? 1 : a.created - b.created; });
+}
 function payFields(row, s){
+  row.lines = budgetLines(s);
+  row.byLines = row.lines.some(function(l){ return l.amount != null; });
+  row.lineSum = row.lines.reduce(function(acc, l){ return acc + (l.amount || 0); }, 0);
   /* 저장된 칸이 있는지(빈 값 포함)를 따로 기억해요. 지운 예약금이 예전 ‘낸 돈’으로 되살아나지 않게, 지운 총비용 칸이 다른 칸으로 바뀌지 않게요. */
   row.paidOld = row.paid; row.deposit = num(s.deposit); row.hasDeposit = s.deposit != null; row.hasActual = s.actual != null;
   row.depositDate = parseYMD(s.depositDate) ? s.depositDate : ''; row.balanceDate = parseYMD(s.balanceDate) ? s.balanceDate : ''; row.balancePaid = !!s.balancePaid;
@@ -2742,6 +2963,8 @@ function planDiff(mine, ref, own){
 function planImportHTML(t){
   if (Store.readOnly) return '';
   if (t.rows.length !== 1) return '<p class="tip">여러 예산 항목을 묶은 가격이라 한 칸에 넣지 않아요. 위에서 항목마다 직접 입력하세요.</p>';
+  /* 세부 내역 합계가 총비용인 항목은 plan을 고쳐도 화면에 반영되지 않으므로 넣기·바꾸기를 내놓지 않아요. */
+  if (t.rows[0].byLines && !t.rows[0].perHead) return '';
   if (!t.priced) return '<p class="tip">금액을 넣지 않은 항목이 있어 예산에 넣을 값이 없어요. 가격 비교 탭에서 금액을 넣어 주세요.</p>';
   var r = t.rows[0], line = t.lines[0];
   if (r.perHead) {
@@ -2775,6 +2998,9 @@ function planTargetHTML(t){
     if (r.perHead) {
       h += '<div class="bedit two">' + f('heads', nm+'인원(명)', r.heads, '예: 200') + f('unit', '1인 금액(원)', r.unit, '예: 65000') + '</div>' +
         (r.calc ? '<div class="field">'+esc(nm)+'내 예산(만원)<div class="calcval">'+fmtMan(r.plan)+'</div></div>' : f('plan', nm+'내 예산(만원)', r.plan));
+    } else if (r.byLines) {
+      h += '<div class="field">'+esc(nm)+'내 예산(만원)<div class="calcval">'+fmtMan(r.lineSum)+' <small>세부 내역 합계</small></div></div>' +
+        '<p class="pr-keep">'+esc(nm)+'세부 내역의 합계가 총비용이에요. 금액을 바꾸려면 예산 항목을 열어 세부 내역을 고치세요.</p>';
     } else h += f('plan', nm+'내 예산(만원)', r.plan);
     var kept = [];
     if (r.actual != null) kept.push('확정 '+fmtMan(r.actual));
@@ -3174,15 +3400,31 @@ function budgetRefHTML(r){
   }
   return '<p class="refline">'+esc(ref.t)+tail+'</p>';
 }
+function budgetLinesHTML(r){
+  var y = today().getFullYear();
+  var h = r.lines.length
+    ? '<ul class="blines">' + r.lines.map(function(l){
+        return '<li><span class="bl-what">'+esc(l.name)+(l.date ? '<small>'+esc(fmtTiny(parseYMD(l.date), y))+'</small>' : '')+'</span><strong>'+(l.amount != null ? fmtMan(l.amount) : '-')+'</strong>' +
+          (Store.readOnly ? '' : '<button class="link" type="button" data-act="bl-del" data-kind="'+r.kind+'" data-id="'+esc(r.id)+'" data-c="'+esc(l.id)+'" aria-label="'+esc(l.name)+' 지우기">지우기</button>') + '</li>';
+      }).join('') + '</ul>' + (r.byLines ? '<p class="tip">합계 <b>'+fmtMan(r.lineSum)+'</b>('+r.lines.length+'건)를 총비용으로 써요.</p>' : '')
+    : '<p class="tip">모임이나 구매처럼 여러 번에 나눠 드는 돈은 한 줄씩 적으세요. 합계가 총비용이 되고, 날짜를 넣으면 진행 순서의 달력에도 보여요.</p>';
+  if (!Store.readOnly) h += '<div class="bl-add">' +
+    '<label class="field">내용<input type="text" maxlength="40" placeholder="예: 대학 동기 모임" data-bl="name" data-fk="bl-name-'+esc(r.id)+'"'+dis()+'></label>' +
+    '<label class="field">날짜(선택)<input type="date" data-bl="date" data-fk="bl-date-'+esc(r.id)+'"'+dis()+'></label>' +
+    '<label class="field">금액(만원)<input type="text" inputmode="numeric" placeholder="예: 24" data-bl="amount" data-fk="bl-amount-'+esc(r.id)+'"'+dis()+'></label>' +
+    '<button class="btn" type="button" data-act="bl-add" data-kind="'+r.kind+'" data-id="'+esc(r.id)+'"'+dis()+'>내역 추가</button></div>';
+  return h;
+}
 function budgetItemHTML(r){
   var open = !!ui.openBudget[r.id];
   var right;
   if (r.expect == null) right = '<span class="bamt"><span class="none">미입력</span></span>';
   else {
     var sub = '';
-    if (r.actual != null && r.plan != null && r.actual > r.plan) sub = '<small class="over">예산보다 '+fmtMan(r.actual - r.plan)+' 많음</small>';
+    if (!r.byLines && r.actual != null && r.plan != null && r.actual > r.plan) sub = '<small class="over">예산보다 '+fmtMan(r.actual - r.plan)+' 많음</small>';
     else if (r.balancePaid) sub = '<small>다 냈어요</small>';
     else if (r.depositShown != null && r.depositShown > 0) sub = '<small>잔금 '+fmtMan(r.balance)+(r.balanceDate ? ' · '+esc(fmtTiny(parseYMD(r.balanceDate), today().getFullYear())) : '')+'</small>';
+    else if (r.byLines && !r.perHead) sub = '<small>세부 내역 '+r.lines.length+'건</small>';
     else if (r.calc && r.actual == null) sub = '<small>'+r.heads.toLocaleString('ko-KR')+'명 × '+r.unit.toLocaleString('ko-KR')+'원</small>';
     else sub = '<small>총비용</small>';
     right = '<span class="bamt">'+fmtMan(r.expect)+sub+'</span>';
@@ -3202,13 +3444,16 @@ function budgetItemHTML(r){
     }
     /* 총비용을 먼저 적고 예약금을 넣으면 잔금은 저절로 나와요. 예전에 넣은 확정 금액이 있으면 그 칸을 총비용으로 고쳐요. */
     var dt = function(key, label, val){ return '<label class="field">'+label+'<input type="date" value="'+esc(val || '')+'" data-bdate="'+key+'" data-bkind="'+r.kind+'" data-id="'+r.id+'" data-fk="b-'+key+'-'+r.id+'"'+dis()+'></label>'; };
-    var totalField = r.calc && !r.hasActual
+    var totalField = r.byLines && !r.perHead
+      ? '<div class="field">총비용(만원)<div class="calcval">'+fmtMan(r.lineSum)+' <small>세부 내역 합계</small></div></div>'
+      : r.calc && !r.hasActual
       ? '<div class="field">총비용(만원)<div class="calcval">'+fmtMan(r.plan)+'</div></div>'
       : '<label class="field">총비용(만원)<input type="text" inputmode="numeric" value="'+((r.calc ? r.actual : r.expect) != null ? (r.calc ? r.actual : r.expect) : '')+'" data-btotal-item="1" data-bkind="'+r.kind+'" data-id="'+r.id+'" data-fk="b-total-'+r.id+'"'+dis()+'></label>';
     h += '<div class="detail">' + fhead('금액과 날짜') + perHead + '<div class="bedit two bpay">' + totalField +
       f('deposit','예약금(만원)', r.depositShown) + dt('depositDate','예약금 납부일', r.depositDate) +
       '<div class="field">잔금(만원)<div class="calcval">'+(r.balance != null ? fmtMan(r.balance) : '-')+'</div></div>' + dt('balanceDate','잔금일', r.balanceDate) + '</div>' +
       (r.balance > 0 || r.balancePaid ? '<div class="tools"><button class="toggle" type="button" aria-pressed="'+(r.balancePaid ? 'true' : 'false')+'" data-act="b-balance-paid" data-kind="'+r.kind+'" data-id="'+r.id+'"'+dis()+'>잔금 냈어요</button></div>' : '') +
+      (r.perHead ? '' : fhead('세부 내역') + budgetLinesHTML(r)) +
       fhead('그 밖') + '<label class="field">누가 내나<select data-bwho="1" data-fk="b-who-'+r.id+'" data-bkind="'+r.kind+'" data-id="'+r.id+'"'+dis()+'>' + WHO.map(function(w){ return '<option value="'+w.v+'"'+(w.v === r.who ? ' selected' : '')+'>'+w.t+'</option>'; }).join('') + '</select></label>' +
       '<label class="field">메모<textarea rows="2" placeholder="업체, 계약 조건, 연락처 등" data-bmemo="'+r.kind+'" data-id="'+r.id+'" data-fk="bmemo-'+r.id+'"'+dis()+'>'+esc(r.memo)+'</textarea></label>' +
       (Store.readOnly ? '' : '<div class="detail-actions">' + (r.kind === 't'
@@ -3542,6 +3787,32 @@ document.addEventListener('click', function(e){
       var tx = document.querySelector('[data-fk="talk-'+id+'"]');
       if (tx) { tx.focus({preventScroll:true}); try { tx.setSelectionRange(tx.value.length, tx.value.length); } catch(e3){} }
     }
+  } else if (act === 'tl-view') {
+    ui.tlView = b.getAttribute('data-v') === 'cal' ? 'cal' : 'list'; lsSet('wd-tlview', ui.tlView); render();
+  } else if (act === 'cal-move') {
+    var cv = Number(b.getAttribute('data-v')), cm = calMonthNow();
+    ui.calMonth = cv === 0 ? ymd(today()).slice(0, 7) : ymd(new Date(Number(cm.slice(0, 4)), Number(cm.slice(5, 7)) - 1 + cv, 1)).slice(0, 7);
+    ui.calDay = ''; render();
+  } else if (act === 'cal-day' || act === 'cal-all') {
+    var draftEl = document.getElementById('addTitle'); ui.calDraft = draftEl ? draftEl.value : '';
+    ui.calDay = act === 'cal-all' || ui.calDay === id ? '' : id; render();
+  } else if (act === 'cal-go') {
+    /* 달력의 할 일을 누르면 목록 보기로 가서 그 일을 펼쳐요. */
+    ui.tlView = 'list'; lsSet('wd-tlview', 'list'); ui.open[id] = true; render();
+    var calSel = '[data-act="open"][data-id="'+id+'"]', calTo = document.querySelector(calSel);
+    if (!calTo && ui.hideDone) { ui.hideDone = false; lsSet('wd-hideDone', '0'); render(); calTo = document.querySelector(calSel); }
+    if (calTo) { calTo.scrollIntoView({block:'center'}); try { calTo.focus({preventScroll:true}); } catch(e11){} }
+  } else if (act === 'bl-add') {
+    var lineBox = b.closest('.bl-add'), lineName = lineBox.querySelector('[data-bl="name"]'), lineDate = lineBox.querySelector('[data-bl="date"]'), lineAmt = lineBox.querySelector('[data-bl="amount"]');
+    var lname = lineName.value.trim(), lamt = lineAmt.value.replace(/[^0-9]/g, '');
+    if (!lname) { lineName.focus(); return; }
+    var lid = 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), linePatch = {lines:{}};
+    linePatch.lines[lid] = {name:lname, date:parseYMD(lineDate.value) ? lineDate.value : '', amount:lamt === '' ? '' : Number(lamt), created:Date.now()};
+    commit(bPatch(kind, id, linePatch));
+    var lineAgain = document.querySelector('[data-fk="bl-name-'+id+'"]'); if (lineAgain) lineAgain.focus({preventScroll:true});
+  } else if (act === 'bl-del') {
+    var lineDel = {lines:{}}; lineDel.lines[b.getAttribute('data-c')] = {deleted:true};
+    commit(bPatch(kind, id, lineDel));
   } else if (act === 'b-open') {
     ui.openBudget[id] = !ui.openBudget[id]; render();
   } else if (act === 'b-hide') {
@@ -3764,6 +4035,9 @@ document.addEventListener('input', function(e){
   var t = e.target;
   if (t.matches('textarea[data-memo]')) {
     commit(patchItem(t.getAttribute('data-memo'), t.getAttribute('data-id'), {memo: t.value}), {render:false, delay:700});
+  } else if (t.matches('input[data-bl="amount"]')) {
+    var lineDigits = t.value.replace(/[^0-9]/g, '');
+    if (lineDigits !== t.value) t.value = lineDigits;
   } else if (t.matches('input[data-bnum]')) {
     var digits = t.value.replace(/[^0-9]/g, '');
     if (digits !== t.value) t.value = digits;
@@ -3886,6 +4160,8 @@ function doTaskAdd(){
   var id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
   var bk = document.getElementById('addBook'), book = bk && parseYMD(bk.value) ? bk.value : '';
   var p = {custom:{}}; p.custom[id] = {title:title, date:date, book:book, created:Date.now()};
+  ui.calDraft = '';
+  if (ui.tlView === 'cal') { ui.calMonth = date.slice(0, 7); ui.calDay = date; }   /* 달력에서 추가하면 그 날이 보이게 */
   commit(p);
 }
 function doBudgetAdd(){
@@ -3945,7 +4221,7 @@ document.addEventListener('click', function(e){
 /* Enter in a one-line field runs that row's button */
 document.addEventListener('keydown', function(e){
   if (e.key !== 'Enter' || e.isComposing || !e.target.matches || !e.target.matches('input')) return;
-  var box = e.target.closest('#addForm, #bAddForm, #qAddForm, #heroForm, #settingsForm, #gAddForm, #gGiftAdd, #priceGroupAddForm, #priceCustomAddForm');
+  var box = e.target.closest('#addForm, #bAddForm, #qAddForm, #heroForm, #settingsForm, #gAddForm, #gGiftAdd, #priceGroupAddForm, #priceCustomAddForm, .bl-add');
   if (!box) return;
   e.preventDefault();
   var btn = box.id === 'settingsForm' ? document.getElementById('saveSettings') : box.querySelector('button[data-act]');
