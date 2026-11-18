@@ -1,59 +1,152 @@
 <!doctype html>
 <html lang="ko">
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>우리의 혼례수첩 · 서비스 디자인 초안</title>
 <style>
 :root{color-scheme:light dark;--paper:#f7f4ed;--card:#fffdf7;--ink:#262f29;--sub:#555e56;--rule:#b6af9c;--accent:#284f43;--on:#fffdf7;--gold:#796137;--wash:#e4ebdf;--shadow:#27312718;--pattern:#91a38d}
 @media(prefers-color-scheme:dark){:root{--paper:#18201c;--card:#232c25;--ink:#f4f0e6;--sub:#c2ccc2;--rule:#68796b;--accent:#afcfb7;--on:#172a22;--gold:#d7bb85;--wash:#303f35;--shadow:#0004;--pattern:#556458}}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 system-ui,sans-serif;word-break:keep-all}main{max-width:840px;margin:auto;padding:0 clamp(18px,5vw,50px) 42px}
 header{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--rule);padding:12px 0}.brand,h1,h2,.date{font-family:Georgia,'Noto Serif CJK KR',serif}.brand{font-size:20px;font-weight:700;text-decoration:none}.mark{color:var(--gold)}a{color:var(--accent);text-underline-offset:4px}a,button{min-width:44px;min-height:44px;display:inline-flex;align-items:center}button{font:inherit;color:inherit;cursor:pointer}a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}small,.sub{color:var(--sub);font-size:14px}.cover{padding:34px 0 16px;display:grid;gap:8px}.cover h1,h1,h2,p{margin:0}h1{font-size:clamp(32px,6vw,54px);line-height:1.3;letter-spacing:-.055em}h2{font-size:22px;line-height:1.4;letter-spacing:-.03em}.folio{margin:16px 0 22px;background:var(--wash);border:1px solid var(--rule);padding:18px;box-shadow:0 4px 15px var(--shadow)}.leaf{border:1px solid var(--pattern);padding:20px;display:grid;gap:8px;text-align:center;justify-items:center}.date{font-size:clamp(28px,5vw,44px);letter-spacing:.04em}.seal{font:italic 21px Georgia;color:var(--gold);border-block:1px solid var(--pattern);padding:3px 12px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.button{border-radius:7px;padding:10px 16px;border:1px solid var(--rule);text-decoration:none;background:var(--card)}.primary{background:var(--accent);border-color:var(--accent);color:var(--on)}.section{margin:26px 0}.section h2{margin-bottom:10px}.row{padding:10px 0;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:12px;justify-content:space-between;text-decoration:none;color:var(--ink)}.row b,.row small{display:block}.row .arrow{color:var(--gold)}.tabbar{display:flex;justify-content:space-around;gap:2px;border-block:1px solid var(--rule);margin:22px 0}.tabbar a{justify-content:center;text-decoration:none;padding:6px;font-size:15px}.tabbar a:first-child{font-weight:bold;border-bottom:3px solid var(--accent)}.feature{background:var(--card);border-left:4px solid var(--accent);padding:16px 18px}.feature .date{font-size:26px}.hint{border-top:1px solid var(--rule);padding-top:12px;margin-top:28px}dialog{max-width:min(420px,90vw);border:1px solid var(--rule);background:var(--card);color:var(--ink);border-radius:8px;padding:22px}dialog p{margin:12px 0 18px}[hidden]{display:none!important}@media(min-width:700px){.cover{padding-top:50px}.landing{display:grid;grid-template-columns:1.1fr 1fr;gap:26px;align-items:center}.folio{margin-block:40px}.cols{display:grid;grid-template-columns:1fr 1fr;gap:26px}}
+
+h1:focus{outline:none}
+body:has(nav:not([hidden])){padding-bottom:calc(68px + env(safe-area-inset-bottom))}
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,800px);box-sizing:border-box;margin:0;z-index:1;padding:3px 4px calc(3px + env(safe-area-inset-bottom));background:var(--card);box-shadow:0 -3px 14px var(--shadow)}
+.tabbar a{padding-inline:3px}.guide{padding-block:12px;border-block:1px solid var(--rule)}
+.guide .actions,.feature .actions{margin-block:8px}.actions .button[aria-pressed=true]{background:var(--accent);color:var(--on)}
+dialog{width:min(440px,92vw);max-height:80vh;overflow:auto}.links{display:flex;flex-wrap:wrap;gap:12px}
 </style>
 <main>
 <header><a class="brand" href="#welcome"><span class="mark" aria-hidden="true">◇&nbsp;</span>우리의 혼례수첩</a><small>서비스 시안 · 예시 자료</small></header>
 <section id="welcome">
-<div class="landing"><div class="cover"><h1 tabindex="-1">우리의 결혼,<br>함께 준비하는 수첩</h1><p>함께 정한 일과 앞으로 쓸 돈을 한곳에 기록해요.</p><div class="actions"><a class="button primary" href="#start">우리 준비 시작하기</a><a class="button" href="#month">D-30 예시 보기</a></div></div>
+<div class="landing"><div class="cover"><h1 tabindex="-1">우리의 결혼,<br>함께 준비하는 수첩</h1><p>함께 정한 일과 앞으로 쓸 돈을 한곳에 기록해요.</p><div class="actions"><a class="button primary" href="#start">우리 준비 시작하기</a><a class="button" href="#month">준비 중 화면 미리 보기</a></div><small>공개 웹은 가입 없이 이 브라우저에 저장해요. 다른 기기로 옮길 때는 백업 파일을 사용해요.</small></div>
 <div class="folio"><div class="leaf"><span class="seal">Wedding journal</span><strong class="date">2027. 05. 08</strong><span>지우와 서진의 결혼식</span><small>준비 수첩 예시</small></div></div></div>
-<div class="section"><h2>수첩에 담기는 것</h2><p class="row">일정 <small>예약일과 할 일</small></p><p class="row">예산 <small>계약금과 남은 잔금</small></p><p class="row">하객과 둘이 정할 것 <small>초대 명단과 함께 내린 결정</small></p></div></section>
+<div class="section"><h2>수첩에 담기는 것</h2><p class="row">일정 <small>예약일과 할 일</small></p><p class="row">예산 <small>계약금과 남은 잔금</small></p><p class="row">하객과 둘이 정할 것 <small>초대 명단과 함께 내린 결정</small></p><p class="row">가격 비교와 준비 가이드 <small>지역 시세·신혼여행·제도</small></p><small>Claude 아티팩트에서는 권한이 있으면 견적서 사진·PDF도 읽을 수 있어요.</small></div></section>
 <section hidden id="start"><div class="cover"><small>우리 홈 · 처음 시작</small><h1 tabindex="-1">첫 준비를 시작해요</h1><p>날짜가 정해졌다면 일정을 맞추고, 아직이라면 먼저 할 일을 적어보세요.</p></div>
-<div class="section feature"><h2>결혼식은 언제인가요?</h2><p class="sub">예식일에 맞춰 준비 순서를 볼 수 있어요.</p><div class="actions"><a class="button primary" href="#date-note">날짜 정하기</a><a class="button" href="#first-task">아직 미정이에요</a></div></div>
-<div class="section"><h2>첫 할 일</h2><a class="row" href="#first-task"><span>예식장 후보 정리하기</span><span class="arrow">›</span></a><a class="row" href="#invite"><span>파트너와 준비하기</span><span class="arrow">›</span></a></div>
+<div class="section feature"><h2 id="season-title">결혼식은 언제인가요?</h2><p class="sub">예식일에 맞춰 준비 순서를 볼 수 있어요.</p><div class="actions"><a class="button primary" href="#date-note">날짜 정하기</a><a class="button" href="#season">날짜 없이 시작하기</a></div></div>
+<div class="section"><h2>날짜 정하기 전에 할 일 3가지</h2><a class="row" href="#first-task"><span>예식장 후보 정리하기</span><span class="arrow">›</span></a><a class="row" href="#people"><span>예상 하객 수 적어보기</span><span class="arrow">›</span></a><a class="row" href="#limit"><span>예산 범위 정하기</span><span class="arrow">›</span></a></div>
 </section>
 <section hidden id="month"><div class="cover"><small>우리 홈 · 지우와 서진</small><h1 tabindex="-1">결혼식까지 30일</h1><p>2027년 5월 8일 토요일</p></div>
-<div class="section feature"><small>4월 8일 기준 · 다음 납부</small><h2>드레스 잔금</h2><div class="date">40만원</div><a href="#payment">4월 12일 납부 내역 보기 ›</a></div>
-<div class="cols"><div class="section"><h2>이번 주 할 일</h2><a class="row" href="#guest-count"><span><b>식장에 최종 인원 전달</b><small>4월 10일 · 서진</small></span><span class="arrow">›</span></a></div><div class="section"><h2>둘이 정할 것</h2><a class="row" href="#music"><span><b>입장곡 고르기</b><small>후보 2곡 · 함께</small></span><span class="arrow">›</span></a></div></div></section>
-<nav hidden class="tabbar" aria-label="우리 준비 공간"><a href="#home">홈</a><a href="#schedule">일정</a><a href="#budget">예산</a><a href="#guests">하객</a><a href="#couple">둘이</a></nav>
+<div class="section feature"><small id="due" aria-live="polite">다음 납부 · 4월 12일(월)까지 · 4일 남음</small><h2>드레스 잔금</h2><div class="date">40만원</div><div class="actions"><a class="button" href="#payment">드레스 잔금 열기</a><button type="button" class="button" id="paid" aria-pressed="false">냈어요</button></div><div class="links"><a href="#compare">이 항목 시세 보기</a><a href="#pay-day">납부일 달력</a></div></div>
+<div class="cols"><div class="section"><h2>이번 주 할 일</h2><a class="row" href="#guest-count"><span><b>식장에 최종 인원 전달</b><small>4월 10일 · 서진</small></span><span class="arrow">›</span></a><a href="#task-day">할 일 날짜 보기</a></div><div class="section"><h2>둘이 정할 것</h2><a class="row" href="#music"><span><b>입장곡 고르기</b><small>후보 2곡 · 함께</small></span><span class="arrow">›</span></a></div></div></section>
+<aside hidden id="resources"><div class="guide"><h2>준비 가이드</h2><p class="sub">혼인신고 전, 제도별 신청 기한을 확인하세요.</p><div class="links"><a href="#honey">신혼여행지</a><a href="#policy">알아둘 제도</a></div></div><a href="#invite">공유와 백업 안내</a></aside>
+<nav hidden class="tabbar" aria-label="우리 준비 공간"><a href="#home">홈</a><a href="#schedule">일정</a><a href="#calendar">달력</a><a href="#budget">예산</a><a href="#guests">하객</a><a href="#couple">둘이</a></nav>
 <footer class="hint"><small>화면 비교</small><div class="actions"><a href="#welcome">공개 홈페이지</a><a href="#start">처음 쓰는 홈</a><a href="#month">D-30 홈</a></div></footer>
-<dialog aria-labelledby="detail-title"><h2 id="detail-title"></h2><p></p><button type="button" class="button">닫기</button></dialog>
+<dialog aria-labelledby="detail-title"><h2 id="detail-title"></h2><p></p><div id="options" class="actions"></div><button type="button" class="button">닫기</button></dialog>
 </main>
 <script>
 const screens=['welcome','start','month'];
 const notes={
  'date-note':['일정 · 예식일','날짜를 정하면 우리 홈에 D-day와 준비 순서를 보여주는 흐름입니다.'],
  'first-task':['일정 · 첫 할 일','예식장 후보 정리하기 → 담당자 고르기 → 목록에서 완료 표시. 예식일이 미정인 커플도 시작할 수 있습니다.'],
- invite:['둘이 · 파트너 초대','제안 흐름은 초대 보내기 → 상대가 참여 동의 → 같은 수첩 열기입니다. 이 시안은 예시 데이터로 동작합니다.'],
+ invite:['공유와 백업','공개 웹에서는 앱 주소를 보내도 기록은 이 브라우저에 남아요. 파트너가 백업 파일을 가져오면 각자 따로 수정해요. Claude 아티팩트는 공유 메뉴에서 권한을 정해요. 수정 권한이면 함께 편집하고, 보기 권한이면 읽을 수 있어요.'],
  payment:['예산 · 드레스 잔금','총 100만원 중 예약금 60만원을 냈어요. 잔금 40만원은 4월 12일 납부 예정이에요.'],
  'guest-count':['일정 · 최종 인원 전달','4월 10일까지 서진이 하객 명단에서 참석 예정 인원을 확인하고 예식장에 알려줘요.'],
  music:['둘이 · 입장곡 고르기','후보 두 곡을 들어보고 결정한 곡을 기록해요.'],
- schedule:['일정','진행 순서와 달력을 한곳에서 봐요. 예약일과 납부일을 누르면 관련 항목으로 이동해요.'],
+ season:['언제쯤 생각하고 있나요?','예상 시기에 맞춰 준비를 시작해요. 예식일을 정하면 일정을 다시 맞출 수 있어요.'],
+ people:['예상 하객 수','양측에서 초대할 가족과 친구 수를 대략 적어보세요.'],
+ limit:['예산 범위','두 사람이 준비할 수 있는 총액과 예식장에 쓸 금액을 먼저 이야기해 보세요.'],
+ honey:['신혼여행지','희망 출발 월과 가능한 여행 기간을 먼저 정해 보세요.'],
+ policy:['알아둘 제도','혼인신고 예정일을 정하기 전에 지원 요건과 신청 기한을 확인해요.'],
+ calendar:['달력','4월 10일 · 최종 인원 전달 / 4월 12일 · 드레스 잔금'],
+ 'pay-day':['4월 12일 월요일','드레스 잔금 40만원'],
+ 'task-day':['4월 10일 토요일','서진 · 식장에 최종 인원 전달'],
+ compare:['가격 비교','내 견적을 지역 참고 시세와 비교해요.'],
+ schedule:['일정','준비 목록에서 혼인신고 시기를 정하고 관련 제도를 살펴보세요.'],
  budget:['예산','항목별 총액, 예약금, 잔금과 업체 견적을 확인해요.'],
  guests:['하객','양측 명단, 초대 여부, 참석 인원과 축의금을 관리해요.'],
  couple:['둘이','대화 주제를 열고 결정한 내용과 다음 할 일을 기록해요.']};
-const dialog=document.querySelector('dialog');
-let current='welcome',trigger;
-function showScreen(){
- const target=location.hash.slice(1);
- if(notes[target]){dialog.querySelector('h2').textContent=notes[target][0];dialog.querySelector('p').textContent=notes[target][1];if(!dialog.open)dialog.showModal();return;}
- if(dialog.open)dialog.close();
- current=screens.includes(target)?target:current;
- for(const id of screens)document.getElementById(id).hidden=id!==current;
- document.querySelector('nav').hidden=current==='welcome';
- window.scrollTo(0,0);
- if(trigger&&trigger.isConnected&&trigger.getClientRects().length){trigger.focus();trigger=null;}else if(target)document.querySelector('section:not([hidden]) h1').focus();
+const dialog = document.querySelector('dialog');
+const options = document.querySelector('#options');
+let current = 'welcome';
+let trigger;
+let budgetView = 'budget';
+let paid = false;
+
+function addOption(label, action, selected) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'button';
+  button.textContent = label;
+  if (selected !== undefined) button.setAttribute('aria-pressed', String(selected));
+  button.onclick = action;
+  options.append(button);
 }
-document.addEventListener('click',event=>{const a=event.target.closest('a');if(!a)return;const id=a.hash.slice(1);if(notes[id])trigger=a;if(id==='home'){event.preventDefault();location.hash=current;}});
-function closeNote(){history.replaceState(null,'','#'+current);showScreen();}
-dialog.querySelector('button').onclick=closeNote;
-dialog.addEventListener('cancel',event=>{event.preventDefault();closeNote();});
-window.addEventListener('hashchange',showScreen);showScreen();
+
+function displayNote(id) {
+  const [title, description] = notes[id];
+  dialog.querySelector('h2').textContent = title;
+  dialog.querySelector('p').textContent = id === 'payment' && paid
+    ? '예약금 60만원과 잔금 40만원을 모두 냈어요.' : description;
+  options.replaceChildren();
+  if (id === 'season') {
+    for (const season of ['봄','여름','가을','겨울','아직 몰라요']) {
+      addOption(season, () => {
+        const month = {봄:3, 여름:6, 가을:9, 겨울:12}[season];
+        document.querySelector('#season-title').textContent = month
+          ? '2027년 ' + season + ' 예정' : '날짜 없이 준비 중';
+        document.querySelector('#season-title + p').textContent = month
+          ? month + '월 1일 기준 임시 일정이에요. 날짜를 정하면 다시 맞춰요.'
+          : '아래 세 가지부터 시작해요. 예식일은 나중에 정해도 돼요.';
+        closeNote();
+      });
+    }
+  }
+  if (id === 'budget' || id === 'compare') {
+    budgetView = id;
+    for (const [key,label] of [['budget','내 예산'],['compare','가격 비교']]) {
+      addOption(label, () => {displayNote(key); options.querySelector('[aria-pressed="true"]').focus();}, id === key);
+    }
+  }
+  if (id === 'calendar' && current === 'start') dialog.querySelector('p').textContent = '아직 정해진 일정이 없어요. 날짜를 정하면 이곳에서 볼 수 있어요.';
+  if (id === 'calendar' && current === 'month') {
+    addOption('4월 10일 할 일', () => displayNote('task-day'));
+    addOption('4월 12일 납부', () => displayNote('pay-day'));
+  }
+  if (id === 'pay-day') addOption('드레스 잔금 열기', () => displayNote('payment'));
+  if (id === 'task-day') addOption('최종 인원 전달 열기', () => displayNote('guest-count'));
+  if (id === 'schedule') addOption('혼인신고 전 제도 보기', () => displayNote('policy'));
+  if (id === 'couple') addOption('공유와 백업 안내', () => displayNote('invite'));
+  if (!dialog.open) dialog.showModal();
+}
+
+function showScreen() {
+  const target = location.hash.slice(1);
+  if (Object.hasOwn(notes,target)) {
+    displayNote(target === 'budget' ? budgetView : target);
+    return;
+  }
+  if (dialog.open) dialog.close();
+  if (screens.includes(target)) current = target;
+  for (const id of screens) document.getElementById(id).hidden = id !== current;
+  document.querySelector('nav').hidden = document.querySelector('#resources').hidden = current === 'welcome';
+  if (trigger && trigger.getClientRects().length) {trigger.focus(); trigger = null;}
+  else {window.scrollTo(0,0); if (target) document.querySelector('section:not([hidden]) h1').focus();}
+}
+document.addEventListener('click', event => {
+  const link = event.target.closest('a');
+  if (!link) return;
+  const id = link.hash.slice(1);
+  if (Object.hasOwn(notes,id)) {
+    event.preventDefault();
+    trigger = link;
+    history.pushState(null, '', '#' + id);
+    showScreen();
+  }
+  if (id === 'home') {event.preventDefault(); window.scrollTo(0,0);}
+});
+document.querySelector('#paid').onclick = event => {
+  paid = !paid;
+  event.currentTarget.textContent = paid ? '납부 표시 취소' : '냈어요';
+  event.currentTarget.setAttribute('aria-pressed', String(paid));
+  document.querySelector('#due').textContent = paid ? '납부 완료 · 드레스 잔금' : '다음 납부 · 4월 12일(월)까지 · 4일 남음';
+};
+function closeNote() {
+  history.replaceState(null,'','#'+current);
+  showScreen();
+}
+dialog.querySelector(':scope > button').onclick = closeNote;
+dialog.addEventListener('cancel', event => {event.preventDefault();closeNote();});
+window.addEventListener('hashchange',showScreen);
+showScreen();
 </script></html>
