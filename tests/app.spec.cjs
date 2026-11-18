@@ -1358,3 +1358,57 @@ test('switching tabs neither jumps to the top nor lands mid-page, and returning 
  await expect(app.locator('#tab-cal')).toBeFocused();s=await state();expect(Math.abs(s.panelTop-s.barH)).toBeLessThanOrEqual(2);
  expect(errors).toEqual([]);
 });
+
+test('home view gathers the next payment, this week and guides without adding a ninth tab',async({page})=>{
+ const seed=structuredClone(SEED);seed.budget.items.b05={plan:140,deposit:30,balanceDate:'2026-10-12'};seed.budget.items.b06={plan:160,deposit:50,balanceDate:'2026-10-02'};
+ const {app,errors}=await openApp(page,seed);
+ await expect(app.locator('.tab')).toHaveCount(8);await expect(app.locator('#panel-home')).toBeHidden();
+ await app.locator('[data-act="home-open"]').click();
+ const home=app.locator('#panel-home');await expect(home).toBeVisible();
+ await expect(app.locator('.tab[aria-selected="true"]')).toHaveCount(0);await expect(app.locator('#panel-timeline')).toBeHidden();
+ expect(await app.locator('body').evaluate(()=>localStorage.getItem('wd-home'))).toBe('1');
+ // The nearest balance (dress, already 4 days late) comes first, with the same paid toggle as the budget tab.
+ await expect(home.locator('.home-pay .home-when')).toHaveText('10.2(금)까지 · 4일 지남');
+ await expect(home.locator('.home-pay .home-what')).toContainText('드레스 잔금');await expect(home.locator('.home-pay .home-what')).toContainText('110만원');
+ await home.locator('.home-pay [data-act="b-balance-paid"]').click();
+ await expect.poll(async()=>(await stored(app)).budget.items.b06.balancePaid).toBe(true);
+ await expect(home.locator('.home-pay .home-what')).toContainText('스튜디오 촬영 잔금');
+ await expect(home.locator('.home-done')).toContainText('드레스 잔금을 냈다고 적었어요');
+ await home.locator('.home-done [data-act="b-balance-paid"]').click();
+ await expect.poll(async()=>(await stored(app)).budget.items.b06.balancePaid).toBe(false);
+ await expect(home.locator('.home-pay .home-what')).toContainText('드레스 잔금');await expect(home.locator('.home-done')).toHaveCount(0);
+ // Late tasks are named as such; tapping one opens it in 진행 순서 and closes the home view.
+ await expect(home.locator('#homeWeekH')).toContainText('놓친 일과 이번 주 할 일');
+ await home.locator('.home-list [data-act="cal-go"]').first().click();
+ await expect(app.locator('#panel-home')).toBeHidden();await expect(app.locator('#tab-timeline')).toHaveAttribute('aria-selected','true');
+ await expect(app.locator('#panel-timeline .task.is-open')).toHaveCount(1);
+ // Guides keep their own names and open their tabs.
+ await app.locator('[data-act="home-open"]').click();
+ await expect(home.locator('.home-go').filter({hasText:'신혼여행'})).toHaveCount(1);await expect(home.locator('.home-go').filter({hasText:'알아둘 것'})).toHaveCount(1);
+ await home.locator('[data-act="home-tab"][data-v="honey"]').click();await expect(app.locator('#tab-honey')).toHaveAttribute('aria-selected','true');await expect(app.locator('#panel-home')).toBeHidden();
+ // A talk topic opens in 둘이 정할 것; any tab tap also leaves home; 홈 닫기 returns to the tab.
+ await app.locator('[data-act="home-open"]').click();await home.locator('[data-act="home-talk"]').first().click();
+ await expect(app.locator('#tab-talk')).toHaveAttribute('aria-selected','true');await expect(app.locator('[data-act="talk-open"][data-id="m1"]')).toHaveAttribute('aria-expanded','true');
+ await app.locator('[data-act="home-open"]').click();await app.locator('#tab-budget').click();await expect(app.locator('#panel-budget')).toBeVisible();await expect(app.locator('#panel-home')).toBeHidden();
+ await app.locator('[data-act="home-open"]').click();await home.locator('[data-act="home-close"]').click();
+ await expect(app.locator('#panel-budget')).toBeVisible();await expect(app.locator('[data-act="home-open"]')).toBeFocused();
+ expect(await app.locator('body').evaluate(()=>localStorage.getItem('wd-home'))).toBe('0');
+ expect(noArrays(await stored(app))).toBe(true);expect(errors).toEqual([]);
+});
+
+test('every visible form field is at least 16px so iPhone Safari does not zoom in on focus',async({page})=>{
+ test.setTimeout(90000);
+ const {app,errors}=await openApp(page);
+ const small=()=>app.locator('body').evaluate(()=>[...document.querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea')].filter(e=>e.getClientRects().length&&!e.closest('[hidden]')&&parseFloat(getComputedStyle(e).fontSize)<16).map(e=>e.dataset.fk||e.id));
+ for(const t of ['timeline','cal','budget','price','guest','know','talk']){
+  await app.locator('#tab-'+t).click();
+  if(t==='timeline')await app.locator('[data-act="open"]').first().click();
+  if(t==='budget')await app.locator('[data-act="b-open"]').first().click();
+  if(t==='guest')await app.locator('[data-act="g-open"]').first().click();
+  if(t==='talk')await app.locator('[data-act="talk-open"]').first().click();
+  if(t==='price'||t==='know')await app.locator(`#panel-${t} details`).evaluateAll(els=>els.forEach(e=>e.open=true));
+  expect(await small(),t).toEqual([]);
+ }
+ await app.locator('#openShare').click();expect(await small(),'share').toEqual([]);
+ expect(errors).toEqual([]);
+});
