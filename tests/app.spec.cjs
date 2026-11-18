@@ -1312,3 +1312,26 @@ test('invitation gatherings are recorded per side with head counts and grouped b
  await expect(hall.locator('[data-act="bl-who"]')).toHaveCount(0);await expect(hall.locator('[data-bl="heads"]')).toHaveCount(0);
  expect(errors).toEqual([]);
 });
+
+test('price tab shows the September 2026 option medians by nationwide, Seoul and Gyeongin, and links to vendor prices',async({page})=>{
+ const {app,errors}=await openApp(page);
+ await app.locator('#tab-price').click();
+ for(const k of ['pt-studio','pt-dress','pt-makeup','pt-package','pt-check'])await openSection(app,k);
+ const row=(sec,label)=>app.locator(`#panel-price details[data-k="${sec}"] tr`).filter({hasText:label});
+ await expect(row('pt-studio','담당자(작가) 지정')).toContainText('19만원 / 19만원 / 18만원');
+ await expect(row('pt-dress','드레스 지정비')).toContainText('88만원 / 83만원 / 65만원');
+ await expect(row('pt-dress','2부 드레스')).toContainText('40만원 / 50만원 / 18만원');
+ await expect(row('pt-makeup','헤어 변형')).toContainText('35만원 / 39만원 / 33만원');
+ await expect(row('pt-makeup','헤어피스 구매')).toContainText('17만원 / 17만원 / 15만원');
+ await expect(row('pt-makeup','담당자 지정')).toContainText('6만원 / 6만원 / 10만원');
+ await expect(row('pt-package','패키지 계약금액')).toContainText('300만원 / 350만원 / 220만원');
+ for(const r of [row('pt-dress','드레스 지정비'),row('pt-package','패키지 계약금액')]){await expect(r).toContainText('2026년 9월');await expect(r.locator('.kchip.mid')).toHaveCount(1);}
+ await expect(app.locator('#panel-price details[data-k="pt-package"]')).toContainText('추가금이 들어 있지 않아요');
+ await expect(app.locator('#panel-price details[data-k="pt-package"]')).toContainText('지역 표와 섞어 보지 마세요');
+ const check=app.locator('#panel-price details[data-k="pt-check"]');
+ await expect(check).toContainText('17곳에 과태료 총 1,560만원');
+ await expect(check.locator('a[href="https://ipsajeon.com/tools/wedding"]')).toHaveText('업체 공개 가격 모음(민간, 2026년 9월 확인)');
+ await expect(check.locator('a[href="https://www.ftc.go.kr"]')).toHaveCount(1);
+ for(const l of await check.locator('.srcs a').all())expect(await l.getAttribute('rel')).toContain('noopener');
+ expect(errors).toEqual([]);
+});
