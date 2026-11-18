@@ -1811,6 +1811,31 @@ function renderHero(list){
     '<button class="close-row hero-fold" type="button" data-act="hero-toggle" data-fk="hero-toggle" aria-expanded="true">청첩장 카드 접기</button>' + notice;
 }
 
+/* 탭 바꾸기: 화면이 맨 위로 튀거나 새 탭 중간에 떨어지지 않게 해요.
+   - 보던 탭의 스크롤 위치를 기억해 두고, 다시 오면 그 자리로 돌아가요.
+   - 처음 여는 탭은 첫 줄이 탭 줄 바로 아래에 오게 해요(탭 줄이 화면 위에 붙어 있던 경우).
+   - 맨 위(첫 화면이 보이는 곳)에서 누르면 그대로 둬요. */
+var tabScroll = {};
+function panelTopScroll(){
+  var p = document.getElementById('panel-'+ui.tab), bar = document.querySelector('.tabs');
+  if (!p || !bar) return 0;
+  return Math.max(0, Math.round(p.getBoundingClientRect().top + window.scrollY - bar.getBoundingClientRect().height));
+}
+function switchTab(t){
+  if (TABS.indexOf(t) < 0) return;
+  var y = window.scrollY, stuck = panelTopScroll(), wasStuck = y >= stuck - 1;
+  tabScroll[ui.tab] = wasStuck ? y : null;
+  if (t === ui.tab) {
+    /* 지금 탭을 다시 누르면 그 탭의 맨 위로 */
+    if (wasStuck) window.scrollTo(0, stuck);
+    return;
+  }
+  ui.tab = t; lsSet('wd-tab', t); render();
+  var top = panelTopScroll(), saved = tabScroll[t], max = document.documentElement.scrollHeight - window.innerHeight;
+  if (!wasStuck) window.scrollTo(0, y);
+  else if (saved != null && saved >= top && saved <= max) window.scrollTo(0, saved);
+  else window.scrollTo(0, Math.min(top, Math.max(0, max)));
+}
 function renderTabs(){
   TABS.forEach(function(t){
     var b = document.getElementById('tab-'+t), p = document.getElementById('panel-'+t);
@@ -4285,13 +4310,13 @@ document.querySelector('.tabs [role=tablist]').addEventListener('keydown', funct
   var order = TABS, i = order.indexOf(ui.tab), n = order.length;
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'Home' || e.key === 'End') {
     e.preventDefault();
-    ui.tab = e.key === 'Home' ? order[0] : e.key === 'End' ? order[n - 1] : order[(i + (e.key === 'ArrowRight' ? 1 : n - 1)) % n];
-    lsSet('wd-tab', ui.tab); render();
-    document.getElementById('tab-'+ui.tab).focus();
+    switchTab(e.key === 'Home' ? order[0] : e.key === 'End' ? order[n - 1] : order[(i + (e.key === 'ArrowRight' ? 1 : n - 1)) % n]);
+    /* 탭 줄은 화면 위에 붙어 있어서, 그냥 focus()를 하면 브라우저가 화면을 맨 위로 올려요. */
+    document.getElementById('tab-'+ui.tab).focus({preventScroll:true});
   }
 });
 Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function(b){
-  b.addEventListener('click', function(){ ui.tab = b.getAttribute('data-tab'); lsSet('wd-tab', ui.tab); render(); });
+  b.addEventListener('click', function(){ switchTab(b.getAttribute('data-tab')); });
 });
 
 /* share (KakaoTalk via the phone's share sheet, with copy fallbacks) */

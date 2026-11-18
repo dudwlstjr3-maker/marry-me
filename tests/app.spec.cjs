@@ -1337,3 +1337,24 @@ test('price tab shows the September 2026 option medians by nationwide, Seoul and
  for(const l of await check.locator('.srcs a').all())expect(await l.getAttribute('rel')).toContain('noopener');
  expect(errors).toEqual([]);
 });
+
+test('switching tabs neither jumps to the top nor lands mid-page, and returning restores the reading position',async({page})=>{
+ const {app,errors}=await openApp(page);
+ const state=()=>app.locator('body').evaluate(()=>{const bar=document.querySelector('.tabs').getBoundingClientRect(),p=document.querySelector('.panel:not([hidden])').getBoundingClientRect();return {y:scrollY,barTop:bar.top,barH:bar.height,panelTop:p.top};});
+ const tap=async t=>{await app.locator('#tab-'+t).evaluate(e=>{const w=e.parentElement,r=e.getBoundingClientRect(),wr=w.getBoundingClientRect();if(r.left<wr.left||r.right>wr.right)w.scrollLeft+=r.left-wr.left-20;});const b=await app.locator('#tab-'+t).boundingBox();await page.mouse.click(b.x+b.width/2,b.y+b.height/2);await expect(app.locator('#tab-'+t)).toHaveAttribute('aria-selected','true');return state();};
+ // At the top of the page a tab tap leaves the page where it is.
+ let s=await tap('budget');expect(s.y).toBe(0);
+ // Deep in a long list, every other tab opens with its first line right under the stuck tab bar.
+ await tap('timeline');await app.locator('body').evaluate(()=>window.scrollTo(0,1500));
+ for(const t of ['cal','budget','price','guest','honey','know','talk']){
+  s=await tap(t);expect(s.barTop,t).toBeLessThanOrEqual(1);expect(Math.abs(s.panelTop-s.barH),t).toBeLessThanOrEqual(2);expect(s.y,t).toBeGreaterThan(0);
+ }
+ // Coming back to 진행 순서 returns to where the list was being read.
+ s=await tap('timeline');expect(Math.abs(s.y-1500)).toBeLessThanOrEqual(2);
+ // Tapping the open tab again goes to the top of that tab, not of the page.
+ s=await tap('timeline');expect(Math.abs(s.panelTop-s.barH)).toBeLessThanOrEqual(2);expect(s.barTop).toBeLessThanOrEqual(1);
+ // Arrow keys on the tab bar behave the same way.
+ await app.locator('body').evaluate(()=>window.scrollTo(0,1500));await app.locator('#tab-timeline').focus();await page.keyboard.press('ArrowRight');
+ await expect(app.locator('#tab-cal')).toBeFocused();s=await state();expect(Math.abs(s.panelTop-s.barH)).toBeLessThanOrEqual(2);
+ expect(errors).toEqual([]);
+});
