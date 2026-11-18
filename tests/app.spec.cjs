@@ -704,7 +704,8 @@ test('a quote photo is read by Claude, checked, edited and saved without storing
   sample.limits=()=>Promise.resolve({maxPromptBytes:262144,images:{maxCount:2,maxInputBytes:20e6,mediaTypes:['image/jpeg','image/png']}});
   sample.json=(prompt,opts)=>{window.__photo.push({prompt,count:opts.images.length,signal:!!opts.signal});
    if(window.__photo.length>1)return Promise.reject({code:'not_granted',message:'declined'});
-   return new Promise(r=>setTimeout(()=>r({name:'봄날 웨딩홀',area:'서울 강남구',when:'2027-05-08 12:30',heads:'200',unit:65000,hall:3000000,extra:null,extras:[{name:'생화 장식',amount:300},{name:'본식 도우미',amount:30}],unsure:['unit'],note:'부가세 별도'}),300));};
+   // The answer waits until the test has checked the 'reading' state, so a slow machine cannot skip past it.
+   return new Promise(r=>{window.__releasePhoto=()=>r({name:'봄날 웨딩홀',area:'서울 강남구',when:'2027-05-08 12:30',heads:'200',unit:65000,hall:3000000,extra:null,extras:[{name:'생화 장식',amount:300},{name:'본식 도우미',amount:30}],unsure:['unit'],note:'부가세 별도'});});};
   window.claude={use:name=>Promise.resolve(name==='sample'?sample:null)};
  });
  const {app,errors}=await openApp(page);await app.locator('#tab-budget').click();
@@ -715,6 +716,7 @@ test('a quote photo is read by Claude, checked, edited and saved without storing
  await app.locator('#qPhotoFile').setInputFiles([png,png]);
  await expect(app.locator('[data-act="q-photo-stop"]')).toBeFocused();
  await expect(app.locator('.q-photo-msg')).toHaveText('Claude가 읽는 중이에요. 1분쯤 걸릴 수 있어요.');
+ await app.locator('body').evaluate(()=>new Promise(r=>{const go=()=>window.__releasePhoto?(window.__releasePhoto(),r()):setTimeout(go,20);go();}));
  const draft=app.locator('.q-photo-draft');await expect(draft).toBeVisible();
  const call=(await app.locator('body').evaluate(()=>window.__photo))[0];
  expect(call.count).toBe(2);expect(call.signal).toBe(true);expect(call.prompt).toContain('JSON');
