@@ -1091,6 +1091,39 @@ dialog{border-color:var(--gold-line);border-radius:16px;box-shadow:0 16px 48px v
   .bcat>summary:hover,#panel-know .know>details>summary:hover{box-shadow:inset 3px 0 var(--gold)}
   input:not(:disabled):hover,textarea:not(:disabled):hover,select:not(:disabled):hover{border-color:var(--gold)}
 }
+
+/* 홈 */
+.hero-actions{margin-top:10px}
+.home-open{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:44px;padding:8px 14px;border-color:var(--gold-line);background:var(--surface);color:var(--gold);font-weight:600;text-align:left}
+.home-open span{color:var(--muted);font-size:13px;font-weight:500}
+.home{display:grid;gap:14px;margin-top:16px}
+.home-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.home-head h2{margin:0;font-family:var(--serif);font-size:22px;color:var(--gold)}
+.home-head h2:focus{outline:none}
+.home-card{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 3px 12px var(--shadow)}
+.home-card h3{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0 0 8px;font-family:var(--serif);font-size:18px;color:var(--ink)}
+.home-card h3 span{font-family:var(--sans);font-size:13px;font-weight:500;color:var(--muted)}
+.home-pay{border-left:4px solid var(--gold)}
+.home-when{margin:0;font-size:14px;color:var(--muted)}
+.home-when.late,.home-late,.home-list small.late{color:var(--hong)}
+.home-late{margin:0 0 4px;font-size:14px;font-weight:600}
+.home-what{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:4px 0 10px;font-size:17px}
+.home-what strong{font-family:var(--serif);font-size:24px;color:var(--gold);font-variant-numeric:tabular-nums}
+.home-done{margin:10px 0 0;padding-top:8px;border-top:1px solid var(--line);font-size:14px}
+.home-list{list-style:none;margin:0;padding:0}
+.home-list li+li{border-top:1px solid var(--line)}
+.home-go{appearance:none;display:grid;gap:2px;width:100%;min-height:48px;padding:8px 0;border:0;background:none;text-align:left;cursor:pointer;font-size:15px;line-height:1.45;color:var(--ink)}
+.home-go small{font-size:13px;color:var(--muted)}
+.home .detail-actions{margin-top:6px}
+/* 아이폰 사파리 맞춤
+   - 글자가 16px보다 작은 입력칸을 누르면 아이폰이 화면을 확대하고 되돌리지 않아요. 입력칸은 모두 16px 이상으로.
+   - 날짜 칸: 비어 있으면 높이가 줄고, 값이 가운데 정렬돼요. 다른 칸과 같은 모양으로.
+   - 누를 때 회색 번쩍임과, 두 번 눌러 확대되며 생기는 지연을 없애요. */
+input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{font-size:max(16px,1em)}
+.gsel,.price-custom-item select,.price-custom-add select,#shareText{font-size:16px}
+input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-height:44px;line-height:1.4;text-align:left}
+input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.4em}
+button,summary,a,label,select,input,[data-act]{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 </style>
 </head>
 <body>
@@ -1119,6 +1152,7 @@ dialog{border-color:var(--gold-line);border-radius:16px;box-shadow:0 16px 48px v
     </div>
   </nav>
 
+  <section class="wrap panel" id="panel-home" role="region" aria-label="우리 홈" hidden></section>
   <section class="wrap panel" id="panel-timeline" role="tabpanel" aria-labelledby="tab-timeline"></section>
   <section class="wrap panel" id="panel-cal" role="tabpanel" aria-labelledby="tab-cal" hidden></section>
   <section class="wrap panel" id="panel-budget" role="tabpanel" aria-labelledby="tab-budget" hidden></section>
@@ -1590,7 +1624,7 @@ function init(){
 var ui = {
   tab: lsGet('wd-tab') || 'timeline',
   heroOpen: lsGet('wd-hero') === '1',
-  calMonth: '', calDay: '', calDraft: '', lineWho: 'groom',
+  calMonth: '', calDay: '', calDraft: '', lineWho: 'groom', home: lsGet('wd-home') === '1', homePaid: '',
   hideDone: lsGet('wd-hideDone') === '1',
   showHidden: false,
   open: {},
@@ -1670,7 +1704,8 @@ function render(){
   renderHero(list);
   renderTabs();
   // 보고 있는 탭만 그려요. 탭 7개를 매번 다 그리면 휴대폰에서 글자 하나 넣을 때마다 느려져요.
-  TABS.forEach(function(t){ document.getElementById('panel-'+t).innerHTML = t === ui.tab ? PANEL_HTML[t](list) : ''; });
+  TABS.forEach(function(t){ document.getElementById('panel-'+t).innerHTML = t === ui.tab && !ui.home ? PANEL_HTML[t](list) : ''; });
+  document.getElementById('panel-home').innerHTML = ui.home ? homeHTML(list) : '';
   if (endSpace && endSpaceTab !== ui.tab) setEndSpace(0);
   document.getElementById('openSettings').disabled = !Store.ready;
   lastSig = JSON.stringify(state);
@@ -1792,7 +1827,8 @@ function renderHero(list){
           '<span class="when">'+esc(fmtLong(wd))+(state.weddingTime ? ' '+esc(fmtTime(state.weddingTime)) : '')+'</span>' +
         '</span><span class="sr">결혼식까지</span><span class="hero-dday">'+esc(big)+'</span><span class="sr">청첩장 카드 펼치기</span>'+CHEV+'</button>' +
       '<div class="hero-prog" role="img" aria-label="할 일 '+c.total+'개 중 '+c.done+'개 완료"><span class="strand c"><i style="width:'+pct+'%"></i></span><span class="strand h"><i style="width:'+pct+'%"></i></span></div>' +
-      '<p class="stats">'+stats+'</p>' + notice;
+      '<p class="stats">'+stats+'</p>' + notice +
+      (ui.home ? '' : '<div class="hero-actions"><button class="btn home-open" type="button" data-act="home-open">홈 보기 <span>다음 납부 · 이번 주 할 일</span></button></div>');
     return;
   }
   el.innerHTML = '<div class="invitation">'+invitationDecorHTML()+namesHTML() +
@@ -1811,14 +1847,70 @@ function renderHero(list){
     '<button class="close-row hero-fold" type="button" data-act="hero-toggle" data-fk="hero-toggle" aria-expanded="true">청첩장 카드 접기</button>' + notice;
 }
 
+document.addEventListener('click', function(e){
+  var b = e.target.closest && e.target.closest('[data-act]');
+  if (!b || b.disabled) return;
+  var act = b.getAttribute('data-act');
+  if (act === 'home-open') {
+    e.stopPropagation(); setHome(true); render();
+    var hh = document.getElementById('homeTitle'); if (hh) { hh.setAttribute('tabindex', '-1'); try { hh.focus({preventScroll:true}); } catch(e12){} }
+    window.scrollTo(0, Math.min(window.scrollY, panelTopScroll()));
+  } else if (act === 'home-close') {
+    e.stopPropagation(); setHome(false); render();
+    var hb = document.querySelector('[data-act="home-open"]'); if (hb) try { hb.focus({preventScroll:true}); } catch(e13){}
+  } else if (act === 'home-tab') {
+    e.stopPropagation(); switchTab(b.getAttribute('data-v'));
+  } else if (act === 'home-talk') {
+    e.stopPropagation(); var tid = b.getAttribute('data-id'); ui.openTalk[tid] = true; switchTab('talk');
+    var tt = document.querySelector('[data-act="talk-open"][data-id="'+tid+'"]'); if (tt) tt.scrollIntoView({block:'center'});
+  } else if (b.hasAttribute('data-home-paid')) {
+    /* 홈의 '냈어요'·'되돌리기'는 예산의 '잔금 냈어요'와 같은 저장을 써요. 바뀐 항목을 기억해 되돌리기를 보여 줘요. */
+    ui.homePaid = b.getAttribute('data-home-paid') === '1' ? b.getAttribute('data-id') : '';
+  } else if (ui.home && /^(b-go|cal-go|goto-know|goto-price)$/.test(act)) {
+    setHome(false);
+  }
+}, true);
+/* 탭 바꾸기: 화면이 맨 위로 튀거나 새 탭 중간에 떨어지지 않게 해요.
+   - 보던 탭의 스크롤 위치를 기억해 두고, 다시 오면 그 자리로 돌아가요.
+   - 처음 여는 탭은 첫 줄이 탭 줄 바로 아래에 오게 해요(탭 줄이 화면 위에 붙어 있던 경우).
+   - 맨 위(첫 화면이 보이는 곳)에서 누르면 그대로 둬요. */
+var tabScroll = {};
+function setHome(on){ ui.home = !!on; lsSet('wd-home', ui.home ? '1' : '0'); if (!on) ui.homePaid = ''; }
+function panelTopScroll(){
+  var p = document.getElementById(ui.home ? 'panel-home' : 'panel-'+ui.tab), bar = document.querySelector('.tabs');
+  if (!p || !bar) return 0;
+  return Math.max(0, Math.round(p.getBoundingClientRect().top + window.scrollY - bar.getBoundingClientRect().height));
+}
+function switchTab(t){
+  if (TABS.indexOf(t) < 0) return;
+  var y = window.scrollY, stuck = panelTopScroll(), wasStuck = y >= stuck - 1;
+  if (ui.home) {
+    /* 홈에서 탭을 누르면 홈을 닫고 그 탭을 처음부터 보여 줘요. */
+    setHome(false); ui.tab = t; lsSet('wd-tab', t); render();
+    if (wasStuck) window.scrollTo(0, panelTopScroll());
+    return;
+  }
+  tabScroll[ui.tab] = wasStuck ? y : null;
+  if (t === ui.tab) {
+    /* 지금 탭을 다시 누르면 그 탭의 맨 위로 */
+    if (wasStuck) window.scrollTo(0, stuck);
+    return;
+  }
+  ui.tab = t; lsSet('wd-tab', t); render();
+  var top = panelTopScroll(), saved = tabScroll[t], max = document.documentElement.scrollHeight - window.innerHeight;
+  if (!wasStuck) window.scrollTo(0, y);
+  else if (saved != null && saved >= top && saved <= max) window.scrollTo(0, saved);
+  else window.scrollTo(0, Math.min(top, Math.max(0, max)));
+}
 function renderTabs(){
   TABS.forEach(function(t){
     var b = document.getElementById('tab-'+t), p = document.getElementById('panel-'+t);
-    var on = ui.tab === t;
+    var on = ui.tab === t && !ui.home;
     b.setAttribute('aria-selected', on ? 'true' : 'false');
-    b.tabIndex = on ? 0 : -1;
+    b.tabIndex = ui.tab === t ? 0 : -1;
     p.hidden = !on;
   });
+  document.getElementById('panel-home').hidden = !ui.home;
   /* 탭 줄이 화면보다 길면 고른 탭이 보이게 옆으로 밀어 둬요. */
   var w = document.querySelector('.tabs [role=tablist]'), a = document.getElementById('tab-'+ui.tab);
   if (w && a && w.scrollWidth > w.clientWidth) {
@@ -2030,6 +2122,52 @@ function calendarHTML(list){
     '<label class="field">날짜<input type="date" id="addDate" value="'+esc(sel || (m === todayStr.slice(0, 7) ? todayStr : ''))+'" data-fk="add-date"'+dis()+'></label>' +
     '<button class="btn primary" type="button" data-act="task-add"'+dis()+'>추가</button></div>' +
     '<p class="tip">돈이 드는 일정은 예산 탭에서 항목을 열고 ‘세부 내역’에 금액과 날짜를 적으면 여기에도 보여요.</p></div>';
+  return h + '</div>';
+}
+
+/* 홈: 다음 납부, 이번 주 할 일, 둘이 정할 것, 준비 가이드를 한 화면에 모아요. 저장하는 값은 없고, 버튼은 각 탭의 동작을 그대로 써요. */
+function homeHTML(list){
+  var t0 = today(), y = t0.getFullYear(), h = '<div class="home">';
+  h += '<div class="home-head"><h2 id="homeTitle">우리 홈</h2><button class="link" type="button" data-act="home-close">홈 닫기</button></div>';
+  /* 1. 다음 납부 */
+  var due = upcomingBalances(), next = due[0], late = due.filter(function(x){ return x.days < 0; }).length;
+  h += '<section class="home-card home-pay" aria-labelledby="homePayH"><h3 id="homePayH">다음 납부</h3>';
+  if (late > 1) h += '<p class="home-late">지난 잔금 '+late+'건이 있어요.</p>';
+  if (next) {
+    h += '<p class="home-when'+(next.days < 0 ? ' late' : '')+'">'+esc(fmtTiny(next.d, y))+'까지 · '+dueLabel(next.days)+'</p>' +
+      '<p class="home-what"><b>'+esc(next.r.name)+' 잔금</b><strong>'+fmtMan(next.r.balance)+'</strong></p>' +
+      '<div class="detail-actions"><button class="btn" type="button" data-act="b-go" data-id="'+esc(next.r.id)+'" data-cat="'+esc(next.r.cat)+'">'+esc(next.r.name)+' 열기</button>' +
+      (Store.readOnly ? '' : '<button class="btn" type="button" data-act="b-balance-paid" data-kind="'+next.r.kind+'" data-id="'+esc(next.r.id)+'" data-home-paid="1"'+dis()+'>냈어요</button>') + '</div>';
+  } else {
+    h += '<p class="tip">날짜가 잡힌 잔금이 없어요. 예산 탭에서 항목마다 잔금일을 넣으면 여기에 가장 가까운 것이 보여요.</p>';
+  }
+  var paidRow = ui.homePaid && budgetRows().filter(function(r){ return r.id === ui.homePaid && r.balancePaid; })[0];
+  if (paidRow && !Store.readOnly) h += '<p class="home-done">'+esc(paidRow.name)+' 잔금을 냈다고 적었어요. <button class="link" type="button" data-act="b-balance-paid" data-kind="'+paidRow.kind+'" data-id="'+esc(paidRow.id)+'" data-home-paid="0">되돌리기</button></p>';
+  h += '</section>';
+  /* 2. 이번 주 할 일: 지난 일 먼저, 그다음 7일 안 */
+  var week = list.filter(function(it){ return !it.hidden && !it.done && it.due && diffDays(it.due, t0) <= 7 && !it.catchup; })
+    .sort(function(a, b){ return a.due - b.due; });
+  var lateN = week.filter(function(it){ return diffDays(it.due, t0) < 0; }).length;
+  h += '<section class="home-card" aria-labelledby="homeWeekH"><h3 id="homeWeekH">'+(lateN ? '놓친 일과 이번 주 할 일' : '이번 주 할 일')+(week.length ? ' <span>'+week.length+'개'+(lateN ? ' · 지난 일 '+lateN+'개' : '')+'</span>' : '')+'</h3>';
+  if (week.length) {
+    h += '<ul class="home-list">' + week.slice(0, 5).map(function(it){
+      var d = diffDays(it.due, t0);
+      return '<li><button class="home-go" type="button" data-act="cal-go" data-id="'+esc(it.id)+'"><span>'+esc(it.title)+'</span><small class="'+(d < 0 ? 'late' : '')+'">'+esc(fmtTiny(it.due, y))+' · '+(d < 0 ? (-d)+'일 지남' : d === 0 ? '오늘' : d+'일 남음')+'</small></button></li>';
+    }).join('') + '</ul>' + (week.length > 5 ? '<p class="tip">그 밖에 '+(week.length - 5)+'개는 진행 순서에서 볼 수 있어요.</p>' : '');
+  } else h += '<p class="tip">이번 주에 날짜가 잡힌 할 일이 없어요.</p>';
+  h += '<div class="detail-actions"><button class="link" type="button" data-act="home-tab" data-v="timeline">진행 순서 전체 보기</button><button class="link" type="button" data-act="home-tab" data-v="cal">달력으로 보기</button></div></section>';
+  /* 3. 둘이 정할 것: 아직 적지 않은 것 두 개 */
+  var talks = [];
+  TALKS.forEach(function(g){ g.items.forEach(function(it){ var m = state.talks && state.talks[it.id]; if (!(m && m.memo)) talks.push(it); }); });
+  h += '<section class="home-card" aria-labelledby="homeTalkH"><h3 id="homeTalkH">둘이 정할 것'+(talks.length ? ' <span>남은 것 '+talks.length+'개</span>' : '')+'</h3>';
+  h += talks.length ? '<ul class="home-list">' + talks.slice(0, 2).map(function(it){ return '<li><button class="home-go" type="button" data-act="home-talk" data-id="'+it.id+'"><span>'+esc(it.t)+'</span><small>'+esc(it.h)+'</small></button></li>'; }).join('') + '</ul>'
+    : '<p class="tip">모든 주제에 정한 내용을 적었어요.</p>';
+  h += '</section>';
+  /* 4. 준비 가이드: 이름 그대로 */
+  h += '<section class="home-card" aria-labelledby="homeGuideH"><h3 id="homeGuideH">준비 가이드</h3><ul class="home-list">' +
+    '<li><button class="home-go" type="button" data-act="home-tab" data-v="honey"><span>신혼여행</span><small>떠나는 달에 맞는 여행지와 날씨</small></button></li>' +
+    '<li><button class="home-go" type="button" data-act="home-tab" data-v="know"><span>알아둘 것</span><small>혼인신고 시기, 결혼세액공제(2026년 12월 31일 신고분까지), 신혼부부 대출</small></button></li>' +
+    '<li><button class="home-go" type="button" data-act="home-tab" data-v="price"><span>가격 비교</span><small>지역 시세와 비교안</small></button></li></ul></section>';
   return h + '</div>';
 }
 
@@ -4285,13 +4423,13 @@ document.querySelector('.tabs [role=tablist]').addEventListener('keydown', funct
   var order = TABS, i = order.indexOf(ui.tab), n = order.length;
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'Home' || e.key === 'End') {
     e.preventDefault();
-    ui.tab = e.key === 'Home' ? order[0] : e.key === 'End' ? order[n - 1] : order[(i + (e.key === 'ArrowRight' ? 1 : n - 1)) % n];
-    lsSet('wd-tab', ui.tab); render();
-    document.getElementById('tab-'+ui.tab).focus();
+    switchTab(e.key === 'Home' ? order[0] : e.key === 'End' ? order[n - 1] : order[(i + (e.key === 'ArrowRight' ? 1 : n - 1)) % n]);
+    /* 탭 줄은 화면 위에 붙어 있어서, 그냥 focus()를 하면 브라우저가 화면을 맨 위로 올려요. */
+    document.getElementById('tab-'+ui.tab).focus({preventScroll:true});
   }
 });
 Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function(b){
-  b.addEventListener('click', function(){ ui.tab = b.getAttribute('data-tab'); lsSet('wd-tab', ui.tab); render(); });
+  b.addEventListener('click', function(){ switchTab(b.getAttribute('data-tab')); });
 });
 
 /* share (KakaoTalk via the phone's share sheet, with copy fallbacks) */
