@@ -128,6 +128,11 @@ end $$;
 revoke all on function public.merge_plan(uuid, jsonb), public.my_plan(), public.create_plan(jsonb), public.create_invite(uuid), public.join_plan(text), public.is_member(uuid) from public, anon;
 grant execute on function public.merge_plan(uuid, jsonb), public.my_plan(), public.create_plan(jsonb), public.create_invite(uuid), public.join_plan(text), public.is_member(uuid) to authenticated;
 
+-- 로그인한 사람이 표를 읽을 수 있게(어떤 행을 읽는지는 위의 RLS가 정해요). 새 프로젝트는 자동으로 주지 않아요.
+grant usage on schema public to authenticated;
+grant select on public.plans, public.plan_members to authenticated;
+revoke all on public.plans, public.plan_members, public.plan_invites from anon;
+
 -- 상대가 고친 내용이 바로 보이게(실시간)
 do $$ begin
   alter publication supabase_realtime add table public.plans;

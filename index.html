@@ -4602,9 +4602,9 @@ document.getElementById('sendLink').addEventListener('click', function(){ sendFr
    CLOUD 두 값(프로젝트 주소, 공개용 anon 키)을 넣어야 켜지고, 비어 있으면 지금처럼 이 기기에만 저장해요.
    anon 키는 공개해도 되는 키예요. 누가 어떤 기록을 볼 수 있는지는 Supabase의 행 보안 규칙(supabase/setup.sql)이 정해요.
    저장은 기존 flush()가 Store.ref.update(바뀐 부분)를 부르는 그대로이고, 서버에서 바뀐 부분만 깊게 합쳐요(merge_plan). */
-var CLOUD = { url:'', anonKey:'' };
+var CLOUD = { url:'https://hrgoihfjocmxlsxpxzme.supabase.co', anonKey:'sb_publishable_R0gv2VItKB8NuloeCSsL1g_KUv99Faj' };
 if (window.__CLOUD && typeof window.__CLOUD === 'object') { CLOUD.url = String(window.__CLOUD.url || ''); CLOUD.anonKey = String(window.__CLOUD.anonKey || ''); }
-var SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
+var SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js';
 var Cloud = { sb:null, user:null, planId:'', members:0, invite:'', busy:false, msg:'', chan:null };
 function cloudOn(){ return !!(CLOUD.url && CLOUD.anonKey) && /^https?:$/.test(location.protocol) && !(window.claude && typeof window.claude.use === 'function'); }
 function cloudBase(){ return location.origin + location.pathname; }

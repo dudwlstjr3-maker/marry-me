@@ -2,7 +2,7 @@
 // 가짜 서버의 규칙(멤버만 읽고 쓰기, 바뀐 부분만 깊게 합치기, 초대 7일·한 번·최대 2명)은 supabase/setup.sql과 같아요.
 const {test,expect}=require('@playwright/test');
 const {SEED}=require('./helpers.cjs');
-const SDK='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
+const SDK='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js';
 const API='https://fake.supabase.test';
 
 function deepMerge(a,b){if(!a||typeof a!=='object'||Array.isArray(a)||!b||typeof b!=='object'||Array.isArray(b))return structuredClone(b);const r={...a};for(const k of Object.keys(b))r[k]=deepMerge(a[k],b[k]);return r;}
@@ -55,7 +55,7 @@ async function openCloud(browser,testInfo,server,{seed=null,path='/index.html',c
  await ctx.route(SDK,r=>{sdkLoads.push(1);return r.fulfill({status:200,contentType:'text/javascript',body:FAKE_SDK});});
  await ctx.route(API+'/**',r=>server.handle(r));
  await ctx.addInitScript(([seed,cloud,api])=>{
-  if(cloud)window.__CLOUD={url:api,anonKey:'public-anon-key'};
+  window.__CLOUD=cloud?{url:api,anonKey:'public-anon-key'}:{url:'',anonKey:''};
   if(!sessionStorage.getItem('seeded')){sessionStorage.setItem('seeded','1');localStorage.clear();if(seed)localStorage.setItem('wedding-plan-v1',JSON.stringify(seed));}
  },[seed,cloud,API]);
  const page=await ctx.newPage();
@@ -67,7 +67,7 @@ async function openCloud(browser,testInfo,server,{seed=null,path='/index.html',c
 const status=p=>p.locator('#status');
 const cloudSec=p=>p.locator('#cloudSec');
 
-test('without the two Supabase values the app stays on this device and never loads the login code',async({browser},testInfo)=>{
+test('with the two Supabase values emptied the app stays on this device and never loads the login code',async({browser},testInfo)=>{
  const server=fakeServer();
  const {ctx,page,errors,sdkLoads}=await openCloud(browser,testInfo,server,{seed:SEED,cloud:false});
  await expect(status(page)).toHaveText('이 기기에만 저장돼요');
