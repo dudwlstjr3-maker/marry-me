@@ -80,7 +80,9 @@ test('all tabs fit viewport and expose labelled unique focus keys',async({page})
    return {overflow:document.documentElement.scrollWidth>innerWidth, missing:controls.filter(e=>!e.dataset.fk||(!e.labels?.length&&!e.getAttribute('aria-label'))).map(e=>e.outerHTML),duplicates:keys.filter((k,i)=>keys.indexOf(k)!==i),nav};
   });
   expect(audit.overflow,tab).toBe(false);expect(audit.missing,tab).toEqual([]);expect(audit.duplicates,tab).toEqual([]);
-  expect(new Set(audit.nav.map(r=>Math.round(r.y))).size).toBe(1);
+  // Eight tabs in two rows of four on phones: every tab is on screen without sliding.
+ expect(new Set(audit.nav.map(r=>Math.round(r.y))).size).toBe(2);
+ expect(audit.nav.every(r=>r.x>=0&&r.x+r.w<=page.viewportSize().width+0.5)).toBe(true);
   expect(audit.nav.every(r=>r.w>=43.9&&r.h>=44&&r.scroll<=r.client+1)).toBe(true);
  }
  expect(errors).toEqual([]);
@@ -746,8 +748,12 @@ test('a quote photo is read by Claude, checked, edited and saved without storing
  expect(noArrays(await stored(app))).toBe(true);expect(errors).toEqual([]);
 });
 
-test('tabs stay on one line and scroll to the open tab; empty budget groups start folded',async({page})=>{
+test('tabs sit in two rows of four with nothing to slide; empty budget groups start folded',async({page})=>{
  const {app,errors}=await openApp(page);
+ expect(await app.locator('.tabs [role=tablist]').evaluate(w=>w.scrollWidth<=w.clientWidth)).toBe(true);
+ expect(await app.locator('.tab').evaluateAll(els=>els.map(e=>e.textContent.trim()))).toEqual(['진행 순서','달력','예산','가격 비교','하객','신혼여행','알아둘 것','둘이 정할 것']);
+ const rowOf=id=>app.locator('#'+id).evaluate(e=>Math.round(e.getBoundingClientRect().top));
+ expect(await rowOf('tab-price')).toBe(await rowOf('tab-timeline'));expect(await rowOf('tab-guest')).toBeGreaterThan(await rowOf('tab-timeline'));expect(await rowOf('tab-talk')).toBe(await rowOf('tab-guest'));
  const tabs=await app.locator('.tab').evaluateAll(els=>els.map(e=>({h:e.getBoundingClientRect().height,lines:Math.round(e.getBoundingClientRect().height/parseFloat(getComputedStyle(e).lineHeight))})));
  expect(tabs.every(t=>t.h>=44&&t.h<=52)).toBe(true);
  const inView=id=>app.locator('.tabs [role=tablist]').evaluate((w,id)=>{const a=document.getElementById(id).getBoundingClientRect(),r=w.getBoundingClientRect();return a.left>=r.left-1&&a.right<=r.right+1;},id);
