@@ -258,3 +258,61 @@ test('the plain app link never carries an invite code and says it does not share
  await g.page.evaluate(()=>window.scrollTo(0,0));await expect(g.page.locator('#netBanner')).toBeHidden();
  for(const x of [g,b]){expect(x.errors.filter(e=>!/Failed to fetch|ERR_FAILED|net::/.test(e))).toEqual([]);await x.ctx.close();}
 });
+
+test('a save that succeeds keeps edits made meanwhile in the phone’s keep-list, and replayed old edits never overwrite newer typing',async({browser},testInfo)=>{
+ test.setTimeout(60000);
+ const server=fakeServer();
+ const {g,b}=await couple(browser,testInfo,server);
+ // Control the bride's network: cut it, or hold chosen requests so the timing is exact.
+ const net={down:false,merge:null,select:null};const release={};
+ await b.ctx.unroute(API+'/**');
+ await b.ctx.route(API+'/**',async r=>{
+  if(net.down)return r.abort();
+  const path=new URL(r.request().url()).pathname;
+  const kind=path==='/rpc/merge_plan'?'merge':path==='/select'&&JSON.parse(r.request().postData()||'{}').table==='plans'?'select':'';
+  if(kind&&net[kind])await net[kind];
+  return server.handle(r);
+ });
+ const hold=k=>{let p;p=new Promise(res=>{release[k]=()=>{if(net[k]===p)net[k]=null;res();};});net[k]=p;};
+ const pending=()=>b.page.evaluate(()=>JSON.parse(localStorage.getItem('wd-cloud-pending')||'null'));
+ // 1) The first save is in flight; a second tick waits in the queue and is written down when the app is hidden.
+ hold('merge');
+ await b.page.locator('[data-act="toggle"][data-id="t30"]').click();
+ await b.page.waitForTimeout(500);
+ await b.page.locator('[data-act="toggle"][data-id="t31"]').click();
+ await b.page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{value:'hidden',configurable:true});document.dispatchEvent(new Event('visibilitychange'));Object.defineProperty(document,'visibilityState',{value:'visible',configurable:true});});
+ expect((await pending()).patch.tasks.t31.done).toBe(true);
+ // Hold the follow-up save too, so the moment right after the first one is acknowledged can be inspected.
+ // Sample the keep-list in the page every few ms from the moment the first save is acknowledged.
+ await b.page.evaluate(()=>{window.__gap=false;window.__watch=setInterval(()=>{const p=JSON.parse(localStorage.getItem('wd-cloud-pending')||'null');if(!p||!p.patch.tasks||!p.patch.tasks.t31)window.__gap=true;},5);});
+ const first=release.merge;hold('merge');first();
+ await expect.poll(()=>shared(server).tasks.t30?.done).toBe(true);
+ await b.page.waitForTimeout(400);
+ expect(shared(server).tasks.t31).toBeUndefined();
+ expect(await b.page.evaluate(()=>{clearInterval(window.__watch);return window.__gap;})).toBe(false);
+ expect((await pending())?.patch?.tasks?.t31?.done).toBe(true);
+ release.merge();
+ await expect.poll(()=>shared(server).tasks.t31?.done).toBe(true);
+ await expect.poll(pending).toBeNull();
+ // 2) Offline, an old memo is kept. On reconnect, while the first snapshot is held, a tick's save is in flight and
+ //    a newer memo waits behind it. Replaying the kept old memo must not overwrite the newer one.
+ net.down=true;await b.page.reload();
+ await expect(status(b.page)).toHaveText('연결 안 됨 · 고친 내용은 보관했다가 올려요');
+ await b.page.locator('[data-act="open"][data-id="t06"]').click();
+ await b.page.locator('[data-fk="memo-t06"]').fill('예전 메모');
+ await expect.poll(async()=>(await pending())?.patch?.tasks?.t06?.memo).toBe('예전 메모');
+ net.down=false;hold('select');hold('merge');
+ await b.page.evaluate(()=>window.dispatchEvent(new Event('online')));
+ await b.page.waitForTimeout(400);
+ await b.page.locator('[data-act="toggle"][data-id="t33"]').click();
+ await b.page.waitForTimeout(500);
+ await b.page.locator('[data-fk="memo-t06"]').fill('새 메모');
+ await b.page.waitForTimeout(900);
+ release.select();await b.page.waitForTimeout(400);
+ release.merge();
+ await expect.poll(()=>shared(server).tasks.t06?.memo,{timeout:8000}).toBe('새 메모');
+ await b.page.waitForTimeout(1500);
+ expect(shared(server).tasks.t06.memo).toBe('새 메모');expect(shared(server).tasks.t33.done).toBe(true);
+ expect(g.errors).toEqual([]);expect(b.errors.filter(e=>!/Failed to fetch|ERR_FAILED|net::/.test(e))).toEqual([]);
+ await g.ctx.close();await b.ctx.close();
+});

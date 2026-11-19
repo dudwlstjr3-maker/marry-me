@@ -4648,7 +4648,12 @@ function cloudCacheGet(){ try { var c = JSON.parse(lsGet(CLOUD_CACHE) || 'null')
 function cloudCacheSet(){ if (Cloud.planId && isObj(Store.base)) lsSet(CLOUD_CACHE, JSON.stringify({planId:Cloud.planId, name:cloudName(), members:Cloud.members, base:Store.base})); }
 function pendingGet(planId){ try { var p = JSON.parse(lsGet(CLOUD_PENDING) || 'null'); return isObj(p) && p.planId === planId && isObj(p.patch) ? p.patch : null; } catch(e){ return null; } }
 function pendingAdd(planId, body){ lsSet(CLOUD_PENDING, JSON.stringify({planId:planId, patch:mergeInto(pendingGet(planId) || {}, body)})); }
-function pendingClear(planId){ if (pendingGet(planId)) { try { localStorage.removeItem(CLOUD_PENDING); } catch(e){} } }
+/* 이번에 올라간 것만 지워요. 그사이 새로 들어와 아직 못 보낸 수정(Store.queue)은 계속 보관해요. */
+function pendingClear(planId){
+  if (!pendingGet(planId)) return;
+  if (isEmpty(Store.queue)) { try { localStorage.removeItem(CLOUD_PENDING); } catch(e){} }
+  else lsSet(CLOUD_PENDING, JSON.stringify({planId:planId, patch:clone(Store.queue)}));
+}
 /* claude.ai 공유 저장과 같은 모양(onSnapshot·set·update)의 문서 하나 */
 function cloudRef(planId){
   function send(body){
@@ -4799,7 +4804,8 @@ function cloudWatch(){
     if (first) {
       first = false;
       var pend = pendingGet(Cloud.planId);
-      if (pend && !Store.readOnly && !Cloud.offline) commit(pend, {delay:0});   /* 지난번에 못 올린 수정(연결이 돌아오면) */
+      /* 지난번에 못 올린 수정(연결이 돌아오면). 그사이 새로 고친 값(Store.queue)이 이기도록 아래에 깔아요. */
+      if (pend && !Store.readOnly && !Cloud.offline) { Store.queue = mergeInto(clone(pend), Store.queue); rebuild(); scheduleFlush(0); }
     }
     if (cloudNow() - Cloud.membersAt > 20000) cloudMembers();
     if (!wasReady) { render(); baseStatus(); return; }
