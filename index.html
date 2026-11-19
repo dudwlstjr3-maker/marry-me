@@ -753,14 +753,16 @@ details:is(.price-picked-details,.price-custom,.price-compare,.trash)>:not(summa
 .q-paste[open]{display:grid;gap:8px}
 .q-unsure{display:inline-block;margin-left:4px;padding:0 6px;border:1px solid var(--hong);border-radius:4px;color:var(--hong);font-size:13px;line-height:1.5}
 /* v26 가독성: 탭은 한 줄로 옆으로 밀어 보고, 보조 글자는 14px·더 진한 회색으로, 빈 예산 분류는 접어요. */
-:root{--muted:#5E544D;--tabs-height:50px}
+/* v29 탭 8개를 4개씩 두 줄로: 옆으로 밀지 않아도 다 보여요. 넓은 화면에서는 한 줄. */
+:root{--muted:#5E544D;--tab-row:44px;--tabs-height:calc(var(--tab-row) * 2)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--muted:#D0C8BB}}
 :root[data-theme="dark"]{--muted:#D0C8BB}
 body{line-height:1.65}
-.tabs .wrap{display:flex;gap:2px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding-inline:8px 28px}
-.tabs .wrap::-webkit-scrollbar{display:none}
-.tab,.tab[aria-selected="true"]{flex:none;min-width:44px;min-height:var(--tabs-height);padding:0 14px;font-size:15px;line-height:1.3;white-space:nowrap;overflow-wrap:normal}
-.tabs::after{content:"";position:absolute;top:0;right:0;bottom:0;width:28px;background:linear-gradient(to right,transparent,var(--surface));pointer-events:none}
+.tabs .wrap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 2px;padding-inline:8px}
+.tab,.tab[aria-selected="true"]{min-width:0;min-height:var(--tab-row);padding:0 2px;font-size:15px;line-height:1.3;white-space:nowrap;overflow-wrap:normal}
+@media (max-width:380px){.tab,.tab[aria-selected="true"]{font-size:14px}}
+@media (max-width:340px){.tabs .wrap{padding-inline:4px}.tab,.tab[aria-selected="true"]{font-size:13px}}
+@media (min-width:720px){:root{--tab-row:50px;--tabs-height:var(--tab-row)}.tabs .wrap{grid-template-columns:repeat(8,minmax(0,1fr))}}
 .tip,.refline,.qline,.lead-note,.basis,.know .lead,.hint,.pr-legend,.pr-keep,.price-note,.q-avg-note,.q-verdict small,.pr-row-nums,.pr-row-name small,.pr-lines small,.bamt small,.tdates,.phase-head .meta{font-size:14px}
 .sub-progress{font-size:13px}
 .bcat{margin-top:14px}
