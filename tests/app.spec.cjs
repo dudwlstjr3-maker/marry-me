@@ -1462,3 +1462,12 @@ test('opening a tab or a talk topic from home with the keyboard moves focus ther
  await expect(app.locator('#panel-home [data-act="home-talk"][data-id="m1"]')).toBeFocused();
  expect(errors).toEqual([]);
 });
+
+test('the custom-task header explanation wraps inside the screen when there is no wedding date',async({page})=>{
+ const seed=structuredClone(SEED);seed.weddingDate='';seed.custom={c1:{title:'축가 리허설',created:1}};
+ const {app,errors}=await openApp(page,seed);
+ const head=app.locator('#panel-timeline .phase-head').filter({hasText:'직접 추가한 일'});await expect(head).toHaveCount(1);
+ const r=await head.evaluate(h=>{const m=h.querySelector('.meta'),hr=h.getBoundingClientRect(),mr=m.getBoundingClientRect();return {right:mr.right,hright:hr.right,vw:innerWidth,clip:m.scrollWidth>m.clientWidth+1};});
+ expect(r.right).toBeLessThanOrEqual(r.hright+0.5);expect(r.right).toBeLessThanOrEqual(r.vw);expect(r.clip).toBe(false);
+ expect(errors).toEqual([]);
+});

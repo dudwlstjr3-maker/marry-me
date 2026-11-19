@@ -768,7 +768,7 @@ body{line-height:1.65}
 /* 시기 소제목을 한 줄로: 이름 · 기간 · 개수. 좁거나 글자가 크면 기간만 꺾여요. */
 .phase-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px}
 .phase-head h3{flex:0 1 auto;min-width:0}
-.phase-head .meta:not(.count){flex:1 1 auto;white-space:nowrap}
+.phase-head .meta:not(.count){flex:1 1 auto;min-width:0;white-space:normal;word-break:keep-all}
 .phase-head .count{margin-left:auto;align-self:baseline}
 .tip,.refline,.qline,.lead-note,.basis,.know .lead,.hint,.pr-legend,.pr-keep,.price-note,.q-avg-note,.q-verdict small,.pr-row-nums,.pr-row-name small,.pr-lines small,.bamt small,.tdates,.phase-head .meta{font-size:14px}
 .sub-progress{font-size:13px}
