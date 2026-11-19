@@ -1133,6 +1133,10 @@ input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{fo
 input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-height:44px;line-height:1.4;text-align:left}
 input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.4em}
 button,summary,a,label,select,input,[data-act]{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+/* 카카오 로그인 단추: 카카오 노란색과 검은 글자 */
+.btn.kakao{background:#FEE500;border-color:#FEE500;color:#191919;font-weight:600}
+#cloudInvite{width:100%;margin-top:8px}
+#cloudSec[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -1210,6 +1214,10 @@ button,summary,a,label,select,input,[data-act]{-webkit-tap-highlight-color:trans
 <dialog id="shareDlg" aria-labelledby="share-title">
   <div class="dlg">
     <h2 id="share-title">카톡으로 공유</h2>
+    <section class="share-sec" id="cloudSec" hidden>
+      <h3>둘이 함께 쓰기</h3>
+      <div id="cloudBody"></div>
+    </section>
     <section class="share-sec">
       <h3>준비 현황 보내기</h3>
       <p class="hint">D-day, 진행 상황, 다음 할 일, 예산을 글로 정리했어요. 보내기를 누르면 휴대폰 공유 창이 열리고, 거기서 카카오톡을 고르면 돼요.</p>
@@ -4589,6 +4597,189 @@ document.getElementById('sendText').addEventListener('click', function(){ sendFr
 document.getElementById('copyLink').addEventListener('click', function(){ copyFrom(document.getElementById('shareLink')); });
 document.getElementById('sendLink').addEventListener('click', function(){ sendFrom(document.getElementById('shareLink'), true); });
 
+/* ---------------- 카카오 로그인으로 둘이 함께 쓰기 (Supabase) ----------------
+   홈페이지(GitHub Pages)에서만 켜져요. claude.ai 아티팩트는 원래의 공유 저장을 그대로 써요.
+   CLOUD 두 값(프로젝트 주소, 공개용 anon 키)을 넣어야 켜지고, 비어 있으면 지금처럼 이 기기에만 저장해요.
+   anon 키는 공개해도 되는 키예요. 누가 어떤 기록을 볼 수 있는지는 Supabase의 행 보안 규칙(supabase/setup.sql)이 정해요.
+   저장은 기존 flush()가 Store.ref.update(바뀐 부분)를 부르는 그대로이고, 서버에서 바뀐 부분만 깊게 합쳐요(merge_plan). */
+var CLOUD = { url:'', anonKey:'' };
+if (window.__CLOUD && typeof window.__CLOUD === 'object') { CLOUD.url = String(window.__CLOUD.url || ''); CLOUD.anonKey = String(window.__CLOUD.anonKey || ''); }
+var SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
+var Cloud = { sb:null, user:null, planId:'', members:0, invite:'', busy:false, msg:'', chan:null };
+function cloudOn(){ return !!(CLOUD.url && CLOUD.anonKey) && /^https?:$/.test(location.protocol) && !(window.claude && typeof window.claude.use === 'function'); }
+function cloudBase(){ return location.origin + location.pathname; }
+function cloudParam(k){ try { return new URLSearchParams(location.search).get(k) || ''; } catch(e){ return ''; } }
+function joinCode(){ var c = cloudParam('join'); return /^[A-Za-z0-9]{6,40}$/.test(c) ? c : ''; }
+function cloudHasSession(){ try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (/^sb-.+-auth-token$/.test(k)) return true; } } catch(e){} return false; }
+/* 로그인한 적이 있거나, 로그인에서 막 돌아왔거나, 초대 링크로 열었을 때만 Supabase를 불러요. */
+function cloudWanted(){ return cloudOn() && (cloudHasSession() || !!cloudParam('code') || !!joinCode()); }
+function cloudLoad(){
+  if (Cloud.sb) return Promise.resolve(Cloud.sb);
+  return new Promise(function(res, rej){
+    function make(){
+      try { Cloud.sb = window.supabase.createClient(CLOUD.url, CLOUD.anonKey, {auth:{flowType:'pkce', detectSessionInUrl:true, persistSession:true, autoRefreshToken:true}}); res(Cloud.sb); }
+      catch(e){ rej(e); }
+    }
+    if (window.supabase && typeof window.supabase.createClient === 'function') { make(); return; }
+    var sc = document.createElement('script'); sc.src = SUPABASE_JS; sc.async = true;
+    sc.onload = make; sc.onerror = function(){ rej(new Error('sdk')); };
+    document.head.appendChild(sc);
+  });
+}
+function cloudErr(e){
+  var c = e && (e.code || e.message) || '';
+  if (/42501|not a member|permission/i.test(String(c))) return {code:'not_granted'};
+  return {code:'network'};
+}
+function cloudRpc(fn, args){
+  return Cloud.sb.rpc(fn, args || {}).then(function(r){ if (r.error) throw r.error; return r.data; });
+}
+/* claude.ai 공유 저장과 같은 모양(onSnapshot·set·update)의 문서 하나 */
+function cloudRef(planId){
+  function send(body){ return cloudRpc('merge_plan', {p_id:planId, p_patch:body}).then(function(){}, function(e){ throw cloudErr(e); }); }
+  return {
+    set: send, update: send,
+    onSnapshot: function(ok, bad){
+      function snap(data){ ok({exists:true, data:function(){ return isObj(data) ? data : {}; }}); }
+      function pull(){
+        return Cloud.sb.from('plans').select('data').eq('id', planId).single().then(function(r){ if (r.error) throw r.error; snap(r.data && r.data.data); });
+      }
+      pull().catch(function(e){ bad(cloudErr(e)); });
+      try {
+        Cloud.chan = Cloud.sb.channel('plan-' + planId)
+          .on('postgres_changes', {event:'UPDATE', schema:'public', table:'plans', filter:'id=eq.' + planId}, function(p){ if (p && p.new) snap(p.new.data); })
+          .subscribe();
+      } catch(e){}
+      /* 휴대폰에서 다시 돌아오면 그사이 바뀐 것을 한 번 더 받아요. */
+      document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') pull().catch(function(){}); });
+    }
+  };
+}
+function cloudCleanUrl(){
+  try { var u = new URL(location.href); ['code','join','state','error','error_description','error_code'].forEach(function(k){ u.searchParams.delete(k); }); history.replaceState(null, '', u.pathname + (u.search || '') + u.hash); } catch(e){}
+}
+function cloudName(){ var m = Cloud.user && Cloud.user.user_metadata || {}; return m.name || m.nickname || m.full_name || m.preferred_username || '카카오 사용자'; }
+function startCloud(){
+  setStatus('불러오는 중…');
+  var join = joinCode(), oauthErr = cloudParam('error_description') || cloudParam('error');
+  cloudLoad().then(function(sb){ return sb.auth.getSession(); }).then(function(r){
+    var session = r && r.data && r.data.session;
+    if (!session) {
+      cloudCleanUrlKeepJoin();
+      startLocal();
+      if (oauthErr) { Cloud.msg = '카카오 로그인을 마치지 못했어요. 다시 눌러 주세요.'; }
+      if (join) { Cloud.msg = '초대받았어요. 카카오로 로그인하면 초대한 사람의 기록을 함께 봐요.'; openShareDlg(); }
+      return;
+    }
+    Cloud.user = session.user;
+    var local = null; try { local = JSON.parse(lsGet(LOCAL_KEY) || 'null'); } catch(e){}
+    var planP = join
+      ? cloudRpc('join_plan', {p_code:join}).then(null, function(e){ Cloud.msg = /full/.test(String(e && e.message)) ? '이 초대는 이미 두 사람이 쓰고 있어요.' : '초대 링크가 지났거나 이미 쓰였어요. 다시 받아 주세요.'; return cloudRpc('my_plan'); })
+      : cloudRpc('my_plan');
+    return planP.then(function(id){
+      return id || cloudRpc('create_plan', {p_data: isObj(local) ? local : defaultBody()});
+    }).then(function(id){
+      if (!id) throw new Error('no plan');
+      Cloud.planId = String(id);
+      if (join && !Cloud.msg) Cloud.msg = '초대를 받아 같은 기록을 함께 쓰고 있어요.';
+      cloudCleanUrl();
+      Store.mode = 'db';
+      Store.ref = cloudRef(Cloud.planId);
+      cloudWatch();
+      cloudMembers();
+    });
+  }).catch(function(){
+    Cloud.planId = '';
+    if (!Store.ready) startLocal();
+    setStatus('함께 쓰기에 연결하지 못했어요. 이 기기에만 저장해요.', true);
+  });
+}
+/* claude.ai 공유 저장(init)과 같은 방식으로 문서 변화를 화면에 반영해요. 저장 계층은 건드리지 않아요. */
+function cloudWatch(){
+  Store.ref.onSnapshot(function(snap){
+    Store.exists = !!snap.exists;
+    Store.base = snap.exists ? clone(snap.data()) : null;
+    var wasReady = Store.ready;
+    Store.ready = true;
+    rebuild();
+    if (!wasReady) { render(); baseStatus(); return; }
+    if (JSON.stringify(state) !== lastSig) render();
+  }, function(){
+    Store.readOnly = true; Store.ready = true;
+    render();
+    setStatus('연결이 끊겼어요. 새로고침하면 다시 연결돼요.', true);
+  });
+}
+/* 카카오로 함께 쓰는 중이면 상태 줄에 알려요(나머지는 원래 문구). */
+var baseStatusPlain = baseStatus;
+baseStatus = function(){
+  if (Store.ready && !Store.readOnly && Store.mode === 'db' && Cloud.planId) return setStatus('둘이 함께 저장돼요');
+  return baseStatusPlain();
+};
+function cloudCleanUrlKeepJoin(){
+  try { var u = new URL(location.href); ['code','state','error','error_description','error_code'].forEach(function(k){ u.searchParams.delete(k); }); history.replaceState(null, '', u.pathname + (u.search || '') + u.hash); } catch(e){}
+}
+function cloudMembers(){
+  if (!Cloud.planId) return;
+  Cloud.sb.from('plan_members').select('user_id').eq('plan_id', Cloud.planId).then(function(r){ if (!r.error && r.data) { Cloud.members = r.data.length; cloudRender(); } }, function(){});
+}
+function cloudRender(){
+  var sec = document.getElementById('cloudSec'), body = document.getElementById('cloudBody');
+  if (!sec || !body) return;
+  sec.hidden = !cloudOn();
+  if (sec.hidden) return;
+  var h = '';
+  if (Cloud.planId) {
+    h += '<p class="hint"><b>' + esc(cloudName()) + '</b>님으로 카카오 로그인했어요. ' + (Cloud.members >= 2 ? '둘이 같은 기록을 함께 쓰고 있어요.' : '초대 링크를 보내면 상대도 같은 기록을 함께 봐요.') + '</p>';
+    h += '<div class="dlg-actions"><button class="btn" type="button" data-cloud="logout">로그아웃</button><button class="btn primary" type="button" data-cloud="invite"' + (Cloud.busy ? ' disabled' : '') + '>초대 링크 보내기</button></div>';
+    if (Cloud.invite) h += '<input type="text" id="cloudInvite" aria-label="초대 링크" data-fk="cloudInvite" readonly value="' + esc(Cloud.invite) + '"><p class="hint">7일 동안 한 번 쓸 수 있어요. 받은 사람이 링크를 열고 카카오로 로그인하면 함께 써요.</p>';
+  } else {
+    h += '<p class="hint">카카오로 로그인하면 신랑·신부가 각자 휴대폰에서 같은 기록을 보고 함께 고쳐요. 처음 로그인하면 이 기기에 적은 기록을 그대로 올려요.</p>';
+    if (joinCode()) h += '<p class="hint">초대를 받아 로그인하면 내 기록 대신 초대한 사람의 기록을 함께 써요. 이 기기에 적은 기록은 이 기기에 그대로 남아요.</p>';
+    h += '<div class="dlg-actions"><button class="btn kakao" type="button" data-cloud="login"' + (Cloud.busy ? ' disabled' : '') + '>카카오 로그인</button></div>';
+  }
+  if (Cloud.msg) h += '<p class="hint cloud-msg" aria-live="polite">' + esc(Cloud.msg) + '</p>';
+  body.innerHTML = h;
+}
+function openShareDlg(){ document.getElementById('openShare').click(); }
+function cloudLogin(){
+  Cloud.busy = true; Cloud.msg = ''; cloudRender();
+  var join = joinCode();
+  cloudLoad().then(function(sb){
+    return sb.auth.signInWithOAuth({provider:'kakao', options:{redirectTo: cloudBase() + (join ? '?join=' + encodeURIComponent(join) : '')}});
+  }).then(function(r){
+    if (r && r.error) throw r.error;
+  }).catch(function(){
+    Cloud.busy = false; Cloud.msg = '카카오 로그인 창을 열지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'; cloudRender();
+  });
+}
+function cloudInvite(){
+  Cloud.busy = true; Cloud.msg = ''; cloudRender();
+  cloudRpc('create_invite', {p_plan:Cloud.planId}).then(function(code){
+    Cloud.busy = false; Cloud.invite = cloudBase() + '?join=' + encodeURIComponent(code); cloudRender();
+    var box = document.getElementById('cloudInvite');
+    var data = {title:'우리 결혼 준비 함께 쓰기', text:'링크를 열고 카카오로 로그인하면 우리 결혼 준비 기록을 함께 볼 수 있어요.', url:Cloud.invite};
+    if (navigator.share) navigator.share(data).then(function(){}, function(err){ if (!(err && err.name === 'AbortError') && box) copyFrom(box); });
+    else if (box) copyFrom(box);
+  }, function(){
+    Cloud.busy = false; Cloud.msg = '초대 링크를 만들지 못했어요. 잠시 뒤에 다시 눌러 주세요.'; cloudRender();
+  });
+}
+function cloudLogout(){
+  flushNow();
+  var done = function(){ Cloud.planId = ''; location.replace(cloudBase()); };
+  (Cloud.sb ? Cloud.sb.auth.signOut() : Promise.resolve()).then(done, done);
+}
+document.getElementById('cloudBody').addEventListener('click', function(e){
+  var b = e.target.closest && e.target.closest('[data-cloud]');
+  if (!b || b.disabled) return;
+  var a = b.getAttribute('data-cloud');
+  if (a === 'login') cloudLogin();
+  else if (a === 'invite') cloudInvite();
+  else if (a === 'logout') cloudLogout();
+});
+document.getElementById('openShare').addEventListener('click', cloudRender);
+
 /* settings dialog */
 var dlg = document.getElementById('settings');
 function openDlg(){
@@ -4621,7 +4812,7 @@ document.getElementById('saveSettings').addEventListener('click', function(){
 });
 
 render();
-init();
+if (cloudWanted()) startCloud(); else init();
 initPhoto();
 initDownloads();
 })();

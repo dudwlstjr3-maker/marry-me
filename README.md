@@ -6,6 +6,8 @@
 
 앱 주소: **https://dudwlstjr3-maker.github.io/marry-me/**
 
+카카오 로그인으로 둘이 함께 쓰려면 [docs/kakao-login.md](docs/kakao-login.md)대로 한 번 설정해요.
+
 최초 활성화와 배포가 끝나면 이 주소를 즐겨찾기해 사용하세요. 앞으로 main에 수정이 반영되면 GitHub Actions가 전체 시험을 통과한 앱을 자동 배포해요. 배포 완료 후 같은 주소를 새로고침하면 최신 화면이 나와요. 열려 있는 화면은 저절로 다시 로드하지 않아요.
 
 ### 처음 한 번 설정

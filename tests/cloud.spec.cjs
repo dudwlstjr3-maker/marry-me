@@ -1,0 +1,151 @@
+// 카카오 로그인으로 둘이 함께 쓰기: Supabase 대신 같은 모양의 가짜 서버로 시험해요.
+// 가짜 서버의 규칙(멤버만 읽고 쓰기, 바뀐 부분만 깊게 합치기, 초대 7일·한 번·최대 2명)은 supabase/setup.sql과 같아요.
+const {test,expect}=require('@playwright/test');
+const {SEED}=require('./helpers.cjs');
+const SDK='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
+const API='https://fake.supabase.test';
+
+function deepMerge(a,b){if(!a||typeof a!=='object'||Array.isArray(a)||!b||typeof b!=='object'||Array.isArray(b))return structuredClone(b);const r={...a};for(const k of Object.keys(b))r[k]=deepMerge(a[k],b[k]);return r;}
+function fakeServer(){
+ const db={plans:{},members:[],invites:{}};let n=0;
+ const isMember=(p,u)=>db.members.some(m=>m.plan===p&&m.user===u);
+ const myPlan=u=>{const m=db.members.filter(x=>x.user===u).sort((a,b)=>b.at-a.at)[0];return m?m.plan:null;};
+ const rpc={
+  my_plan:(u)=>myPlan(u),
+  create_plan:(u,a)=>{const have=myPlan(u);if(have)return have;const id='p'+(++n);db.plans[id]=structuredClone(a.p_data||{});db.members.push({plan:id,user:u,at:++n});return id;},
+  merge_plan:(u,a)=>{if(!isMember(a.p_id,u))throw {code:'42501',message:'not a member'};db.plans[a.p_id]=deepMerge(db.plans[a.p_id],a.p_patch);return null;},
+  create_invite:(u,a)=>{if(!isMember(a.p_plan,u))throw {code:'42501',message:'not a member'};const c='inv'+(++n)+'abcd';db.invites[c]={plan:a.p_plan,used:null};return c;},
+  join_plan:(u,a)=>{const inv=db.invites[a.p_code];if(!inv)throw {message:'invalid invite'};if(isMember(inv.plan,u))return inv.plan;if(inv.used&&inv.used!==u)throw {message:'invalid invite'};if(db.members.filter(m=>m.plan===inv.plan).length>=2)throw {message:'full'};db.members=db.members.filter(m=>m.user!==u);db.members.push({plan:inv.plan,user:u,at:++n});inv.used=u;return inv.plan;},
+ };
+ async function handle(route){
+  const req=route.request(),path=new URL(req.url()).pathname.slice(1),body=JSON.parse(req.postData()||'{}'),u=req.headers()['x-user']||'';
+  let out;
+  try{
+   if(!u)throw {code:'42501',message:'login required'};
+   if(path.startsWith('rpc/'))out={data:rpc[path.slice(4)](u,body.args||{}),error:null};
+   else if(path==='select'&&body.table==='plans')out=isMember(body.id,u)?{data:{data:db.plans[body.id]},error:null}:{data:null,error:{code:'PGRST116',message:'no rows'}};
+   else if(path==='select'&&body.table==='plan_members')out=isMember(body.id,u)?{data:db.members.filter(m=>m.plan===body.id).map(m=>({user_id:m.user})),error:null}:{data:[],error:null};
+   else out={data:null,error:{message:'unknown'}};
+  }catch(e){out={data:null,error:e};}
+  await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(out)});
+ }
+ return {db,handle};
+}
+// supabase-js와 같은 모양의 작은 가짜(UMD). ?code=이름 으로 돌아오면 그 이름으로 로그인돼요.
+const FAKE_SDK=`window.supabase={createClient:function(url,key,opts){
+ var K='sb-fake-auth-token';
+ function sess(){try{return JSON.parse(localStorage.getItem(K));}catch(e){return null;}}
+ function call(path,body){var s=sess();return fetch(url+'/'+path,{method:'POST',headers:{'content-type':'application/json','x-user':s?s.user.id:''},body:JSON.stringify(body||{})}).then(function(r){return r.json();});}
+ window.__sbOpts=opts;
+ return {
+  auth:{
+   getSession:function(){var m=location.search.match(/[?&]code=([^&]+)/);if(m){var id=decodeURIComponent(m[1]);localStorage.setItem(K,JSON.stringify({user:{id:id,user_metadata:{name:id==='groom'?'준호':'민지'}}}));}return Promise.resolve({data:{session:sess()},error:null});},
+   signInWithOAuth:function(o){window.__oauth=o;return Promise.resolve({data:{},error:null});},
+   signOut:function(){localStorage.removeItem(K);return Promise.resolve({error:null});}
+  },
+  rpc:function(fn,args){return call('rpc/'+fn,{args:args});},
+  from:function(t){return {select:function(){return {eq:function(c,v){var p=call('select',{table:t,id:v});return {single:function(){return p;},then:function(a,b){return p.then(a,b);}};}};}};},
+  channel:function(){var ch={on:function(ev,f,cb){ch.f=f;ch.cb=cb;return ch;},subscribe:function(){var last=null,id=ch.f.filter.split('eq.')[1];setInterval(function(){call('select',{table:'plans',id:id}).then(function(r){var j=JSON.stringify(r.data&&r.data.data);if(last!==null&&j!==last)ch.cb({new:r.data});last=j;});},150);return ch;}};return ch;}
+ };}};`;
+
+async function openCloud(browser,testInfo,server,{seed=null,path='/index.html',cloud=true}={}){
+ const ctx=await browser.newContext({...testInfo.project.use});
+ const errors=[],sdkLoads=[];
+ await ctx.route('https://fonts.googleapis.com/**',r=>r.fulfill({status:200,contentType:'text/css',body:''}));
+ await ctx.route(SDK,r=>{sdkLoads.push(1);return r.fulfill({status:200,contentType:'text/javascript',body:FAKE_SDK});});
+ await ctx.route(API+'/**',r=>server.handle(r));
+ await ctx.addInitScript(([seed,cloud,api])=>{
+  if(cloud)window.__CLOUD={url:api,anonKey:'public-anon-key'};
+  if(!sessionStorage.getItem('seeded')){sessionStorage.setItem('seeded','1');localStorage.clear();if(seed)localStorage.setItem('wedding-plan-v1',JSON.stringify(seed));}
+ },[seed,cloud,API]);
+ const page=await ctx.newPage();
+ page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+ await page.clock.setFixedTime(new Date('2026-10-06T03:00:00Z'));
+ await page.goto(path);
+ return {ctx,page,errors,sdkLoads};
+}
+const status=p=>p.locator('#status');
+const cloudSec=p=>p.locator('#cloudSec');
+
+test('without the two Supabase values the app stays on this device and never loads the login code',async({browser},testInfo)=>{
+ const server=fakeServer();
+ const {ctx,page,errors,sdkLoads}=await openCloud(browser,testInfo,server,{seed:SEED,cloud:false});
+ await expect(status(page)).toHaveText('이 기기에만 저장돼요');
+ await page.locator('#openShare').click();
+ await expect(cloudSec(page)).toBeHidden();
+ expect(sdkLoads.length).toBe(0);expect(errors).toEqual([]);
+ await ctx.close();
+});
+
+test('groom logs in with Kakao, his device data goes up, the bride joins by invite link and both see each other’s edits',async({browser},testInfo)=>{
+ test.setTimeout(60000);
+ const server=fakeServer();
+ // Groom: configured, never logged in → still local until he asks; the SDK is not loaded yet.
+ const g=await openCloud(browser,testInfo,server,{seed:SEED});
+ await expect(status(g.page)).toHaveText('이 기기에만 저장돼요');expect(g.sdkLoads.length).toBe(0);
+ await g.page.locator('#openShare').click();
+ await expect(cloudSec(g.page)).toBeVisible();
+ const login=g.page.locator('#cloudSec [data-cloud="login"]');await expect(login).toHaveText('카카오 로그인');
+ await login.click();
+ await expect.poll(()=>g.page.evaluate(()=>window.__oauth&&window.__oauth.provider)).toBe('kakao');
+ expect(await g.page.evaluate(()=>window.__sbOpts.auth.flowType)).toBe('pkce');
+ expect(await g.page.evaluate(()=>window.__oauth.options.redirectTo)).toBe('http://127.0.0.1:4173/index.html');
+ // Kakao sends him back with ?code=…; the plan is created from what was on this device.
+ await g.page.goto('/index.html?code=groom');
+ await expect(status(g.page)).toHaveText('둘이 함께 저장돼요');
+ await expect(g.page).toHaveURL('http://127.0.0.1:4173/index.html');
+ expect(Object.values(server.db.plans)[0].groom).toBe('준호');
+ expect(Object.values(server.db.plans)[0].budget.items.b02.heads).toBe(187);
+ // Invite link
+ await g.page.locator('#openShare').click();
+ await expect(g.page.locator('#cloudSec')).toContainText('준호님으로 카카오 로그인했어요');
+ await g.page.locator('#cloudSec [data-cloud="invite"]').click();
+ const link=await g.page.locator('#cloudInvite').inputValue();
+ expect(link).toMatch(/^http:\/\/127\.0\.0\.1:4173\/index\.html\?join=[A-Za-z0-9]+$/);
+ await g.page.locator('#closeShare').click();
+
+ // Bride: opens the link on her own phone (empty device), is told what will happen, logs in.
+ const b=await openCloud(browser,testInfo,server,{path:link.replace('http://127.0.0.1:4173','')});
+ await expect(b.page.locator('#shareDlg')).toBeVisible();
+ await expect(b.page.locator('#cloudSec')).toContainText('초대받았어요');
+ await b.page.locator('#cloudSec [data-cloud="login"]').click();
+ await expect.poll(()=>b.page.evaluate(()=>window.__oauth&&window.__oauth.options.redirectTo)).toBe(link);
+ await b.page.goto(link.replace('http://127.0.0.1:4173','')+'&code=bride');
+ await expect(status(b.page)).toHaveText('둘이 함께 저장돼요');
+ await expect(b.page).toHaveURL('http://127.0.0.1:4173/index.html');
+ await expect(b.page.locator('#hero')).toContainText('준호');
+ // She ticks a task; he sees it without reloading. He types a memo; she sees it.
+ await b.page.locator('#tab-timeline').click();
+ await b.page.locator('[data-act="toggle"][data-id="t05"]').click();
+ await expect.poll(()=>Object.values(server.db.plans)[0].tasks.t05&&Object.values(server.db.plans)[0].tasks.t05.done).toBe(true);
+ await expect(g.page.locator('[data-act="toggle"][data-id="t05"]')).toHaveAttribute('aria-checked','true');
+ await g.page.locator('[data-act="open"][data-id="t06"]').click();
+ await g.page.locator('[data-fk="memo-t06"]').fill('본식 계약금 300');
+ await b.page.locator('[data-act="open"][data-id="t06"]').click();
+ await expect(b.page.locator('[data-fk="memo-t06"]')).toHaveValue('본식 계약금 300');
+ // Both edits survive: the server merged them instead of overwriting.
+ const plan=Object.values(server.db.plans)[0];
+ expect(plan.tasks.t05.done).toBe(true);expect(plan.tasks.t06.memo).toBe('본식 계약금 300');expect(plan.tasks.t01.done).toBe(true);
+ await b.page.locator('#openShare').click();
+ await expect(b.page.locator('#cloudSec')).toContainText('둘이 같은 기록을 함께 쓰고 있어요');
+ // A third person with the same (used) link is turned away and gets their own record.
+ const c=await openCloud(browser,testInfo,server,{path:link.replace('http://127.0.0.1:4173','')+'&code=stranger'});
+ await expect(status(c.page)).toHaveText('둘이 함께 저장돼요');
+ expect(server.db.members.filter(m=>m.plan===Object.keys(server.db.plans)[0]).length).toBe(2);
+ await c.page.locator('#openShare').click();await expect(c.page.locator('#cloudSec')).toContainText('초대 링크가 지났거나 이미 쓰였어요');
+ // Logging out goes back to this device only.
+ await b.page.locator('#cloudSec [data-cloud="logout"]').click();
+ await expect(status(b.page)).toHaveText('이 기기에만 저장돼요');
+ for(const x of [g,b,c]){expect(x.errors).toEqual([]);await x.ctx.close();}
+});
+
+test('a failed connection falls back to this device and says so',async({browser},testInfo)=>{
+ const server=fakeServer();
+ const {ctx,page,errors}=await openCloud(browser,testInfo,server,{seed:SEED,path:'/index.html?code=groom'});
+ await ctx.unroute(API+'/**');await ctx.route(API+'/**',r=>r.abort());
+ await page.reload();
+ await expect(status(page)).toHaveText('함께 쓰기에 연결하지 못했어요. 이 기기에만 저장해요.');
+ await expect(page.locator('#hero')).toContainText('준호');
+ expect(errors.filter(e=>!/Failed to fetch|ERR_FAILED|net::/.test(e))).toEqual([]);
+ await ctx.close();
+});
