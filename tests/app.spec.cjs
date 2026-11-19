@@ -5,6 +5,34 @@ const {execFileSync}=require('node:child_process');
 const tabs=['timeline','cal','budget','price','guest','honey','know','talk'];
 function noArrays(value) { if(Array.isArray(value)) return false; return !value||typeof value!=='object'||Object.values(value).every(noArrays); }
 
+test('starting without a wedding date opens the checklist and preserves undated preparation',async({page})=>{
+ const {app,errors}=await openApp(page,null);
+ await app.locator('#tab-price').click();
+ await app.getByRole('button',{name:'날짜 없이 준비 시작'}).click();
+ await expect(app.locator('#tab-timeline')).toBeFocused();
+ await expect(app.locator('#tab-timeline')).toHaveAttribute('aria-selected','true');
+ await expect(app.locator('#heroDate')).toHaveValue('');
+ expect(await app.locator('#panel-timeline').evaluate(e=>e.getBoundingClientRect().top)).toBeLessThan(180);
+ await app.locator('[data-act="toggle"][data-id="t01"]').click();
+ await expect.poll(async()=>(await stored(app))?.tasks?.t01?.done).toBe(true);
+ expect((await stored(app)).weddingDate).toBe('');
+ expect((await stored(app)).startDate).toBe('');
+ expect(errors).toEqual([]);
+});
+
+test('talk topics keep their own prompts and save notes without the shared money example',async({page})=>{
+ const {app,errors}=await openApp(page);
+ await app.locator('#tab-talk').click();
+ const topic=app.locator('[data-act="talk-open"][data-id="m17"]');
+ await topic.click();
+ const note=app.getByRole('textbox',{name:'정한 내용'});
+ await expect(note).not.toHaveAttribute('placeholder',/.+/);
+ await expect(topic.locator('..').locator('.tip')).toHaveText(/\S/);
+ await note.fill('함께 이야기한 내용');await note.blur();
+ await expect.poll(async()=>(await stored(app)).talks?.m17?.memo).toBe('함께 이야기한 내용');
+ expect(errors).toEqual([]);
+});
+
 test('date/time and task save using clicks and Enter without forms',async({page})=>{
  const {app,errors}=await openApp(page,null);
  await expect(app.locator('form')).toHaveCount(0);
@@ -1212,7 +1240,8 @@ test('calendar view gathers dated tasks, payments and detail lines by month and 
  await expect(app.locator('.cal-list')).not.toContainText('지운 모임');
  // The grid marks the kinds of things on each day and announces how many there are.
  const d17=app.locator('.cal-day[data-id="2026-10-17"]');
- await expect(d17).toHaveAttribute('aria-label','10월 17일 토요일, 일정 1개');await expect(d17.locator('.cal-dots i.p')).toHaveCount(1);
+ await expect(d17).toHaveAccessibleName('10월 17일 토요일, 일정 1개, 지출');await expect(d17.locator('.cal-dots i.p')).toHaveCount(1);
+ await expect(app.locator('.cal-day[data-id="2026-10-08"]')).toHaveAccessibleName('10월 8일 목요일, 일정 1개, 예약');
  await expect(app.locator('.cal-day[data-id="2026-10-08"] .cal-dots i.b')).toHaveCount(1);
  await expect(app.locator('.cal-day[data-id="2026-10-06"]')).toHaveAttribute('aria-label','10월 6일 화요일, 오늘, 일정 0개');
  // Nothing overflows sideways and every control is at least 44px, also at 320px.
@@ -1226,6 +1255,12 @@ test('calendar view gathers dated tasks, payments and detail lines by month and 
  await expect.poll(async()=>Object.values((await stored(app)).custom).some(x=>x.title==='웨딩홀 시식'&&x.date==='2026-10-17')).toBe(true);
  await expect(app.locator('.cal-list h4')).toHaveText('10월 17일 (토) 2건');await expect(items.filter({hasText:'웨딩홀 시식'})).toHaveCount(1);
  await expect(app.locator('.cal-day[data-id="2026-10-17"] .cal-dots i')).toHaveCount(2);
+ await expect(d17).toHaveAccessibleName('10월 17일 토요일, 일정 2개, 지출·할 일');
+ const shapes=await app.locator('.cal-legend i').evaluateAll(markers=>markers.map(marker=>{
+  const style=getComputedStyle(marker);
+  return [style.borderRadius,style.clipPath].join(' ');
+ }));
+ expect(new Set(shapes).size).toBe(3);
  await app.locator('[data-act="cal-all"]').click();await expect(app.locator('.cal-list h4')).toHaveText('10월 일정 8건');
  // Other months, and back to today. The wedding month shows the wedding day.
  await app.locator('[data-act="cal-move"][data-v="-1"]').click();await expect(app.locator('#calTitle')).toHaveText('2026년 9월');

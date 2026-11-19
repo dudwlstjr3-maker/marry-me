@@ -6,30 +6,54 @@ const SDK='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/su
 const API='https://fake.supabase.test';
 
 function deepMerge(a,b){if(!a||typeof a!=='object'||Array.isArray(a)||!b||typeof b!=='object'||Array.isArray(b))return structuredClone(b);const r={...a};for(const k of Object.keys(b))r[k]=deepMerge(a[k],b[k]);return r;}
-function fakeServer(){
+function fakeServer({legacy=false}={}){
  const db={plans:{},members:[],invites:{}};let n=0;
+ const calls=[],offline=new Set(),failures=[],holds=[];
  const isMember=(p,u)=>db.members.some(m=>m.plan===p&&m.user===u);
  const myPlan=u=>{const m=db.members.filter(x=>x.user===u).sort((a,b)=>b.at-a.at)[0];return m?m.plan:null;};
+ const label=p=>{const d=db.plans[p]||{};return d.title||[d.groom,d.bride].filter(Boolean).join(' · ')||'결혼 준비 수첩';};
+ function invite(code,u){
+  const inv=db.invites[code];
+  if(!inv||inv.expires<Date.now()||(inv.used&&inv.used!==u&&!isMember(inv.plan,u)))throw {message:'invalid invite'};
+  return inv;
+ }
  const rpc={
-  my_plan:(u)=>myPlan(u),
+  my_plan:u=>myPlan(u),
+  list_my_plans:u=>db.members.filter(m=>m.user===u).sort((a,b)=>b.at-a.at).map(m=>({plan_id:m.plan,label:label(m.plan)})),
   create_plan:(u,a)=>{const have=myPlan(u);if(have)return have;const id='p'+(++n);db.plans[id]=structuredClone(a.p_data||{});db.members.push({plan:id,user:u,at:++n});return id;},
   merge_plan:(u,a)=>{if(!isMember(a.p_id,u))throw {code:'42501',message:'not a member'};db.plans[a.p_id]=deepMerge(db.plans[a.p_id],a.p_patch);return null;},
-  create_invite:(u,a)=>{if(!isMember(a.p_plan,u))throw {code:'42501',message:'not a member'};const c='inv'+(++n)+'abcd';db.invites[c]={plan:a.p_plan,used:null};return c;},
-  join_plan:(u,a)=>{const inv=db.invites[a.p_code];if(!inv)throw {message:'invalid invite'};if(isMember(inv.plan,u))return inv.plan;if(inv.used&&inv.used!==u)throw {message:'invalid invite'};if(db.members.filter(m=>m.plan===inv.plan).length>=2)throw {message:'full'};db.members=db.members.filter(m=>m.user!==u);db.members.push({plan:inv.plan,user:u,at:++n});inv.used=u;return inv.plan;},
+  create_invite:(u,a)=>{if(!isMember(a.p_plan,u))throw {code:'42501',message:'not a member'};if(db.members.filter(m=>m.plan===a.p_plan).length>=2)throw {message:'full'};const c='inv'+(++n)+'abcd';db.invites[c]={plan:a.p_plan,used:null,expires:Date.now()+7*86400000};return c;},
+  preview_plan_invite:(u,a)=>{const inv=invite(a.p_code,u);if(!isMember(inv.plan,u)&&db.members.filter(m=>m.plan===inv.plan).length>=2)throw {message:'full'};return [{plan_id:inv.plan,label:label(inv.plan)}];},
+  join_plan:(u,a)=>{const inv=invite(a.p_code,u);if(isMember(inv.plan,u))return inv.plan;if(db.members.filter(m=>m.plan===inv.plan).length>=2)throw {message:'full'};db.members=db.members.filter(m=>m.user!==u);db.members.push({plan:inv.plan,user:u,at:++n});inv.used=u;return inv.plan;},
+  accept_plan_invite:(u,a)=>{const inv=invite(a.p_code,u);if(isMember(inv.plan,u))return inv.plan;if(db.members.filter(m=>m.plan===inv.plan).length>=2)throw {message:'full'};db.members.push({plan:inv.plan,user:u,at:++n});inv.used=u;return inv.plan;},
  };
  async function handle(route){
   const req=route.request(),path=new URL(req.url()).pathname.slice(1),body=JSON.parse(req.postData()||'{}'),u=req.headers()['x-user']||'';
+  const op=path.startsWith('rpc/')?path.slice(4):path+':'+body.table;
+  calls.push({op,user:u,args:body.args||body});
+  const held=holds.find(h=>!h.entered&&h.op===op&&(!h.user||h.user===u));
+  if(held){held.entered=true;await held.wait;}
+  if(offline.has(u))return route.abort('internetdisconnected');
   let out;
   try{
+   const fault=failures.findIndex(f=>f.op===op&&(!f.user||f.user===u));
+   if(fault>=0)throw failures.splice(fault,1)[0].error;
    if(!u)throw {code:'42501',message:'login required'};
-   if(path.startsWith('rpc/'))out={data:rpc[path.slice(4)](u,body.args||{}),error:null};
-   else if(path==='select'&&body.table==='plans')out=isMember(body.id,u)?{data:{data:db.plans[body.id]},error:null}:{data:null,error:{code:'PGRST116',message:'no rows'}};
+   if(path.startsWith('rpc/')){
+    if(legacy&&['list_my_plans','preview_plan_invite','accept_plan_invite'].includes(op))throw {code:'PGRST202',message:'missing function'};
+    if(!rpc[op])throw {code:'PGRST202',message:'unknown RPC '+op};
+    out={data:rpc[op](u,body.args||{}),error:null};
+   }else if(path==='select'&&body.table==='plans')out=isMember(body.id,u)?{data:{data:db.plans[body.id]},error:null}:{data:null,error:{code:'PGRST116',message:'no rows'}};
    else if(path==='select'&&body.table==='plan_members')out=isMember(body.id,u)?{data:db.members.filter(m=>m.plan===body.id).map(m=>({user_id:m.user})),error:null}:{data:[],error:null};
    else out={data:null,error:{message:'unknown'}};
   }catch(e){out={data:null,error:e};}
   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(out)});
  }
- return {db,handle};
+ return {db,handle,calls,offline,
+  failNext(op,user,error={code:'XX000',message:'temporary server failure'}){failures.push({op,user,error});},
+  holdNext(op,user){const h={op,user,entered:false};h.wait=new Promise(resolve=>h.release=resolve);holds.push(h);return h;},
+  patch(user,id,patch){return rpc.merge_plan(user,{p_id:id,p_patch:patch});},
+ };
 }
 // supabase-js와 같은 모양의 작은 가짜(UMD). ?code=이름 으로 돌아오면 그 이름으로 로그인돼요.
 const FAKE_SDK=`window.supabase={createClient:function(url,key,opts){
@@ -45,7 +69,12 @@ const FAKE_SDK=`window.supabase={createClient:function(url,key,opts){
   },
   rpc:function(fn,args){return call('rpc/'+fn,{args:args});},
   from:function(t){return {select:function(){return {eq:function(c,v){var p=call('select',{table:t,id:v});return {single:function(){return p;},then:function(a,b){return p.then(a,b);}};}};}};},
-  channel:function(){var ch={on:function(ev,f,cb){ch.f=f;ch.cb=cb;return ch;},subscribe:function(){var last=null,id=ch.f.filter.split('eq.')[1];setInterval(function(){call('select',{table:'plans',id:id}).then(function(r){var j=JSON.stringify(r.data&&r.data.data);if(last!==null&&j!==last)ch.cb({new:r.data});last=j;});},150);return ch;}};return ch;}
+  removeChannel:function(ch){return ch.unsubscribe();},
+  channel:function(){var handlers=[];var ch={
+   on:function(ev,f,cb){handlers.push({f:f,cb:cb,last:null});return ch;},
+   subscribe:function(ready){ch.timer=setInterval(function(){handlers.forEach(function(h){var id=h.f.filter.split('eq.')[1];call('select',{table:h.f.table,id:id}).then(function(r){if(r.error)return;var j=JSON.stringify(r.data);if(h.last!==null&&j!==h.last)h.cb({new:r.data});h.last=j;}).catch(function(){});});},100);if(ready)ready('SUBSCRIBED');return ch;},
+   unsubscribe:function(){clearInterval(ch.timer);return Promise.resolve('ok');}
+  };return ch;}
  };}};`;
 
 async function openCloud(browser,testInfo,server,{seed=null,path='/index.html',cloud=true}={}){
@@ -315,4 +344,58 @@ test('a save that succeeds keeps edits made meanwhile in the phone’s keep-list
  expect(shared(server).tasks.t06.memo).toBe('새 메모');expect(shared(server).tasks.t33.done).toBe(true);
  expect(g.errors).toEqual([]);expect(b.errors.filter(e=>!/Failed to fetch|ERR_FAILED|net::/.test(e))).toEqual([]);
  await g.ctx.close();await b.ctx.close();
+});
+
+async function openShareWhenClosed(page){
+ if(!(await page.locator('#shareDlg').isVisible()))await page.locator('#openShare').click();
+}
+async function createNotebookInvite(client){
+ await openShareWhenClosed(client.page);await client.page.locator('[data-cloud="invite"]').click();
+ await expect(client.page.locator('#cloudInvite')).not.toHaveValue('');
+ const link=await client.page.locator('#cloudInvite').inputValue();await client.page.locator('#closeShare').click();return link;
+}
+async function twoNotebooks(browser,testInfo,server){
+ const g=await openCloud(browser,testInfo,server,{seed:SEED,path:'/index.html?code=groom'});
+ await expect(status(g.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');
+ const target=server.db.members.find(m=>m.user==='groom').plan,link=await createNotebookInvite(g);
+ const ownSeed=structuredClone(SEED);ownSeed.groom='';ownSeed.bride='수진';ownSeed.tasks.t09={memo:'이전 수첩의 메모'};
+ const s=await openCloud(browser,testInfo,server,{seed:ownSeed,path:'/index.html?code=sujin'});
+ await expect(status(s.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');
+ const own=server.db.members.find(m=>m.user==='sujin').plan;
+ return {g,s,own,target,link};
+}
+
+test('joining preserves the previous notebook, switching keeps edits separate and reopening remembers the selected notebook',async({browser},testInfo)=>{
+ test.setTimeout(60000);
+ const server=fakeServer();const {g,s,own,target,link}=await twoNotebooks(browser,testInfo,server);
+ await s.page.goto(link);await expect(s.page.locator('[data-cloud="join"]')).toBeVisible();
+ expect(server.db.members.filter(m=>m.user==='sujin').map(m=>m.plan)).toEqual([own]);
+ await s.page.locator('[data-cloud="stay"]').click();await expect(s.page.locator('#hero')).toContainText('수진');
+ expect(server.db.invites[new URL(link).searchParams.get('join')].used).toBeNull();
+ await s.page.goto(link);await s.page.locator('[data-cloud="join"]').click();await expect(status(s.page)).toHaveText('둘이 함께 저장돼요');
+ expect(server.db.members.filter(m=>m.user==='sujin').map(m=>m.plan).sort()).toEqual([own,target].sort());
+ expect(server.db.plans[own].tasks.t09.memo).toBe('이전 수첩의 메모');
+ await openShareWhenClosed(s.page);await s.page.locator(`[data-cloud="switch"][data-plan="${own}"]`).click();
+ await expect(status(s.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');await expect(s.page.locator('#hero')).toContainText('수진');
+ await s.page.reload();await expect(status(s.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');await expect(s.page.locator('#hero')).toContainText('수진');
+ await s.page.locator('[data-act="open"][data-id="t09"]').click();await s.page.locator('[data-fk="memo-t09"]').fill('내 수첩만 고침');
+ await expect.poll(()=>server.db.plans[own].tasks.t09.memo).toBe('내 수첩만 고침');expect(server.db.plans[target].tasks.t09).toBeUndefined();
+ await openShareWhenClosed(s.page);await s.page.locator(`[data-cloud="switch"][data-plan="${target}"]`).click();
+ await expect(status(s.page)).toHaveText('둘이 함께 저장돼요');await expect(s.page.locator('#hero')).toContainText('준호');
+ await s.page.reload();await expect(status(s.page)).toHaveText('둘이 함께 저장돼요');await expect(s.page.locator('#hero')).toContainText('준호');
+ expect(server.db.members.filter(m=>m.plan===target)).toHaveLength(2);expect(server.calls.filter(c=>c.op==='join_plan')).toEqual([]);
+ for(const client of [g,s]){expect(client.errors).toEqual([]);await client.ctx.close();}
+});
+
+test('a server without the new SQL can read existing notebooks but never uses the destructive invitation RPC',async({browser},testInfo)=>{
+ test.setTimeout(60000);
+ const server=fakeServer({legacy:true});const {g,s,own,target,link}=await twoNotebooks(browser,testInfo,server);
+ await s.page.goto(link);await expect(s.page.locator('[data-cloud="join"]')).toBeVisible();await s.page.locator('[data-cloud="join"]').click();
+ await expect(cloudSec(s.page)).toContainText(/서버.*업데이트|업데이트.*필요/);
+ await expect(s.page.locator('#hero')).toContainText('수진');expect(server.db.members.filter(m=>m.user==='sujin').map(m=>m.plan)).toEqual([own]);
+ const fresh=await openCloud(browser,testInfo,server,{path:link+'&code=newcomer'});
+ await expect(status(fresh.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');await expect(cloudSec(fresh.page)).toContainText(/서버.*업데이트|업데이트.*필요/);
+ expect(server.db.members.filter(m=>m.plan===target)).toHaveLength(1);expect(server.db.invites[new URL(link).searchParams.get('join')].used).toBeNull();
+ expect(server.calls.filter(c=>c.op==='join_plan')).toEqual([]);
+ for(const client of [g,s,fresh]){expect(client.errors).toEqual([]);await client.ctx.close();}
 });
