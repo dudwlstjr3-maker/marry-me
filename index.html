@@ -288,7 +288,7 @@ select{width:auto;min-width:140px}
 .price-builder{margin:18px 0 22px;padding:14px;border:1px solid var(--gold-line);border-top:3px solid var(--gold);border-radius:6px;background:var(--surface)}
 .price-builder-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .price-builder h3{font-family:var(--serif);font-size:18px;margin:0}
-.price-eyebrow{display:block;margin-bottom:3px;color:var(--gold);font-size:13px;font-weight:700;letter-spacing:.1em}
+.price-eyebrow{display:block;margin-bottom:3px;color:var(--gold);font-size:13px;font-weight:700;letter-spacing:.02em}
 .price-builder-intro{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
 .price-group-tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:14px 0 8px}
 .price-group-tab{appearance:none;display:grid;align-content:center;gap:3px;min-width:0;min-height:68px;padding:8px 11px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);text-align:left;cursor:pointer}
@@ -763,6 +763,13 @@ body{line-height:1.65}
 @media (max-width:380px){.tab,.tab[aria-selected="true"]{font-size:14px}}
 @media (max-width:340px){.tabs .wrap{padding-inline:4px}.tab,.tab[aria-selected="true"]{font-size:13px}}
 @media (min-width:720px){:root{--tab-row:50px;--tabs-height:var(--tab-row)}.tabs .wrap{grid-template-columns:repeat(8,minmax(0,1fr))}}
+/* v30 큰 글자에서도 탭 이름이 칸 안에: 넘치면 두 줄로 꺾고, 소제목은 실제 탭 높이 아래에 붙어요(--tabs-height는 스크립트가 맞춰요). */
+.tab,.tab[aria-selected="true"]{white-space:normal;line-height:1.2;padding-block:4px}
+/* 시기 소제목을 한 줄로: 이름 · 기간 · 개수. 좁거나 글자가 크면 기간만 꺾여요. */
+.phase-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px}
+.phase-head h3{flex:0 1 auto;min-width:0}
+.phase-head .meta:not(.count){flex:1 1 auto;min-width:0;white-space:normal;word-break:keep-all}
+.phase-head .count{margin-left:auto;align-self:baseline}
 .tip,.refline,.qline,.lead-note,.basis,.know .lead,.hint,.pr-legend,.pr-keep,.price-note,.q-avg-note,.q-verdict small,.pr-row-nums,.pr-row-name small,.pr-lines small,.bamt small,.tdates,.phase-head .meta{font-size:14px}
 .sub-progress{font-size:13px}
 .bcat{margin-top:14px}
@@ -1849,22 +1856,40 @@ function renderHero(list){
     '<button class="close-row hero-fold" type="button" data-act="hero-toggle" data-fk="hero-toggle" aria-expanded="true">청첩장 카드 접기</button>' + notice;
 }
 
+/* 앱을 닫거나 다른 앱으로 넘어가면, 기다리던 저장(0.3~0.7초)을 바로 해요. 저장 방식은 그대로 flush()를 써요. */
+function flushNow(){ if (Store.timer) { clearTimeout(Store.timer); Store.timer = null; } flush(); }
+window.addEventListener('pagehide', flushNow);
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') flushNow(); });
+/* 새로고침해도 첫 화면 맨 위에서 시작해요(첫 화면 카드가 접히며 위치가 어긋나지 않게). */
+try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch(e17){}
+/* 탭 줄의 실제 높이(큰 글자면 커져요)를 소제목·스크롤 위치 계산에 써요. */
+(function(){
+  var bar = document.querySelector('.tabs'); if (!bar || !window.ResizeObserver) return;
+  new ResizeObserver(function(){ var h = Math.round(bar.getBoundingClientRect().height); if (h) document.documentElement.style.setProperty('--tabs-height', h + 'px'); }).observe(bar);
+})();
+var homeFrom = '';
 document.addEventListener('click', function(e){
   var b = e.target.closest && e.target.closest('[data-act]');
   if (!b || b.disabled) return;
   var act = b.getAttribute('data-act');
   if (act === 'home-open') {
     e.stopPropagation(); setHome(true); render();
-    var hh = document.getElementById('homeTitle'); if (hh) { hh.setAttribute('tabindex', '-1'); try { hh.focus({preventScroll:true}); } catch(e12){} }
+    /* 홈에서 다른 곳으로 갔다가 돌아오면, 그때 누른 홈 카드로 초점을 되돌려요. */
+    var hb2 = homeFrom ? tapOnly(homeFrom) : null; homeFrom = '';
+    var hh = document.getElementById('homeTitle');
+    if (hb2) { try { hb2.focus({preventScroll:true}); } catch(e16){} }
+    else if (hh) { hh.setAttribute('tabindex', '-1'); try { hh.focus({preventScroll:true}); } catch(e12){} }
     window.scrollTo(0, Math.min(window.scrollY, panelTopScroll()));
   } else if (act === 'home-close') {
     e.stopPropagation(); setHome(false); render();
     var hb = document.querySelector('[data-act="home-open"]'); if (hb) try { hb.focus({preventScroll:true}); } catch(e13){}
   } else if (act === 'home-tab') {
-    e.stopPropagation(); switchTab(b.getAttribute('data-v'));
+    e.stopPropagation(); homeFrom = tapSelector(b); switchTab(b.getAttribute('data-v'));
+    /* 키보드로 열었을 때 초점이 페이지 처음으로 빠지지 않게, 열린 탭 단추로 옮겨요. */
+    var ht = document.getElementById('tab-'+ui.tab); if (ht) try { ht.focus({preventScroll:true}); } catch(e14){}
   } else if (act === 'home-talk') {
-    e.stopPropagation(); var tid = b.getAttribute('data-id'); ui.openTalk[tid] = true; switchTab('talk');
-    var tt = document.querySelector('[data-act="talk-open"][data-id="'+tid+'"]'); if (tt) tt.scrollIntoView({block:'center'});
+    e.stopPropagation(); homeFrom = tapSelector(b); var tid = b.getAttribute('data-id'); ui.openTalk[tid] = true; switchTab('talk');
+    var tt = document.querySelector('[data-act="talk-open"][data-id="'+tid+'"]'); if (tt) { tt.scrollIntoView({block:'center'}); try { tt.focus({preventScroll:true}); } catch(e15){} }
   } else if (b.hasAttribute('data-home-paid')) {
     /* 홈의 '냈어요'·'되돌리기'는 예산의 '잔금 냈어요'와 같은 저장을 써요. 바뀐 항목을 기억해 되돌리기를 보여 줘요. */
     ui.homePaid = b.getAttribute('data-home-paid') === '1' ? b.getAttribute('data-id') : '';
@@ -2769,7 +2794,7 @@ function pricePlanHTML(){
     return '<li><span><b>'+esc(PRICE_SECS[line.item.sec])+' · '+esc(line.item.name)+'</b><small>'+(line.mine ? '직접 넣은 금액'+(line.ref ? ' · 참고 시세 '+esc(priceRefText(line)) : '') : line.opt ? '참고 시세 · '+esc(priceOptText(line.opt, region)) : '금액을 넣어 주세요')+'</small></span><strong>'+esc(priceAmountText(line))+'</strong><button class="price-picked-remove" type="button" aria-label="'+esc(active.name)+'에서 '+esc(line.item.name)+' 빼기" data-act="'+(line.item.custom ? 'price-custom-del' : 'price-remove')+'" data-id="'+line.item.id+'" data-group="'+active.id+'" data-fk="price-remove-'+line.item.id+'"'+dis()+'>빼기</button></li>';
   }).join('');
   if (ui.openKnow['price-picked'] == null) ui.openKnow['price-picked'] = false;
-  return '<section class="price-builder" aria-labelledby="price-builder-title"><div class="price-builder-main"><div class="price-builder-head"><div><span class="price-eyebrow">MY PRICE PLAN</span><h3 id="price-builder-title">비교안 만들기</h3>' +
+  return '<section class="price-builder" aria-labelledby="price-builder-title"><div class="price-builder-main"><div class="price-builder-head"><div><span class="price-eyebrow">내 가격 계획</span><h3 id="price-builder-title">비교안 만들기</h3>' +
     '</div></div>' +
     '<div class="price-group-tabs" role="group" aria-label="비교안 선택">'+tabs+'</div>' +
     '<div class="price-group-edit"><label class="field">비교안 이름<input type="text" value="'+esc(active.rawName)+'" maxlength="30" placeholder="'+esc(active.name)+'" data-price-group-name="'+active.id+'" data-fk="price-group-name-'+active.id+'"'+dis()+'></label>' +

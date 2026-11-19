@@ -1418,3 +1418,56 @@ test('every visible form field is at least 16px so iPhone Safari does not zoom i
  await app.locator('#openShare').click();expect(await small(),'share').toEqual([]);
  expect(errors).toEqual([]);
 });
+
+test('typing then leaving the app right away still saves; a reload starts at the top',async({page})=>{
+ const {app,errors}=await openApp(page);
+ await app.locator('[data-act="open"][data-id="t05"]').click();
+ await app.locator('[data-fk="memo-t05"]').fill('상견례 장소 예약');
+ // The page is hidden before the 0.6s save delay ends (switching apps, closing the tab).
+ await app.locator('body').evaluate(()=>window.dispatchEvent(new Event('pagehide')));
+ expect((await stored(app)).tasks.t05.memo).toBe('상견례 장소 예약');
+ await app.locator('[data-fk="memo-t05"]').fill('상견례 장소 예약 완료');
+ await app.locator('body').evaluate(()=>{Object.defineProperty(document,'visibilityState',{value:'hidden',configurable:true});document.dispatchEvent(new Event('visibilitychange'));});
+ expect((await stored(app)).tasks.t05.memo).toBe('상견례 장소 예약 완료');
+ expect(await app.locator('body').evaluate(()=>history.scrollRestoration)).toBe('manual');
+ expect(noArrays(await stored(app))).toBe(true);expect(errors).toEqual([]);
+});
+
+test('with a 20px minimum font the tab names stay inside their buttons and the stuck phase header sits below the tabs',async({page})=>{
+ const {app,errors}=await openApp(page);
+ // Normal size: the stuck phase header is one line (name · range · count).
+ const intoPhase=()=>app.locator('body').evaluate(()=>{const sec=document.querySelectorAll('#panel-timeline .phase')[1];window.scrollTo(0,sec.getBoundingClientRect().top+scrollY+150);});
+ await intoPhase();
+ const head=()=>app.locator('body').evaluate(()=>{const bar=document.querySelector('.tabs').getBoundingClientRect();const h=[...document.querySelectorAll('.phase-head')].map(e=>e.getBoundingClientRect()).find(r=>r.top<bar.bottom+60&&r.bottom>bar.bottom);return {bar:bar.bottom,top:h&&h.top,height:h&&h.height,over:[...document.querySelectorAll('.tab')].filter(t=>t.scrollWidth>t.clientWidth+1||t.scrollHeight>t.clientHeight+1).map(t=>t.textContent)};});
+ let r=await head();expect(r.over).toEqual([]);expect(Math.abs(r.top-r.bar)).toBeLessThanOrEqual(1);expect(r.height).toBeLessThanOrEqual(40);
+ // Large text: every font below 20px is raised to 20px, as a browser minimum font size does.
+ await app.locator('body').evaluate(()=>{for(const e of document.querySelectorAll('body *')){if(parseFloat(getComputedStyle(e).fontSize)<20)e.style.fontSize='20px';}});
+ await app.locator('body').evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+ await intoPhase();
+ await expect.poll(async()=>{const x=await head();return x.top!=null&&Math.abs(x.top-x.bar)<=1;}).toBe(true);
+ r=await head();expect(r.over).toEqual([]);
+ expect(errors).toEqual([]);
+});
+
+test('opening a tab or a talk topic from home with the keyboard moves focus there, and reopening home returns focus to that card',async({page})=>{
+ const {app,errors}=await openApp(page);
+ await app.locator('[data-act="home-open"]').focus();await page.keyboard.press('Enter');
+ await app.locator('#panel-home [data-act="home-tab"][data-v="timeline"]').focus();await page.keyboard.press('Enter');
+ await expect(app.locator('#tab-timeline')).toBeFocused();
+ await app.locator('[data-act="home-open"]').focus();await page.keyboard.press('Enter');
+ await expect(app.locator('#panel-home [data-act="home-tab"][data-v="timeline"]')).toBeFocused();
+ await app.locator('#panel-home [data-act="home-talk"][data-id="m1"]').focus();await page.keyboard.press('Enter');
+ await expect(app.locator('[data-act="talk-open"][data-id="m1"]')).toBeFocused();
+ await app.locator('[data-act="home-open"]').focus();await page.keyboard.press('Enter');
+ await expect(app.locator('#panel-home [data-act="home-talk"][data-id="m1"]')).toBeFocused();
+ expect(errors).toEqual([]);
+});
+
+test('the custom-task header explanation wraps inside the screen when there is no wedding date',async({page})=>{
+ const seed=structuredClone(SEED);seed.weddingDate='';seed.custom={c1:{title:'축가 리허설',created:1}};
+ const {app,errors}=await openApp(page,seed);
+ const head=app.locator('#panel-timeline .phase-head').filter({hasText:'직접 추가한 일'});await expect(head).toHaveCount(1);
+ const r=await head.evaluate(h=>{const m=h.querySelector('.meta'),hr=h.getBoundingClientRect(),mr=m.getBoundingClientRect();return {right:mr.right,hright:hr.right,vw:innerWidth,clip:m.scrollWidth>m.clientWidth+1};});
+ expect(r.right).toBeLessThanOrEqual(r.hright+0.5);expect(r.right).toBeLessThanOrEqual(r.vw);expect(r.clip).toBe(false);
+ expect(errors).toEqual([]);
+});
