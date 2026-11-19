@@ -88,6 +88,7 @@ language plpgsql security definer set search_path = public as $$
 declare pid uuid;
 begin
   if auth.uid() is null then raise exception 'login required' using errcode = '42501'; end if;
+  perform pg_advisory_xact_lock(hashtextextended(auth.uid()::text, 0));
   select public.my_plan() into pid;
   if pid is not null then return pid; end if;
   insert into public.plans (data) values (coalesce(p_data, '{}'::jsonb)) returning id into pid;
@@ -101,30 +102,65 @@ language plpgsql security definer set search_path = public as $$
 declare c text;
 begin
   if auth.uid() is null or not public.is_member(p_plan) then raise exception 'not a member' using errcode = '42501'; end if;
+  if (select count(*) from public.plan_members where plan_id = p_plan) >= 2 then raise exception 'full'; end if;
   c := substr(replace(gen_random_uuid()::text, '-', ''), 1, 16);
   insert into public.plan_invites (code, plan_id, created_by) values (c, p_plan, auth.uid());
   return c;
 end $$;
 
--- 초대 받기: 코드가 살아 있고, 아직 두 사람이 아니면 멤버로 넣어요.
--- 받은 사람이 혼자 쓰던 다른 기록에서는 빠져요(그 기록 자체는 지우지 않아요).
-create or replace function public.join_plan(p_code text) returns uuid
+-- 수첩 이름만 목록과 초대에 써요. 초대를 확인할 때는 다른 수첩의 기록을 공개하지 않아요.
+create or replace function public.plan_label(d jsonb) returns text
+language sql immutable as $$
+  select coalesce(nullif(btrim(d->>'title'), ''), nullif(concat_ws(' · ',
+    nullif(btrim(d->>'groom'), ''), nullif(btrim(d->>'bride'), '')), ''), '결혼 준비 수첩');
+$$;
+
+create or replace function public.list_my_plans() returns table(plan_id uuid, label text)
+language sql security definer set search_path = public stable as $$
+  select p.id, public.plan_label(p.data) from public.plans p
+  join public.plan_members m on m.plan_id = p.id
+  where m.user_id = auth.uid() order by m.joined_at desc, p.id;
+$$;
+
+create or replace function public.preview_plan_invite(p_code text) returns table(plan_id uuid, label text)
+language plpgsql security definer set search_path = public stable as $$
+declare inv public.plan_invites;
+begin
+  if auth.uid() is null then raise exception 'login required' using errcode = '42501'; end if;
+  select * into inv from public.plan_invites i where i.code = p_code;
+  if not found or inv.expires_at <= now() then raise exception 'invalid invite'; end if;
+  if not public.is_member(inv.plan_id) then
+    if inv.used_at is not null then raise exception 'invalid invite'; end if;
+    if (select count(*) from public.plan_members m where m.plan_id = inv.plan_id) >= 2 then raise exception 'full'; end if;
+  end if;
+  return query select p.id, public.plan_label(p.data) from public.plans p where p.id = inv.plan_id;
+end $$;
+
+-- 서로 다른 초대 코드로 동시에 들어와도 수첩 단위로 정원을 확인해요. 기존 멤버십은 보존해요.
+create or replace function public.accept_plan_invite(p_code text) returns uuid
 language plpgsql security definer set search_path = public as $$
-declare inv public.plan_invites; n int;
+declare inv public.plan_invites;
 begin
   if auth.uid() is null then raise exception 'login required' using errcode = '42501'; end if;
   select * into inv from public.plan_invites where code = p_code for update;
-  if not found or inv.expires_at < now() then raise exception 'invalid invite'; end if;
+  if not found or inv.expires_at <= now() then raise exception 'invalid invite'; end if;
+  perform id from public.plans where id = inv.plan_id for update;
   if public.is_member(inv.plan_id) then return inv.plan_id; end if;
-  if inv.used_by is not null and inv.used_by <> auth.uid() then raise exception 'invalid invite'; end if;
-  select count(*) into n from public.plan_members where plan_id = inv.plan_id;
-  if n >= 2 then raise exception 'full'; end if;
-  delete from public.plan_members where user_id = auth.uid();
+  if inv.used_at is not null then raise exception 'invalid invite'; end if;
+  if (select count(*) from public.plan_members where plan_id = inv.plan_id) >= 2 then raise exception 'full'; end if;
   insert into public.plan_members (plan_id, user_id) values (inv.plan_id, auth.uid());
   update public.plan_invites set used_by = auth.uid(), used_at = now() where code = p_code;
   return inv.plan_id;
 end $$;
 
+-- 이전 앱도 기존 수첩을 보존하는 같은 처리로 연결해요.
+create or replace function public.join_plan(p_code text) returns uuid
+language sql security definer set search_path = public as $$
+  select public.accept_plan_invite(p_code);
+$$;
+
+revoke all on function public.plan_label(jsonb), public.list_my_plans(), public.preview_plan_invite(text), public.accept_plan_invite(text) from public, anon;
+grant execute on function public.list_my_plans(), public.preview_plan_invite(text), public.accept_plan_invite(text) to authenticated;
 revoke all on function public.merge_plan(uuid, jsonb), public.my_plan(), public.create_plan(jsonb), public.create_invite(uuid), public.join_plan(text), public.is_member(uuid) from public, anon;
 grant execute on function public.merge_plan(uuid, jsonb), public.my_plan(), public.create_plan(jsonb), public.create_invite(uuid), public.join_plan(text), public.is_member(uuid) to authenticated;
 

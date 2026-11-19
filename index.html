@@ -564,8 +564,10 @@ body{background:linear-gradient(155deg,var(--paper),var(--blush)) fixed;backgrou
 .setup-q{font-size:clamp(23px,6vw,32px);line-height:1.6;color:var(--gold)}
 .setup-row{text-align:left;gap:14px}
 .setup-row>.field{flex:1 1 120px}
+.setup-row>.field:has(.timepick){flex-basis:12rem}
 #heroForm input[type=text]{width:100%}
 .setup-row>.btn{width:100%}
+.setup-skip{margin:0 0 14px}
 .petals{position:absolute;inset:0;overflow:hidden;border-radius:inherit;z-index:-1}
 .petal{position:absolute;top:75px;width:6px;height:12px;border-radius:85% 10% 80% 20%;background:var(--petal-line);opacity:0}
 .petal:nth-child(1){left:3%;--drift:3px;--turn:140deg}
@@ -962,10 +964,10 @@ body{line-height:1.65}
 .cal-day.wed{background:var(--gold-soft)}
 .cal-day[aria-pressed="true"]{border-color:var(--gold);background:var(--open-head);box-shadow:inset 0 0 0 1px var(--gold)}
 .cal-day.wed .cal-num,.cal-day[aria-pressed="true"] .cal-num{color:var(--ink)}
-.cal-dots{display:flex;gap:3px;height:6px}
-.cal-dots i,.cal-legend i{display:block;width:6px;height:6px;border-radius:50%;background:var(--gold)}
-.cal-dots i.p,.cal-legend i.p{background:var(--hong)}
-.cal-dots i.b,.cal-legend i.b{background:var(--chung)}
+.cal-dots{display:flex;gap:4px;height:8px}
+.cal-dots i,.cal-legend i{display:block;width:8px;height:8px;border-radius:50%;background:var(--gold)}
+.cal-dots i.p,.cal-legend i.p{border-radius:0;background:var(--hong)}
+.cal-dots i.b,.cal-legend i.b{border-radius:0;background:var(--chung);clip-path:polygon(50% 0,100% 100%,0 100%)}
 .cal-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 2px 0;font-size:13px;color:var(--muted)}
 .cal-legend span{display:inline-flex;align-items:center;gap:5px}
 .cal-list{margin-top:18px}
@@ -1141,6 +1143,8 @@ button,summary,a,label,select,input,[data-act]{-webkit-tap-highlight-color:trans
 .net-banner{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:30;padding:10px 14px;border-radius:10px;background:var(--surface);color:var(--ink);border:1.5px solid currentColor;box-shadow:0 4px 16px var(--shadow);font-size:15px;line-height:1.45;text-align:center}
 .net-banner[hidden]{display:none}
 .cloud-ask{font-weight:600}
+.memo-choices{border-inline-start:3px solid var(--gold);background:var(--paper);color:var(--ink);padding:10px 12px;font-size:14px}
+.memo-choices p{margin:4px 0;overflow-wrap:anywhere;white-space:pre-wrap}
 </style>
 </head>
 <body>
@@ -1226,19 +1230,19 @@ button,summary,a,label,select,input,[data-act]{-webkit-tap-highlight-color:trans
     </section>
     <section class="share-sec">
       <h3>준비 현황 보내기</h3>
-      <p class="hint">D-day, 진행 상황, 다음 할 일, 예산을 글로 정리했어요. 보내기를 누르면 휴대폰 공유 창이 열리고, 거기서 카카오톡을 고르면 돼요.</p>
+      <p class="hint">D-day, 진행 상황, 다음 할 일, 예산을 글로 정리했어요. 현황 보내기를 누르면 휴대폰 공유 창이 열리고, 거기서 카카오톡을 고르면 돼요.</p>
       <textarea id="shareText" aria-label="카톡 준비 현황" data-fk="shareText" rows="9" readonly></textarea>
-      <div class="dlg-actions"><button class="btn" type="button" id="copyText">복사</button><button class="btn primary" type="button" id="sendText">보내기</button></div>
+      <div class="dlg-actions"><button class="btn" type="button" id="copyText">복사</button><button class="btn primary" type="button" id="sendText">현황 보내기</button></div>
     </section>
     <section class="share-sec">
       <h3 id="shareLinkTitle">앱 링크 보내기</h3>
       <input type="text" id="shareLink" aria-label="공유할 앱 링크" data-fk="shareLink" readonly>
-      <div class="dlg-actions"><button class="btn" type="button" id="copyLink">복사</button><button class="btn primary" type="button" id="sendLink">보내기</button></div>
+      <div class="dlg-actions"><button class="btn" type="button" id="copyLink">복사</button><button class="btn primary" type="button" id="sendLink">앱 주소 보내기</button></div>
       <p class="hint" id="shareLinkHint">받는 사람이 우리 목록을 그대로 보려면 claude.ai에서 이 앱을 공유로 열어 두고, 받는 사람도 claude.ai에 로그인해야 해요. 같이 고치려면 수정 권한을 주세요. 로그인하지 않고 열면 빈 앱으로 보여요.</p>
     </section>
     <section class="share-sec" id="backupSec">
       <h3>데이터 백업·옮기기</h3>
-      <p class="hint">입력한 내용은 이 브라우저에만 저장돼요. 파일로 저장해 두면 브라우저 기록을 지우거나 휴대폰을 바꿔도 되살릴 수 있고, 다른 기기로 옮길 수도 있어요.</p>
+      <p class="hint">지금 열어 둔 수첩을 파일로 보관하거나 다른 기기로 옮길 수 있어요.</p>
       <div class="dlg-actions"><button class="btn" type="button" id="backupCopy">백업 글 복사</button><button class="btn primary" type="button" id="backupSave">파일로 저장</button></div>
       <textarea id="backupText" aria-label="백업 글" data-fk="backupText" rows="4" readonly hidden></textarea>
       <label class="field">백업 파일 고르기<input type="file" id="restoreFile" accept=".json,application/json,text/plain" data-fk="restoreFile"></label>
@@ -1729,6 +1733,7 @@ function render(){
   // 보고 있는 탭만 그려요. 탭 7개를 매번 다 그리면 휴대폰에서 글자 하나 넣을 때마다 느려져요.
   TABS.forEach(function(t){ document.getElementById('panel-'+t).innerHTML = t === ui.tab && !ui.home ? PANEL_HTML[t](list) : ''; });
   document.getElementById('panel-home').innerHTML = ui.home ? homeHTML(list) : '';
+  if (typeof Cloud !== 'undefined' && Cloud && Cloud.planId) renderMemoChoices();
   if (endSpace && endSpaceTab !== ui.tab) setEndSpace(0);
   document.getElementById('openSettings').disabled = !Store.ready;
   lastSig = JSON.stringify(state);
@@ -1811,6 +1816,7 @@ function renderHero(list){
     el.innerHTML = '<div class="invitation">'+invitationDecorHTML()+namesHTML() +
       '<p class="setup-q">결혼식 날짜를 넣으면<br>할 일마다 날짜가 붙어요.</p>' +
       (Store.readOnly ? '<p class="tip">아직 결혼식 날짜가 정해지지 않았어요.</p>' :
+      '<button class="btn setup-skip" type="button" data-act="start-undated"'+dis()+'>날짜 없이 준비 시작</button>' +
       '<div class="setup-row" id="heroForm"><label class="field">신랑 이름(선택)<input type="text" id="heroGroom" data-fk="heroGroom" maxlength="12" value="'+esc(state.groom || '')+'"'+dis()+'></label>' +
       '<label class="field">신부 이름(선택)<input type="text" id="heroBride" data-fk="heroBride" maxlength="12" value="'+esc(state.bride || '')+'"'+dis()+'></label>' +
       '<label class="field">결혼식 날짜<input type="date" id="heroDate" data-fk="heroDate"'+dis()+'></label>' +
@@ -2140,8 +2146,9 @@ function calendarHTML(list){
   for (var d = 1; d <= days; d++) {
     var ds = m + '-' + (d < 10 ? '0' : '') + d, es = byDay[ds] || [], types = {}, dow = (lead + d - 1) % 7;
     es.forEach(function(e){ types[e.type] = 1; });
+    var kinds = [types.pay && '지출', types.book && '예약', types.task && '할 일'].filter(Boolean);
     h += '<button class="cal-day'+(ds === todayStr ? ' today' : '')+(types.wed ? ' wed' : '')+(dow === 0 ? ' sun' : '')+'" type="button" data-act="cal-day" data-id="'+ds+'" aria-pressed="'+(ds === sel ? 'true' : 'false')+'"' +
-      ' aria-label="'+mm+'월 '+d+'일 '+WD[dow]+'요일'+(ds === todayStr ? ', 오늘' : '')+(types.wed ? ', 결혼식' : '')+', 일정 '+es.length+'개">' +
+      ' aria-label="'+mm+'월 '+d+'일 '+WD[dow]+'요일'+(ds === todayStr ? ', 오늘' : '')+(types.wed ? ', 결혼식' : '')+', 일정 '+es.length+'개'+(kinds.length ? ', '+kinds.join('·') : '')+'">' +
       '<span class="cal-num">'+d+'</span><span class="cal-dots" aria-hidden="true">'+(types.pay ? '<i class="p"></i>' : '')+(types.book ? '<i class="b"></i>' : '')+(types.task ? '<i class="t"></i>' : '')+'</span></button>';
   }
   h += '</div><p class="cal-legend" aria-hidden="true"><span><i class="p"></i>돈 나가는 날</span><span><i class="b"></i>예약일</span><span><i class="t"></i>할 일</span></p>';
@@ -3936,7 +3943,7 @@ function talkHTML(){
         '<button class="t-title t-row" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="talk-open" data-id="'+it.id+'"><span>'+esc(it.t)+'</span>' +
         (!memo && !open ? '<span class="t-state">눌러서 작성</span>' : '') + CHEV + '</button>';
       if (!open && memo) h += '<p class="preview">'+esc(memo)+'</p>';
-      if (open) h += '<div class="detail"><p class="tip">'+esc(it.h)+'</p><label class="field">정한 내용<textarea rows="3" placeholder="예: 생활비는 공동 통장, 각자 월 OO만원" data-talk-memo="'+it.id+'" data-fk="talk-'+it.id+'"'+dis()+'>'+esc(memo)+'</textarea></label>'+CLOSE_ROW+'</div>';
+      if (open) h += '<div class="detail"><p class="tip">'+esc(it.h)+'</p><label class="field">정한 내용<textarea rows="3" data-talk-memo="'+it.id+'" data-fk="talk-'+it.id+'"'+dis()+'>'+esc(memo)+'</textarea></label>'+CLOSE_ROW+'</div>';
       h += '</li>';
     });
     h += '</ul></section>';
@@ -4444,6 +4451,11 @@ document.addEventListener('click', function(e){
   else if (act === 'q-photo-cancel') { ui.photoDraft = null; ui.photoMsg = ''; render(); focusSel('[data-act="q-photo"]'); }
   else if (act === 'q-photo-save') doQuotePhotoSave();
   else if (act === 'hero-save') doHeroSave();
+  else if (act === 'start-undated') {
+    switchTab('timeline');
+    document.getElementById('tab-timeline').focus({preventScroll:true});
+    window.scrollTo(0, panelTopScroll());
+  }
   else if (act === 'hero-toggle') {
     ui.heroOpen = !ui.heroOpen; lsSet('wd-hero', ui.heroOpen ? '1' : '0'); render();
     var heroBtn = document.querySelector('[data-act="hero-toggle"]');
@@ -4612,7 +4624,7 @@ var CLOUD = { url:'https://hrgoihfjocmxlsxpxzme.supabase.co', anonKey:'sb_publis
 if (window.__CLOUD && typeof window.__CLOUD === 'object') { CLOUD.url = String(window.__CLOUD.url || ''); CLOUD.anonKey = String(window.__CLOUD.anonKey || ''); }
 var SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js';
 function cloudNow(){ return (window.performance && performance.now) ? performance.now() : Date.now(); }   /* 시계를 바꿔도 흔들리지 않는 경과 시간 */
-var Cloud = { sb:null, user:null, planId:'', members:-1, invite:'', busy:false, msg:'', chan:null, offline:false, askJoin:'', retryTimer:null, membersAt:0 };
+var Cloud = { sb:null, user:null, planId:'', members:-1, invite:'', busy:false, msg:'', chan:null, offline:false, askJoin:'', targetLabel:'', plans:[], legacy:false, retryTimer:null, membersAt:0 };
 function cloudOn(){ return !!(CLOUD.url && CLOUD.anonKey) && /^https?:$/.test(location.protocol) && !(window.claude && typeof window.claude.use === 'function'); }
 function cloudBase(){ return location.origin + location.pathname; }
 function cloudParam(k){ try { return new URLSearchParams(location.search).get(k) || ''; } catch(e){ return ''; } }
@@ -4691,6 +4703,28 @@ function cloudCleanUrlKeepJoin(){
   try { var u = new URL(location.href); ['code','state','error','error_description','error_code'].forEach(function(k){ u.searchParams.delete(k); }); history.replaceState(null, '', u.pathname + (u.search || '') + u.hash); } catch(e){}
 }
 function cloudName(){ var m = Cloud.user && Cloud.user.user_metadata || {}; return m.name || m.nickname || m.full_name || m.preferred_username || '카카오 사용자'; }
+function cloudPlanList(){
+  return cloudRpc('list_my_plans').then(function(rows){
+    if (!Array.isArray(rows)) throw new Error('invalid notebook list');
+    Cloud.plans = rows; Cloud.legacy = false;
+    return rows;
+  }, function(e){
+    if (!e || (e.code !== 'PGRST202' && e.code !== '42883')) throw e;
+    Cloud.legacy = true;
+    return cloudRpc('my_plan').then(function(id){ Cloud.plans = id ? [{plan_id:id,label:'내 수첩'}] : []; return Cloud.plans; });
+  });
+}
+function cloudSelectionKey(){ return 'wd-cloud-selected:' + Cloud.user.id; }
+function cloudPick(rows){
+  var last = lsGet(cloudSelectionKey());
+  return rows.find(function(row){ return row.plan_id === last; }) || rows[0];
+}
+function cloudLabel(row){
+  var name = row.label || '결혼 준비 수첩';
+  if (row.plan_id === Cloud.planId && Store.ready) name = state.title || [state.groom,state.bride].filter(Boolean).join(' · ') || name;
+  return name + ' (' + String(row.plan_id).slice(-6) + ')';
+}
+var cloudUpgradeMsg = '초대에 참여하려면 서버의 수첩 업데이트가 필요해요. 지금 쓰는 기록은 그대로예요.';
 function startCloud(){
   setStatus('불러오는 중…');
   var join = joinCode(), oauthErr = cloudParam('error_description') || cloudParam('error');
@@ -4706,11 +4740,21 @@ function startCloud(){
     Cloud.user = session.user;
     var local = null; try { local = JSON.parse(lsGet(LOCAL_KEY) || 'null'); } catch(e){}
     var showDlg = false;
-    return cloudRpc('my_plan').then(function(mine){
-      /* 이미 쓰는 수첩이 있으면 초대 링크로 바로 옮기지 않고 먼저 물어요. */
-      if (join && mine) { Cloud.askJoin = join; showDlg = true; return mine; }
-      if (join) return cloudRpc('join_plan', {p_code:join}).then(function(id){ Cloud.msg = '초대를 받아 같은 기록을 함께 쓰고 있어요.'; return id; }, function(e){
-        Cloud.msg = /full/.test(String(e && e.message)) ? '이 초대는 이미 두 사람이 쓰고 있어요. 지금은 혼자 쓰는 수첩이에요. 새 초대 링크를 받아 주세요.' : '초대 링크가 지났거나 이미 쓰였어요. 지금은 혼자 쓰는 수첩이에요. 새 초대 링크를 받아 주세요.';
+    return cloudPlanList().then(function(rows){
+      var entry = cloudPick(rows), mine = entry && entry.plan_id;
+      if (join && Cloud.legacy) { Cloud.msg = cloudUpgradeMsg; showDlg = true; return mine; }
+      if (join && mine) {
+        Cloud.askJoin = join; showDlg = true;
+        return cloudRpc('preview_plan_invite', {p_code:join}).then(function(target){
+          if (target && target[0]) Cloud.targetLabel = cloudLabel(target[0]);
+          return mine;
+        }, function(){ return mine; });
+      }
+      if (join) return cloudRpc('accept_plan_invite', {p_code:join}).then(function(id){ Cloud.msg = '초대를 받아 같은 기록을 함께 쓰고 있어요.'; return id; }, function(e){
+        var msg = String(e && e.message || '');
+        Cloud.msg = /full/.test(msg) ? '이 초대는 이미 두 사람이 쓰고 있어요. 지금은 혼자 쓰는 수첩이에요. 새 초대 링크를 받아 주세요.' :
+          /invalid invite/.test(msg) ? '초대 링크가 지났거나 이미 쓰였어요. 지금은 혼자 쓰는 수첩이에요. 새 초대 링크를 받아 주세요.' :
+          '초대받은 수첩에 연결하지 못했어요. 연결한 뒤 초대 링크를 다시 열어 주세요.';
         showDlg = true; return mine;
       });
       return mine;
@@ -4719,6 +4763,7 @@ function startCloud(){
     }).then(function(id){
       if (!id) throw new Error('no plan');
       cloudCleanUrl();
+      lsSet(cloudSelectionKey(),String(id));
       cloudUse(String(id));
       if (showDlg) openShareDlg();
     });
@@ -4757,11 +4802,11 @@ function cloudReconnect(){
     var session = r && r.data && r.data.session;
     if (!session) throw new Error('no session');
     Cloud.user = session.user;
-    return cloudRpc('my_plan');
-  }).then(function(id){
+    return cloudPlanList();
+  }).then(function(rows){
     if (!Cloud.offline) return;
-    if (!id || String(id) !== Cloud.planId) { flushNow(); location.reload(); return; }
-    cloudUse(String(id));
+    if (!rows.some(function(row){ return row.plan_id === Cloud.planId; })) { flushNow(); location.reload(); return; }
+    cloudUse(Cloud.planId);
     scheduleFlush(0);   /* 끊긴 동안 쌓인 수정을 바로 올려요 */
   }).catch(function(){ cloudRetrySoon(); });
 }
@@ -4773,7 +4818,77 @@ document.addEventListener('visibilitychange', function(){ if (document.visibilit
 /* 상대 수정이 와서 화면을 다시 그릴 때, 방금(5초 안에) 글자를 치던 칸은 쓰던 글자를 그대로 둬요.
    손을 멈추고 5초가 지나면 저장된 값으로 맞춰요. 계속 치면 그 글이 저장돼요. */
 var cloudLastInput = {fk:'', at:0}, cloudSettleTimer = null;
-document.addEventListener('input', function(e){ var t = e.target; if (t && t.dataset && t.dataset.fk) { cloudLastInput.fk = t.dataset.fk; cloudLastInput.at = cloudNow(); } }, true);
+// 편집 중 서버에서 같은 메모가 달라지면 두 버전을 이 탭에 보관한다.
+var memoChoices = {}, memoScope = '', typedMemo = null;
+function memoScopeReady(){
+  var scope = 'wd-memo-choices:' + (Cloud.user && Cloud.user.id || '') + ':' + Cloud.planId;
+  if (scope !== memoScope) {
+    memoScope = scope; typedMemo = null;
+    try { memoChoices = JSON.parse(sessionStorage.getItem(scope)) || {}; } catch(e){ memoChoices = {}; }
+  }
+}
+function keepMemoChoices(){
+  try {
+    if (isEmpty(memoChoices)) sessionStorage.removeItem(memoScope);
+    else sessionStorage.setItem(memoScope, JSON.stringify(memoChoices));
+  } catch(e){}
+}
+function memoFieldPath(t){
+  var d = t.dataset;
+  if (d.talkMemo) return ['talks', d.talkMemo, 'memo'];
+  if (d.gmemo) return ['guests', d.gmemo, 'memo'];
+  if (d.qmemo) return ['budget','quotes',d.qmemo,'memo'];
+  if (d.bmemo) return ['budget', d.bmemo === 'c' ? 'custom' : 'items', d.id, 'memo'];
+  if (d.memo) return [d.memo === 'c' ? 'custom' : 'tasks', d.id, 'memo'];
+  return null;
+}
+function readMemo(body,path){
+  return path.reduce(function(obj,key){ return obj && obj[key]; },body) || '';
+}
+document.addEventListener('input', function(e){
+  var t=e.target, fk=t.dataset && t.dataset.fk;
+  if (!fk) return;
+  cloudLastInput={fk:fk,at:cloudNow()};
+  if (!Cloud.planId || t.tagName !== 'TEXTAREA') return;
+  memoScopeReady();
+  var path=memoFieldPath(t);
+  if (!path) return;
+  if (!typedMemo || typedMemo.fk!==fk) typedMemo={fk:fk,path:path,values:new Set()};
+  typedMemo.values.add(t.value);
+  if (memoChoices[fk]) { memoChoices[fk].mine=t.value; keepMemoChoices(); }
+},true);
+function compareRemoteMemo(before,after){
+  memoScopeReady();
+  var t=typedMemo, active=document.activeElement;
+  if (!t || !active || active.dataset.fk!==t.fk || !before) return;
+  var previous=readMemo(before,t.path), next=readMemo(after,t.path);
+  if (next===previous || next===active.value || t.values.has(next)) return;
+  var mine=memoChoices[t.fk] ? memoChoices[t.fk].mine : active.value;
+  memoChoices[t.fk]={mine:mine,remote:next}; keepMemoChoices();
+}
+function renderMemoChoices(){
+  memoScopeReady();
+  Object.keys(memoChoices).forEach(function(fk){
+    var field=document.querySelector('textarea[data-fk="'+CSS.escape(fk)+'"]');
+    if (!field) return;
+    var choice=memoChoices[fk], box=document.createElement('section');
+    box.className='memo-choices'; box.dataset.memoChoiceFor=fk;
+    box.innerHTML='<strong>같은 메모를 둘이 수정했어요</strong><p>내가 쓰던 내용 · '+esc(choice.mine || '(빈 메모)')+'</p>'+
+      '<p>상대가 저장한 내용 · '+esc(choice.remote || '(빈 메모)')+'</p><div class="dlg-actions">'+
+      '<button type="button" class="btn" data-memo-choice="mine">내 초안 사용</button>'+
+      '<button type="button" class="btn" data-memo-choice="remote">상대 내용 사용</button></div>';
+    field.closest('label').after(box);
+  });
+}
+document.addEventListener('click',function(e){
+  var btn=e.target.closest('[data-memo-choice]');
+  if (!btn || Store.readOnly || !Cloud.planId) return;
+  var box=btn.closest('[data-memo-choice-for]'), fk=box.dataset.memoChoiceFor;
+  var field=document.querySelector('textarea[data-fk="'+CSS.escape(fk)+'"]'), choice=memoChoices[fk];
+  if (!field || !choice) return;
+  delete memoChoices[fk]; keepMemoChoices(); box.remove(); typedMemo=null;
+  field.value=choice[btn.dataset.memoChoice]; field.focus(); field.dispatchEvent(new Event('input',{bubbles:true}));
+});
 function cloudRepaint(){
   var a = document.activeElement, fk = a && a.dataset && a.dataset.fk, keep = null;
   if (fk && 'value' in a && cloudLastInput.fk === fk && cloudNow() - cloudLastInput.at < 5000) keep = {fk:fk, v:a.value, s:a.selectionStart, e:a.selectionEnd};
@@ -4796,7 +4911,9 @@ function cloudWatch(){
   ref.onSnapshot(function(snap){
     if (Store.ref !== ref) return;   /* 다시 연결해 문서가 바뀌었으면 예전 것은 무시 */
     Store.exists = !!snap.exists;
-    Store.base = snap.exists ? clone(snap.data()) : null;
+    var incoming = snap.exists ? clone(snap.data()) : null;
+    compareRemoteMemo(Store.base, incoming);
+    Store.base = incoming;
     var wasReady = Store.ready;
     Store.ready = true;
     rebuild();
@@ -4856,12 +4973,20 @@ function cloudRender(){
   if (Cloud.planId) {
     if (Cloud.askJoin) {
       h += '<p class="hint cloud-ask">초대 링크로 열었어요. 초대받은 수첩으로 옮길까요?</p>';
-      h += '<p class="hint">옮기면 지금 쓰던 수첩은 이 계정에서 다시 열 수 없어요(지워지지는 않아요). 이미 그 수첩을 함께 쓰고 있다면 그대로예요.</p>';
+      if (Cloud.targetLabel) h += '<p class="hint">초대받은 수첩 <b>' + esc(Cloud.targetLabel) + '</b></p>';
+      h += '<p class="hint">지금 수첩은 보관돼요. 공유 창에서 언제든 다시 열 수 있어요.</p>';
       h += '<div class="dlg-actions"><button class="btn" type="button" data-cloud="stay">지금 수첩 계속 쓰기</button><button class="btn primary" type="button" data-cloud="join"' + (Cloud.busy ? ' disabled' : '') + '>초대받은 수첩으로 옮기기</button></div>';
     } else {
+      var current = Cloud.plans.find(function(row){ return row.plan_id === Cloud.planId; });
+      if (current && Cloud.plans.length > 1) h += '<p class="hint">현재 수첩 <b>' + esc(cloudLabel(current)) + '</b></p>';
       var who = '<b>' + esc(cloudName()) + '</b>님으로 카카오 로그인했어요. ';
       h += '<p class="hint">' + who + (Cloud.offline ? '지금은 연결이 안 돼서, 고친 내용을 이 휴대폰에 보관했다가 연결되면 올려요.' : Cloud.members >= 2 ? '둘이 같은 기록을 함께 쓰고 있어요.' : '아직 혼자 쓰는 수첩이에요. 초대 링크를 보내면 상대도 같은 기록을 함께 봐요. 상대가 이미 로그인했다면, 상대가 이 초대 링크를 열어야 같은 수첩이 돼요.') + '</p>';
       h += '<div class="dlg-actions"><button class="btn" type="button" data-cloud="logout">로그아웃</button>' + (Cloud.members >= 2 || Cloud.offline ? '' : '<button class="btn primary" type="button" data-cloud="invite"' + (Cloud.busy ? ' disabled' : '') + '>초대 링크 보내기</button>') + '</div>';
+      if (Cloud.plans.length > 1 && !Cloud.offline) {
+        h += '<p class="hint">다른 수첩 열기</p><div class="dlg-actions">';
+        Cloud.plans.forEach(function(row){ if (row.plan_id !== Cloud.planId) h += '<button class="btn" type="button" data-cloud="switch" data-plan="' + esc(row.plan_id) + '"' + (Cloud.busy ? ' disabled' : '') + '>' + esc(cloudLabel(row)) + '</button>'; });
+        h += '</div>';
+      }
       if (Cloud.invite) h += '<input type="text" id="cloudInvite" aria-label="초대 링크" data-fk="cloudInvite" readonly value="' + esc(Cloud.invite) + '"><p class="hint">7일 동안 한 번 쓸 수 있어요. 받은 사람이 링크를 열고 카카오로 로그인하면 함께 써요.</p>';
     }
   } else {
@@ -4896,20 +5021,41 @@ function cloudInvite(){
     Cloud.busy = false; Cloud.msg = '초대 링크를 만들지 못했어요. 잠시 뒤에 다시 눌러 주세요.'; cloudRender();
   });
 }
-function cloudJoinAsked(){
-  var code = Cloud.askJoin; if (!code) return;
-  Cloud.busy = true; Cloud.msg = ''; cloudRender();
+function cloudSaveBeforeMove(){
   flushNow();
-  cloudRpc('join_plan', {p_code:code}).then(function(id){
-    Cloud.busy = false; Cloud.askJoin = '';
-    if (String(id) === Cloud.planId) { Cloud.msg = '이미 이 수첩을 함께 쓰고 있어요.'; cloudRender(); return; }
-    try { localStorage.removeItem(CLOUD_CACHE); } catch(e){}
-    location.replace(cloudBase());
-  }, function(e){
-    Cloud.busy = false; Cloud.askJoin = '';
-    Cloud.msg = /full/.test(String(e && e.message)) ? '이 초대는 이미 두 사람이 쓰고 있어요. 지금 수첩을 계속 써요.' : '초대 링크가 지났거나 이미 쓰였어요. 지금 수첩을 계속 써요.';
-    cloudRender();
+  var deadline = cloudNow() + 3500;
+  return new Promise(function(resolve,reject){
+    function check(){
+      if (!Store.inflight && isEmpty(Store.queue) && !pendingGet(Cloud.planId)) return resolve();
+      if (Cloud.offline || Store.readOnly || cloudNow() >= deadline) return reject(new Error('unsaved notebook'));
+      setTimeout(check,80);
+    }
+    check();
   });
+}
+function cloudMove(next){
+  Cloud.busy = true; Cloud.msg = ''; cloudRender();
+  cloudSaveBeforeMove().then(next).then(function(id){
+    if (id === Cloud.planId) { Cloud.askJoin = ''; Cloud.msg = '이미 이 수첩을 함께 쓰고 있어요.'; return; }
+    // 수락 중에 새로 쓴 내용도 현재 수첩으로 먼저 보내고 화면을 다시 열어요.
+    return cloudSaveBeforeMove().then(function(){
+      localStorage.setItem(cloudSelectionKey(),String(id));
+      localStorage.removeItem(CLOUD_CACHE);
+      location.replace(cloudBase());
+    });
+  }).catch(function(e){
+    var msg = String(e && e.message || '');
+    if (/invalid invite|full/.test(msg)) {
+      Cloud.askJoin = '';
+      Cloud.msg = /full/.test(msg) ? '이 초대는 이미 두 사람이 쓰고 있어요. 지금 수첩을 계속 써요.' : '초대 링크가 지났거나 이미 쓰였어요. 지금 수첩을 계속 써요.';
+    } else if (/unsaved/.test(msg)) Cloud.msg = '현재 수첩에 아직 보내지 못한 수정이 있어요. 저장된 뒤 다시 열어 주세요.';
+    else Cloud.msg = '수첩을 열지 못했어요. 연결과 저장 상태를 확인한 뒤 다시 눌러 주세요.';
+  }).then(function(){ Cloud.busy = false; cloudRender(); });
+}
+function cloudJoinAsked(){
+  var code = Cloud.askJoin;
+  if (!code || Cloud.legacy) return;
+  cloudMove(function(){ return cloudRpc('accept_plan_invite', {p_code:code}); });
 }
 function cloudLogout(){
   flushNow();
@@ -4919,12 +5065,13 @@ function cloudLogout(){
 }
 document.getElementById('cloudBody').addEventListener('click', function(e){
   var b = e.target.closest && e.target.closest('[data-cloud]');
-  if (!b || b.disabled) return;
+  if (!b || b.disabled || Cloud.busy) return;
   var a = b.getAttribute('data-cloud');
   if (a === 'login') cloudLogin();
   else if (a === 'invite') cloudInvite();
   else if (a === 'logout') cloudLogout();
   else if (a === 'join') cloudJoinAsked();
+  else if (a === 'switch') cloudMove(function(){ return b.getAttribute('data-plan'); });
   else if (a === 'stay') { Cloud.askJoin = ''; Cloud.msg = '지금 수첩을 계속 써요.'; cloudRender(); }
 });
 document.getElementById('openShare').addEventListener('click', cloudRender);
