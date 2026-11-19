@@ -92,7 +92,8 @@ test('groom logs in with Kakao, his device data goes up, the bride joins by invi
  expect(await g.page.evaluate(()=>window.__oauth.options.redirectTo)).toBe('http://127.0.0.1:4173/index.html');
  // Kakao sends him back with ?code=…; the plan is created from what was on this device.
  await g.page.goto('/index.html?code=groom');
- await expect(status(g.page)).toHaveText('둘이 함께 저장돼요');
+ // Until someone joins, the status line says he is on his own.
+ await expect(status(g.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');
  await expect(g.page).toHaveURL('http://127.0.0.1:4173/index.html');
  expect(Object.values(server.db.plans)[0].groom).toBe('준호');
  expect(Object.values(server.db.plans)[0].budget.items.b02.heads).toBe(187);
@@ -128,24 +129,132 @@ test('groom logs in with Kakao, his device data goes up, the bride joins by invi
  expect(plan.tasks.t05.done).toBe(true);expect(plan.tasks.t06.memo).toBe('본식 계약금 300');expect(plan.tasks.t01.done).toBe(true);
  await b.page.locator('#openShare').click();
  await expect(b.page.locator('#cloudSec')).toContainText('둘이 같은 기록을 함께 쓰고 있어요');
- // A third person with the same (used) link is turned away and gets their own record.
+ // A third person with the same (used) link is turned away, told so at once, and is shown as on their own.
  const c=await openCloud(browser,testInfo,server,{path:link.replace('http://127.0.0.1:4173','')+'&code=stranger'});
- await expect(status(c.page)).toHaveText('둘이 함께 저장돼요');
+ await expect(status(c.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');
  expect(server.db.members.filter(m=>m.plan===Object.keys(server.db.plans)[0]).length).toBe(2);
- await c.page.locator('#openShare').click();await expect(c.page.locator('#cloudSec')).toContainText('초대 링크가 지났거나 이미 쓰였어요');
+ await expect(c.page.locator('#shareDlg')).toBeVisible();await expect(c.page.locator('#cloudSec')).toContainText('초대 링크가 지났거나 이미 쓰였어요. 지금은 혼자 쓰는 수첩이에요');
+ await c.page.locator('#closeShare').click();
  // Logging out goes back to this device only.
  await b.page.locator('#cloudSec [data-cloud="logout"]').click();
  await expect(status(b.page)).toHaveText('이 기기에만 저장돼요');
  for(const x of [g,b,c]){expect(x.errors).toEqual([]);await x.ctx.close();}
 });
 
-test('a failed connection falls back to this device and says so',async({browser},testInfo)=>{
+test('with no copy of the shared notebook on this phone, a failed connection falls back to this device and says so',async({browser},testInfo)=>{
  const server=fakeServer();
  const {ctx,page,errors}=await openCloud(browser,testInfo,server,{seed:SEED,path:'/index.html?code=groom'});
+ await expect(status(page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');
  await ctx.unroute(API+'/**');await ctx.route(API+'/**',r=>r.abort());
+ await page.evaluate(()=>localStorage.removeItem('wd-cloud-cache'));
  await page.reload();
  await expect(status(page)).toHaveText('함께 쓰기에 연결하지 못했어요. 이 기기에만 저장해요.');
  await expect(page.locator('#hero')).toContainText('준호');
  expect(errors.filter(e=>!/Failed to fetch|ERR_FAILED|net::/.test(e))).toEqual([]);
  await ctx.close();
+});
+
+const shared=s=>Object.values(s.db.plans)[0];
+async function couple(browser,testInfo,server){
+ const g=await openCloud(browser,testInfo,server,{seed:SEED,path:'/index.html?code=groom'});
+ await expect(status(g.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');
+ await g.page.locator('#openShare').click();await g.page.locator('#cloudSec [data-cloud="invite"]').click();
+ const link=(await g.page.locator('#cloudInvite').inputValue()).replace('http://127.0.0.1:4173','');await g.page.locator('#closeShare').click();
+ const b=await openCloud(browser,testInfo,server,{path:link+'&code=bride'});
+ await expect(status(b.page)).toHaveText('둘이 함께 저장돼요');
+ return {g,b,link};
+}
+
+test('someone already keeping a shared notebook is asked before an invite link moves them, and can stay',async({browser},testInfo)=>{
+ test.setTimeout(60000);
+ const server=fakeServer();
+ const {g,b,link}=await couple(browser,testInfo,server);
+ // 수진 already logged in on her own phone with her own notebook, then taps 준호's link (e.g. sent by mistake).
+ const s=await openCloud(browser,testInfo,server,{seed:{...SEED,groom:'',bride:'수진'},path:'/index.html?code=sujin'});
+ await expect(status(s.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');
+ const own=server.db.members.find(m=>m.user==='sujin').plan;
+ await g.page.locator('#openShare').click();await g.page.locator('#cloudSec').waitFor();
+ await s.page.goto(link);
+ await expect(s.page.locator('#shareDlg')).toBeVisible();
+ await expect(s.page.locator('#cloudSec')).toContainText('초대받은 수첩으로 옮길까요?');
+ expect(server.db.members.find(m=>m.user==='sujin').plan).toBe(own);
+ await expect(s.page).toHaveURL('http://127.0.0.1:4173/index.html');
+ await s.page.locator('#cloudSec [data-cloud="stay"]').click();
+ await expect(s.page.locator('#cloudSec')).toContainText('지금 수첩을 계속 써요.');
+ expect(server.db.members.find(m=>m.user==='sujin').plan).toBe(own);
+ await expect(s.page.locator('#hero')).toContainText('수진');
+ // Choosing to move with a link that is already used is refused and she keeps her own.
+ await s.page.goto(link);await s.page.locator('#cloudSec [data-cloud="join"]').click();
+ await expect(s.page.locator('#cloudSec')).toContainText('초대 링크가 지났거나 이미 쓰였어요. 지금 수첩을 계속 써요.');
+ expect(server.db.members.find(m=>m.user==='sujin').plan).toBe(own);
+ // The bride re-opening the link she already used is asked, and moving keeps her where she is.
+ await b.page.goto(link);await b.page.locator('#cloudSec [data-cloud="join"]').click();
+ await expect(b.page.locator('#cloudSec')).toContainText('이미 이 수첩을 함께 쓰고 있어요.');
+ for(const x of [g,b,s]){expect(x.errors).toEqual([]);await x.ctx.close();}
+});
+
+test('edits made while the connection is down survive closing the app and go up when it comes back, and the shared notebook still opens offline',async({browser},testInfo)=>{
+ test.setTimeout(60000);
+ const server=fakeServer();
+ const {g,b}=await couple(browser,testInfo,server);
+ const down=()=>b.ctx.route(API+'/**',r=>r.abort()),up=()=>b.ctx.unroute(API+'/**',r=>r.abort());
+ // Tick while offline, then close the app before the connection returns.
+ await b.ctx.unroute(API+'/**');await b.ctx.route(API+'/**',r=>r.abort());
+ await b.page.locator('[data-act="toggle"][data-id="t12"]').click();
+ await expect(status(b.page)).toHaveText('저장하지 못했어요. 다시 시도하는 중…');
+ // Leaving the page (same as closing the app) before the connection returns.
+ const p2=b.page;await b.ctx.route('**/leave.html',r=>r.fulfill({status:200,contentType:'text/html',body:'<p>다른 페이지</p>'}));await p2.goto('/leave.html');
+ // Reopen while still offline: the shared notebook (not this phone's own old record) is shown, with the tick kept.
+ await p2.goto('/index.html');
+ await expect(status(p2)).toHaveText('연결 안 됨 · 고친 내용은 보관했다가 올려요');
+ await expect(p2.locator('#hero')).toContainText('준호');
+ await expect(p2.locator('[data-act="toggle"][data-id="t12"]')).toHaveAttribute('aria-checked','true');
+ await p2.locator('[data-act="toggle"][data-id="t13"]').click();
+ expect(shared(server).tasks.t12).toBeUndefined();
+ // Connection back: both ticks reach the shared notebook and the partner's screen.
+ await b.ctx.unroute(API+'/**');await b.ctx.route(API+'/**',r=>server.handle(r));
+ await p2.evaluate(()=>window.dispatchEvent(new Event('online')));
+ await expect.poll(()=>shared(server).tasks.t12&&shared(server).tasks.t13&&shared(server).tasks.t12.done&&shared(server).tasks.t13.done).toBe(true);
+ await expect(g.page.locator('[data-act="toggle"][data-id="t13"]')).toHaveAttribute('aria-checked','true');
+ await expect(status(p2)).toHaveText('둘이 함께 저장돼요');
+ expect(await p2.evaluate(()=>localStorage.getItem('wd-cloud-pending'))).toBeNull();
+ expect(g.errors).toEqual([]);expect(b.errors.filter(e=>!/Failed to fetch|ERR_FAILED|net::/.test(e))).toEqual([]);await g.ctx.close();await b.ctx.close();
+});
+
+test('a partner’s edit does not replace what someone is typing; once both stop, both screens show the saved text',async({browser},testInfo)=>{
+ test.setTimeout(60000);
+ const server=fakeServer();
+ const {g,b}=await couple(browser,testInfo,server);
+ for(const x of [g,b])await x.page.locator('[data-act="open"][data-id="t08"]').click();
+ const bm=b.page.locator('[data-fk="memo-t08"]');await bm.click();await bm.pressSequentially('신부가 천천히',{delay:80});
+ await g.page.locator('[data-fk="memo-t08"]').fill('신랑 수정');
+ await expect.poll(()=>shared(server).tasks.t08?.memo).toBe('신랑 수정');
+ await b.page.waitForTimeout(700);
+ await expect(bm).toHaveValue('신부가 천천히');await expect(bm).toBeFocused();
+ await bm.pressSequentially(' 쓰는 중',{delay:80});
+ await expect.poll(()=>shared(server).tasks.t08?.memo).toBe('신부가 천천히 쓰는 중');
+ await expect(g.page.locator('[data-fk="memo-t08"]')).toHaveValue('신부가 천천히 쓰는 중',{timeout:9000});
+ for(const x of [g,b]){expect(x.errors).toEqual([]);await x.ctx.close();}
+});
+
+test('the plain app link never carries an invite code and says it does not share the notebook; warnings stay visible when scrolled',async({browser},testInfo)=>{
+ const server=fakeServer();
+ const g=await openCloud(browser,testInfo,server,{seed:SEED,path:'/index.html?code=groom'});
+ await g.page.locator('#openShare').click();await g.page.locator('#cloudSec [data-cloud="invite"]').click();
+ const link=(await g.page.locator('#cloudInvite').inputValue()).replace('http://127.0.0.1:4173','');await g.page.locator('#closeShare').click();
+ const b=await openCloud(browser,testInfo,server,{path:link});
+ await expect(b.page.locator('#shareDlg')).toBeVisible();
+ await expect(b.page.locator('#shareLink')).toHaveValue('http://127.0.0.1:4173/index.html');
+ await expect(b.page.locator('#shareText')).not.toHaveValue(/join=/);
+ await expect(b.page.locator('#shareLinkTitle')).toHaveText('앱 주소만 보내기');
+ await expect(b.page.locator('#shareLinkHint')).toContainText('각자 따로 기록해요');
+ await b.page.locator('#closeShare').click();
+ // A warning while the header is scrolled away appears at the bottom of the screen.
+ await g.ctx.unroute(API+'/**');await g.ctx.route(API+'/**',r=>r.abort());
+ await g.page.evaluate(()=>window.scrollTo(0,1500));
+ await g.page.locator('#tab-timeline').evaluate(()=>{});
+ await g.page.locator('[data-act="toggle"][data-id="t20"]').click();
+ await expect(g.page.locator('#netBanner')).toBeVisible();await expect(g.page.locator('#netBanner')).toHaveText('저장하지 못했어요. 다시 시도하는 중…');
+ await g.page.evaluate(()=>window.scrollTo(0,0));await expect(g.page.locator('#netBanner')).toBeHidden();
+ for(const x of [g,b]){expect(x.errors.filter(e=>!/Failed to fetch|ERR_FAILED|net::/.test(e))).toEqual([]);await x.ctx.close();}
 });
