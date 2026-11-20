@@ -947,7 +947,7 @@ body{line-height:1.65}
 .bl-add input{width:100%;min-width:0}
 .calcval{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px}
 .calcval small{font-size:12px;font-weight:500}
-/* 진행 순서의 목록·달력 보기 */
+/* 진행 순서의 목록·캘린더 보기 */
 .seg{display:flex;gap:6px;margin:14px 0 0}
 .cal{margin-top:16px}
 .cal-head{display:flex;align-items:center;gap:6px}
@@ -973,7 +973,7 @@ body{line-height:1.65}
 .cal-list h4 span{font-family:var(--sans);font-size:13px;font-weight:500;color:var(--muted)}
 .cal-date{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:12px 2px 4px;font-size:14px}
 .cal-date span{color:var(--muted);font-size:13px}
-.cal-group ul{list-style:none;margin:0;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.cal-group>ul{list-style:none;margin:0;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
 .cal-item{border-bottom:1px solid var(--line)}
 .cal-item:last-child{border-bottom:0}
 .cal-item button{appearance:none;display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:6px 0;border:0;background:none;text-align:left;font-size:15px;line-height:1.45;cursor:pointer}
@@ -1161,7 +1161,7 @@ button,summary,a,label,select,input,[data-act]{-webkit-tap-highlight-color:trans
   <nav class="tabs" aria-label="보기 선택">
     <div class="wrap" role="tablist">
       <button class="tab" role="tab" id="tab-timeline" aria-controls="panel-timeline" data-tab="timeline" type="button">진행 순서</button>
-      <button class="tab" role="tab" id="tab-cal" aria-controls="panel-cal" data-tab="cal" type="button">달력</button>
+      <button class="tab" role="tab" id="tab-cal" aria-controls="panel-cal" data-tab="cal" type="button">캘린더</button>
       <button class="tab" role="tab" id="tab-budget" aria-controls="panel-budget" data-tab="budget" type="button">예산</button>
       <button class="tab" role="tab" id="tab-price" aria-controls="panel-price" data-tab="price" type="button">가격 비교</button>
       <button class="tab" role="tab" id="tab-guest" aria-controls="panel-guest" data-tab="guest" type="button">하객</button>
@@ -1647,7 +1647,7 @@ function init(){
 var ui = {
   tab: lsGet('wd-tab') || 'timeline',
   heroOpen: lsGet('wd-hero') === '1',
-  calMonth: '', calDay: '', calDraft: '', lineWho: 'groom', home: lsGet('wd-home') === '1', homePaid: '',
+  calMonth: '', calDay: '', calTaskKey: '', calDraft: '', lineWho: 'groom', home: lsGet('wd-home') === '1', homePaid: '',
   hideDone: lsGet('wd-hideDone') === '1',
   showHidden: false,
   open: {},
@@ -2059,14 +2059,14 @@ function taskProgress(it){
   return {total:total, done:done};
 }
 
-function taskHTML(it, wd, t0){
+function taskHTML(it, wd, t0, calKey){
   var late = !it.done && !it.catchup && it.due && diffDays(it.due, t0) < 0;
-  var open = !!ui.open[it.id];
+  var open = !!calKey || !!ui.open[it.id];
   var progress = taskProgress(it);
   var cls = 'task' + (it.done ? ' done' : '') + (late ? ' overdue' : '') + (it.catchup && !it.done ? ' catchup' : '') + (it.wedding ? ' wedding' : '') + (open ? ' is-open' : '');
   var h = '<li class="'+cls+'">' +
     '<button class="knot" type="button" role="checkbox" aria-checked="'+(it.done?'true':'false')+'" aria-label="완료 표시: '+esc(it.title)+'" data-act="toggle" data-fk="task-check-'+it.id+'" data-kind="'+it.kind+'" data-id="'+it.id+'"'+dis()+'>'+CHECK+'</button>' +
-    '<div class="row"><button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="open" data-fk="task-open-'+it.id+'" data-id="'+it.id+'">'+esc(it.title)+(it.kind==='c' ? '<span class="mine">직접 추가</span>' : '')+(progress.total > 1 && progress.done > 0 && progress.done < progress.total ? '<span class="sub-progress">'+progress.done+'/'+progress.total+'</span>' : '')+'</button>' + dueHTML(it, wd, t0) + CHEV + '</div>';
+    '<div class="row"><button class="t-title" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="'+(calKey ? 'cal-task' : 'open')+'" data-fk="'+(calKey || 'task-open-'+it.id)+'" data-id="'+it.id+'">'+esc(it.title)+(it.kind==='c' ? '<span class="mine">직접 추가</span>' : '')+(progress.total > 1 && progress.done > 0 && progress.done < progress.total ? '<span class="sub-progress">'+progress.done+'/'+progress.total+'</span>' : '')+'</button>' + dueHTML(it, wd, t0) + CHEV + '</div>';
   var dl = [];
   if (it.book) dl.push('<span><b>예약</b> '+esc(fmtShort(it.book, t0.getFullYear()))+'</span>');
   var cc = it.kind === 't' ? checkCount(it.id, taskState('t', it.id).checks) : null;
@@ -2099,14 +2099,14 @@ function taskHTML(it, wd, t0){
   return h + '</li>';
 }
 
-/* 달력: 날짜가 있는 것을 한 달씩 모아 봐요. 할 일(진행일·예약일), 예약금 납부일, 잔금일, 예산 세부 내역, 혼인신고 예정일. */
+/* 캘린더: 날짜가 있는 것을 한 달씩 모아 봐요. 할 일(진행일·예약일), 예약금 납부일, 잔금일, 예산 세부 내역, 혼인신고 예정일. */
 function calEntries(list){
   var out = [];
   function push(dateStr, o){ o.date = dateStr; out.push(o); }
   list.forEach(function(it){
     if (it.hidden) return;
-    if (it.due) push(ymd(it.due), {type:it.wedding ? 'wed' : 'task', title:it.title + (it.wedding && state.weddingTime ? ' ' + fmtTime(state.weddingTime) : ''), done:it.done, id:it.id});
-    if (it.book) push(ymd(it.book), {type:'book', title:'예약 · ' + it.title, done:it.done, id:it.id});
+    if (it.due) push(ymd(it.due), {type:it.wedding ? 'wed' : 'task', title:it.title + (it.wedding && state.weddingTime ? ' ' + fmtTime(state.weddingTime) : ''), done:it.done, id:it.id, task:it});
+    if (it.book) push(ymd(it.book), {type:'book', title:'예약 · ' + it.title, done:it.done, id:it.id, task:it});
   });
   if (parseYMD(state.regDate)) push(state.regDate, {type:'task', title:'혼인신고 예정일', know:'k1'});
   budgetRows().forEach(function(r){
@@ -2119,8 +2119,10 @@ function calEntries(list){
   return out.sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : rank[a.type] - rank[b.type]; });
 }
 function calEntryHTML(e){
+  var calKey = 'cal-'+e.type+'-'+e.id;
+  if (e.task && ui.calTaskKey === calKey) return taskHTML(e.task, parseYMD(state.weddingDate), today(), calKey);
   var chip = {wed:'결혼식', pay:'지출', book:'예약', task:'할 일'}[e.type];
-  var go = e.bid ? 'data-act="b-go" data-id="'+esc(e.bid)+'" data-cat="'+esc(e.cat)+'"' : e.know ? 'data-act="goto-know" data-k="'+e.know+'"' : 'data-act="cal-go" data-id="'+esc(e.id)+'"';
+  var go = e.bid ? 'data-act="b-go" data-id="'+esc(e.bid)+'" data-cat="'+esc(e.cat)+'"' : e.know ? 'data-act="goto-know" data-k="'+e.know+'"' : 'data-act="cal-task" aria-expanded="false" data-fk="'+esc(calKey)+'" data-id="'+esc(e.id)+'"';
   return '<li class="cal-item k-'+e.type+(e.done ? ' k-done' : '')+'"><button type="button" '+go+'><span class="cal-chip">'+chip+'</span>' +
     '<span class="cal-what">'+esc(e.title)+(e.done ? '<small>'+(e.type === 'pay' ? '냈어요' : '완료')+'</small>' : '')+'</span>'+(e.amount != null ? '<strong>'+fmtMan(e.amount)+'</strong>' : '')+'</button></li>';
 }
@@ -2196,7 +2198,7 @@ function homeHTML(list){
       return '<li><button class="home-go" type="button" data-act="cal-go" data-id="'+esc(it.id)+'"><span>'+esc(it.title)+'</span><small class="'+(d < 0 ? 'late' : '')+'">'+esc(fmtTiny(it.due, y))+' · '+(d < 0 ? (-d)+'일 지남' : d === 0 ? '오늘' : d+'일 남음')+'</small></button></li>';
     }).join('') + '</ul>' + (week.length > 5 ? '<p class="tip">그 밖에 '+(week.length - 5)+'개는 진행 순서에서 볼 수 있어요.</p>' : '');
   } else h += '<p class="tip">이번 주에 날짜가 잡힌 할 일이 없어요.</p>';
-  h += '<div class="detail-actions"><button class="link" type="button" data-act="home-tab" data-v="timeline">진행 순서 전체 보기</button><button class="link" type="button" data-act="home-tab" data-v="cal">달력으로 보기</button></div></section>';
+  h += '<div class="detail-actions"><button class="link" type="button" data-act="home-tab" data-v="timeline">진행 순서 전체 보기</button><button class="link" type="button" data-act="home-tab" data-v="cal">캘린더로 보기</button></div></section>';
   /* 3. 둘이 정할 것: 아직 적지 않은 것 두 개 */
   var talks = [];
   TALKS.forEach(function(g){ g.items.forEach(function(it){ var m = state.talks && state.talks[it.id]; if (!(m && m.memo)) talks.push(it); }); });
@@ -3624,8 +3626,8 @@ function budgetLinesHTML(r){
     h += '<ul class="blines">' + r.lines.map(function(l){ return lineLiHTML(r, l, y); }).join('') + '</ul>' + (r.byLines ? '<p class="tip">합계 <b>'+fmtMan(r.lineSum)+'</b>('+r.lines.length+'건)를 총비용으로 써요.</p>' : '');
   } else {
     h += gather
-      ? '<p class="tip">청첩장 모임을 한 번씩 적으세요. 신랑 쪽·신부 쪽 모임을 나눠 보여 주고, 합계가 총비용이 돼요. 날짜를 넣으면 달력 탭에도 보여요.</p>'
-      : '<p class="tip">모임이나 구매처럼 여러 번에 나눠 드는 돈은 한 줄씩 적으세요. 합계가 총비용이 되고, 날짜를 넣으면 달력 탭에도 보여요.</p>';
+      ? '<p class="tip">청첩장 모임을 한 번씩 적으세요. 신랑 쪽·신부 쪽 모임을 나눠 보여 주고, 합계가 총비용이 돼요. 날짜를 넣으면 캘린더 탭에도 보여요.</p>'
+      : '<p class="tip">모임이나 구매처럼 여러 번에 나눠 드는 돈은 한 줄씩 적으세요. 합계가 총비용이 되고, 날짜를 넣으면 캘린더 탭에도 보여요.</p>';
   }
   if (!Store.readOnly) {
     var whoPick = gather ? '<div class="field bl-who">누구 모임<div class="seg" role="radiogroup" aria-label="누구 모임">' + LINE_WHO.map(function(w){
@@ -3936,7 +3938,7 @@ function talkHTML(){
         '<button class="t-title t-row" type="button" aria-expanded="'+(open?'true':'false')+'" data-act="talk-open" data-id="'+it.id+'"><span>'+esc(it.t)+'</span>' +
         (!memo && !open ? '<span class="t-state">눌러서 작성</span>' : '') + CHEV + '</button>';
       if (!open && memo) h += '<p class="preview">'+esc(memo)+'</p>';
-      if (open) h += '<div class="detail"><p class="tip">'+esc(it.h)+'</p><label class="field">정한 내용<textarea rows="3" placeholder="예: 생활비는 공동 통장, 각자 월 OO만원" data-talk-memo="'+it.id+'" data-fk="talk-'+it.id+'"'+dis()+'>'+esc(memo)+'</textarea></label>'+CLOSE_ROW+'</div>';
+      if (open) h += '<div class="detail"><p class="tip">'+esc(it.h)+'</p><label class="field">정한 내용<textarea rows="3" data-talk-memo="'+it.id+'" data-fk="talk-'+it.id+'"'+dis()+'>'+esc(memo)+'</textarea></label>'+CLOSE_ROW+'</div>';
       h += '</li>';
     });
     h += '</ul></section>';
@@ -3963,7 +3965,7 @@ document.addEventListener('click', function(e){
     /* 펼친 상자 맨 아래의 닫기: 그 줄의 제목 단추를 대신 누르고, 접힌 줄이 보이게 옮겨요. */
     var crLi = b.closest('li'), crTitle = crLi && crLi.querySelector('.t-title[aria-expanded]');
     if (crTitle) {
-      var crSel = '[data-act="'+crTitle.getAttribute('data-act')+'"][data-id="'+crTitle.getAttribute('data-id')+'"]';
+      var crSel = crTitle.dataset.fk ? '[data-fk="'+crTitle.dataset.fk+'"]' : '[data-act="'+crTitle.getAttribute('data-act')+'"][data-id="'+crTitle.getAttribute('data-id')+'"]';
       crTitle.click();
       var crBack = document.querySelector(crSel);
       if (crBack) { crBack.scrollIntoView({block:'nearest'}); try { crBack.focus({preventScroll:true}); } catch(e8){} }
@@ -4016,12 +4018,16 @@ document.addEventListener('click', function(e){
   } else if (act === 'cal-move') {
     var cv = Number(b.getAttribute('data-v')), cm = calMonthNow();
     ui.calMonth = cv === 0 ? ymd(today()).slice(0, 7) : ymd(new Date(Number(cm.slice(0, 4)), Number(cm.slice(5, 7)) - 1 + cv, 1)).slice(0, 7);
-    ui.calDay = ''; render();
+    ui.calDay = ''; ui.calTaskKey = ''; render();
   } else if (act === 'cal-day' || act === 'cal-all') {
-    var draftEl = document.getElementById('addTitle'); ui.calDraft = draftEl ? draftEl.value : '';
+    ui.calTaskKey = '';
     ui.calDay = act === 'cal-all' || ui.calDay === id ? '' : id; render();
+  } else if (act === 'cal-task') {
+    var calKey = b.getAttribute('data-fk');
+    ui.calTaskKey = ui.calTaskKey === calKey ? '' : calKey;
+    render();
   } else if (act === 'cal-go') {
-    /* 달력의 할 일을 누르면 진행 순서 탭으로 가서 그 일을 펼쳐요. */
+    /* 홈의 할 일을 누르면 진행 순서 탭으로 가서 그 일을 펼쳐요. */
     ui.tab = 'timeline'; lsSet('wd-tab', 'timeline'); ui.open[id] = true; render();
     var calSel = '[data-act="open"][data-id="'+id+'"]', calTo = document.querySelector(calSel);
     if (!calTo && ui.hideDone) { ui.hideDone = false; lsSet('wd-hideDone', '0'); render(); calTo = document.querySelector(calSel); }
@@ -4265,7 +4271,9 @@ document.addEventListener('click', function(e){
 
 document.addEventListener('input', function(e){
   var t = e.target;
-  if (t.matches('textarea[data-memo]')) {
+  if (ui.tab === 'cal' && t.id === 'addTitle') {
+    ui.calDraft = t.value;
+  } else if (t.matches('textarea[data-memo]')) {
     commit(patchItem(t.getAttribute('data-memo'), t.getAttribute('data-id'), {memo: t.value}), {render:false, delay:700});
   } else if (t.matches('input[data-bl="amount"], input[data-bl="heads"]')) {
     var lineDigits = t.value.replace(/[^0-9]/g, '');
@@ -4369,14 +4377,16 @@ document.addEventListener('change', function(e){
     commit(bPatch(t.getAttribute('data-bkind'), t.getAttribute('data-id'), {who: t.value}));
     return;
   }
-  if (a2 === 'date') {
-    var v = t.value, kind = t.getAttribute('data-kind'), id = t.getAttribute('data-id');
-    if (!parseYMD(v)) return;
-    commit(patchItem(kind, id, {date: v}));
-  } else if (a2 === 'book') {
-    var bv = t.value;
-    if (bv && !parseYMD(bv)) return;
-    commit(patchItem(t.getAttribute('data-kind'), t.getAttribute('data-id'), {book: bv}));
+  if (a2 === 'date' || a2 === 'book') {
+    var value = t.value, kind = t.getAttribute('data-kind'), id = t.getAttribute('data-id');
+    if (!parseYMD(value) && !(a2 === 'book' && value === '')) return;
+    var entryKey = 'cal-'+(a2 === 'book' ? 'book' : 'task')+'-'+id;
+    if (value && ui.tab === 'cal' && (ui.calTaskKey === entryKey || (a2 === 'date' && ui.calTaskKey === 'cal-wed-'+id))) {
+      ui.calMonth = value.slice(0, 7);
+      if (ui.calDay) ui.calDay = value;
+    }
+    var patch = {}; patch[a2] = value;
+    commit(patchItem(kind, id, patch));
   } else if (a2 === 'field') {
     var f = t.getAttribute('data-field'), val = t.value;
     if (val && !parseYMD(val)) return;
@@ -4393,7 +4403,7 @@ function doTaskAdd(){
   var bk = document.getElementById('addBook'), book = bk && parseYMD(bk.value) ? bk.value : '';
   var p = {custom:{}}; p.custom[id] = {title:title, date:date, book:book, created:Date.now()};
   ui.calDraft = '';
-  if (ui.tab === 'cal') { ui.calMonth = date.slice(0, 7); ui.calDay = date; }   /* 달력에서 추가하면 그 날이 보이게 */
+  if (ui.tab === 'cal') { ui.calMonth = date.slice(0, 7); ui.calDay = date; }   /* 캘린더에서 추가하면 그 날이 보이게 */
   commit(p);
 }
 function doBudgetAdd(){

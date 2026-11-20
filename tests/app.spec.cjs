@@ -751,7 +751,7 @@ test('a quote photo is read by Claude, checked, edited and saved without storing
 test('tabs sit in two rows of four with nothing to slide; empty budget groups start folded',async({page})=>{
  const {app,errors}=await openApp(page);
  expect(await app.locator('.tabs [role=tablist]').evaluate(w=>w.scrollWidth<=w.clientWidth)).toBe(true);
- expect(await app.locator('.tab').evaluateAll(els=>els.map(e=>e.textContent.trim()))).toEqual(['진행 순서','달력','예산','가격 비교','하객','신혼여행','알아둘 것','둘이 정할 것']);
+ expect(await app.locator('.tab').evaluateAll(els=>els.map(e=>e.textContent.trim()))).toEqual(['진행 순서','캘린더','예산','가격 비교','하객','신혼여행','알아둘 것','둘이 정할 것']);
  const rowOf=id=>app.locator('#'+id).evaluate(e=>Math.round(e.getBoundingClientRect().top));
  expect(await rowOf('tab-price')).toBe(await rowOf('tab-timeline'));expect(await rowOf('tab-guest')).toBeGreaterThan(await rowOf('tab-timeline'));expect(await rowOf('tab-talk')).toBe(await rowOf('tab-guest'));
  const tabs=await app.locator('.tab').evaluateAll(els=>els.map(e=>({h:e.getBoundingClientRect().height,lines:Math.round(e.getBoundingClientRect().height/parseFloat(getComputedStyle(e).lineHeight))})));
@@ -1198,7 +1198,7 @@ test('calendar view gathers dated tasks, payments and detail lines by month and 
  seed.budget.items.b28={lines:{l1:{name:'대학 동기 모임',date:'2026-10-17',amount:24,created:1},l2:{name:'회사 팀 모임',date:'2026-10-24',amount:18,created:2},l3:{name:'지운 모임',date:'2026-10-20',amount:9,deleted:true}}};
  const {app,errors}=await openApp(page,seed);
  // The calendar has its own tab, right after 진행 순서, and the tab is remembered on this device.
- expect(await app.locator('.tab').evaluateAll(els=>els.slice(0,3).map(e=>e.textContent))).toEqual(['진행 순서','달력','예산']);
+ expect(await app.locator('.tab').evaluateAll(els=>els.slice(0,3).map(e=>e.textContent))).toEqual(['진행 순서','캘린더','예산']);
  await app.locator('#tab-cal').click();
  expect(await app.locator('body').evaluate(()=>localStorage.getItem('wd-tab'))).toBe('cal');
  await expect(app.locator('#panel-timeline .phase')).toHaveCount(0);
@@ -1235,11 +1235,26 @@ test('calendar view gathers dated tasks, payments and detail lines by month and 
  await expect(app.locator('.cal-day.wed')).toHaveAttribute('data-id','2027-05-08');
  await expect(app.locator('.cal-item.k-wed')).toContainText('결혼식 오후 12시 30분');
  await app.locator('[data-act="cal-move"][data-v="0"]').click();
- // A task opens in 진행 순서; a payment opens its budget item.
+ // Edit a task in the calendar, then check both views use the same record.
  await items.filter({hasText:'본식 스냅·영상 계약'}).locator('button').click();
- await expect(app.locator('#tab-timeline')).toHaveAttribute('aria-selected','true');
- await expect(app.locator('[data-act="open"][data-id="t11"]')).toHaveAttribute('aria-expanded','true');
+ const cal=app.locator('#panel-cal'), timeline=app.locator('#panel-timeline');
+ await expect(app.locator('#tab-cal')).toHaveAttribute('aria-selected','true');
+ await cal.locator('[data-act="subtask-toggle"][data-id="ts11a"]').click();
+ await cal.locator('[data-fk="memo-t11"]').fill('업체에 문의함');
+ await cal.locator('[data-act-change="date"]').fill('2026-11-02');
+ await expect(app.locator('#calTitle')).toHaveText('2026년 11월');
+ await expect(cal.locator('[data-act="subtask-toggle"][data-id="ts11a"]')).toHaveAttribute('aria-checked','true');
+ await cal.locator('[data-act="close-row"]').click();
+ await expect(cal.locator('[data-fk="cal-task-t11"]')).toBeFocused();
+ await app.locator('#tab-timeline').click();
+ await timeline.locator('[data-act="open"][data-id="t11"]').click();
+ await expect(timeline.locator('[data-fk="memo-t11"]')).toHaveValue('업체에 문의함');
+ await expect(timeline.locator('[data-fk="task-date-t-t11"]')).toHaveValue('2026-11-02');
+ await expect(timeline.locator('[data-act="subtask-toggle"][data-id="ts11a"]')).toHaveAttribute('aria-checked','true');
+ await timeline.locator('[data-act="toggle"][data-id="t11"]').click();
  await app.locator('#tab-cal').click();
+ await expect(cal.locator('[data-fk="cal-task-t11"]')).toContainText('완료');
+ await app.locator('[data-act="cal-move"][data-v="0"]').click();
  await items.filter({hasText:'대학 동기 모임'}).locator('button').click();
  await expect(app.locator('#tab-budget')).toHaveAttribute('aria-selected','true');
  await expect(app.locator('[data-act="b-open"][data-id="b28"]')).toHaveAttribute('aria-expanded','true');
