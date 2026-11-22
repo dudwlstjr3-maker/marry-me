@@ -85,7 +85,7 @@ async function openCloud(browser,testInfo,server,{seed=null,path='/index.html',c
  await ctx.route(API+'/**',r=>server.handle(r));
  await ctx.addInitScript(([seed,cloud,api])=>{
   window.__CLOUD=cloud?{url:api,anonKey:'public-anon-key'}:{url:'',anonKey:''};
-  if(!sessionStorage.getItem('seeded')){sessionStorage.setItem('seeded','1');localStorage.clear();if(seed)localStorage.setItem('wedding-plan-v1',JSON.stringify(seed));}
+  if(!localStorage.getItem('cloud-test-seeded')){localStorage.clear();localStorage.setItem('cloud-test-seeded','1');if(seed)localStorage.setItem('wedding-plan-v1',JSON.stringify(seed));}
  },[seed,cloud,API]);
  const page=await ctx.newPage();
  page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
@@ -95,6 +95,8 @@ async function openCloud(browser,testInfo,server,{seed=null,path='/index.html',c
 }
 const status=p=>p.locator('#status');
 const cloudSec=p=>p.locator('#cloudSec');
+const pendingKeyFor=(user,plan)=>'wd-cloud-pending:'+encodeURIComponent(user)+':'+encodeURIComponent(plan);
+const readPending=(page,user,plan)=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)||'null'),pendingKeyFor(user,plan));
 
 test('with the two Supabase values emptied the app stays on this device and never loads the login code',async({browser},testInfo)=>{
  const server=fakeServer();
@@ -175,7 +177,7 @@ test('with no copy of the shared notebook on this phone, a failed connection fal
  const {ctx,page,errors}=await openCloud(browser,testInfo,server,{seed:SEED,path:'/index.html?code=groom'});
  await expect(status(page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');
  await ctx.unroute(API+'/**');await ctx.route(API+'/**',r=>r.abort());
- await page.evaluate(()=>localStorage.removeItem('wd-cloud-cache'));
+ await page.evaluate(()=>Object.keys(localStorage).filter(key=>key==='wd-cloud-cache'||key.startsWith('wd-cloud-cache:')).forEach(key=>localStorage.removeItem(key)));
  await page.reload();
  await expect(status(page)).toHaveText('함께 쓰기에 연결하지 못했어요. 이 기기에만 저장해요.');
  await expect(page.locator('#hero')).toContainText('준호');
@@ -247,6 +249,7 @@ test('edits made while the connection is down survive closing the app and go up 
  await expect(g.page.locator('[data-act="toggle"][data-id="t13"]')).toHaveAttribute('aria-checked','true');
  await expect(status(p2)).toHaveText('둘이 함께 저장돼요');
  expect(await p2.evaluate(()=>localStorage.getItem('wd-cloud-pending'))).toBeNull();
+ expect(await readPending(p2,'bride',server.db.members.find(m=>m.user==='bride').plan)).toBeNull();
  expect(g.errors).toEqual([]);expect(b.errors.filter(e=>!/Failed to fetch|ERR_FAILED|net::/.test(e))).toEqual([]);await g.ctx.close();await b.ctx.close();
 });
 
@@ -263,6 +266,12 @@ test('a partner’s edit does not replace what someone is typing; once both stop
  await bm.pressSequentially(' 쓰는 중',{delay:80});
  await expect.poll(()=>shared(server).tasks.t08?.memo).toBe('신부가 천천히 쓰는 중');
  await expect(g.page.locator('[data-fk="memo-t08"]')).toHaveValue('신부가 천천히 쓰는 중',{timeout:9000});
+ // Both versions remain available after the typing has settled. Choosing the partner's text saves that choice.
+ const choices=b.page.locator('[data-memo-choice-for="memo-t08"]');
+ await expect(choices).toContainText('신부가 천천히 쓰는 중');await expect(choices).toContainText('신랑 수정');
+ await choices.locator('[data-memo-choice="remote"]').click();
+ await expect.poll(()=>shared(server).tasks.t08?.memo).toBe('신랑 수정');await expect(bm).toHaveValue('신랑 수정');
+ await expect(choices).toHaveCount(0);
  for(const x of [g,b]){expect(x.errors).toEqual([]);await x.ctx.close();}
 });
 
@@ -303,7 +312,8 @@ test('a save that succeeds keeps edits made meanwhile in the phone’s keep-list
   return server.handle(r);
  });
  const hold=k=>{let p;p=new Promise(res=>{release[k]=()=>{if(net[k]===p)net[k]=null;res();};});net[k]=p;};
- const pending=()=>b.page.evaluate(()=>JSON.parse(localStorage.getItem('wd-cloud-pending')||'null'));
+ const pendingKey=pendingKeyFor('bride',server.db.members.find(m=>m.user==='bride').plan);
+ const pending=()=>b.page.evaluate(key=>JSON.parse(localStorage.getItem(key)||'null'),pendingKey);
  // 1) The first save is in flight; a second tick waits in the queue and is written down when the app is hidden.
  hold('merge');
  await b.page.locator('[data-act="toggle"][data-id="t30"]').click();
@@ -313,7 +323,7 @@ test('a save that succeeds keeps edits made meanwhile in the phone’s keep-list
  expect((await pending()).patch.tasks.t31.done).toBe(true);
  // Hold the follow-up save too, so the moment right after the first one is acknowledged can be inspected.
  // Sample the keep-list in the page every few ms from the moment the first save is acknowledged.
- await b.page.evaluate(()=>{window.__gap=false;window.__watch=setInterval(()=>{const p=JSON.parse(localStorage.getItem('wd-cloud-pending')||'null');if(!p||!p.patch.tasks||!p.patch.tasks.t31)window.__gap=true;},5);});
+ await b.page.evaluate(key=>{window.__gap=false;window.__watch=setInterval(()=>{const p=JSON.parse(localStorage.getItem(key)||'null');if(!p||!p.patch.tasks||!p.patch.tasks.t31)window.__gap=true;},5);},pendingKey);
  const first=release.merge;hold('merge');first();
  await expect.poll(()=>shared(server).tasks.t30?.done).toBe(true);
  await b.page.waitForTimeout(400);
@@ -354,10 +364,12 @@ async function createNotebookInvite(client){
  await expect(client.page.locator('#cloudInvite')).not.toHaveValue('');
  const link=await client.page.locator('#cloudInvite').inputValue();await client.page.locator('#closeShare').click();return link;
 }
-async function twoNotebooks(browser,testInfo,server){
+async function twoNotebooks(browser,testInfo,server,{existingInvite=false}={}){
  const g=await openCloud(browser,testInfo,server,{seed:SEED,path:'/index.html?code=groom'});
  await expect(status(g.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');
- const target=server.db.members.find(m=>m.user==='groom').plan,link=await createNotebookInvite(g);
+ const target=server.db.members.find(m=>m.user==='groom').plan;let link;
+ if(existingInvite){server.db.invites.storedInvite01={plan:target,used:null,expires:Date.now()+86400000};link='http://127.0.0.1:4173/index.html?join=storedInvite01';}
+ else link=await createNotebookInvite(g);
  const ownSeed=structuredClone(SEED);ownSeed.groom='';ownSeed.bride='수진';ownSeed.tasks.t09={memo:'이전 수첩의 메모'};
  const s=await openCloud(browser,testInfo,server,{seed:ownSeed,path:'/index.html?code=sujin'});
  await expect(status(s.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');
@@ -389,13 +401,103 @@ test('joining preserves the previous notebook, switching keeps edits separate an
 
 test('a server without the new SQL can read existing notebooks but never uses the destructive invitation RPC',async({browser},testInfo)=>{
  test.setTimeout(60000);
- const server=fakeServer({legacy:true});const {g,s,own,target,link}=await twoNotebooks(browser,testInfo,server);
- await s.page.goto(link);await expect(s.page.locator('[data-cloud="join"]')).toBeVisible();await s.page.locator('[data-cloud="join"]').click();
- await expect(cloudSec(s.page)).toContainText(/서버.*업데이트|업데이트.*필요/);
+ const server=fakeServer({legacy:true});const {g,s,own,target,link}=await twoNotebooks(browser,testInfo,server,{existingInvite:true});
+ await openShareWhenClosed(g.page);await expect(g.page.locator('[data-cloud="invite"]')).toHaveCount(0);await g.page.locator('#closeShare').click();
+ await s.page.goto(link);await expect(cloudSec(s.page)).toContainText(/서버.*업데이트|업데이트.*필요/);
+ await expect(s.page.locator('[data-cloud="join"]')).toHaveCount(0);
  await expect(s.page.locator('#hero')).toContainText('수진');expect(server.db.members.filter(m=>m.user==='sujin').map(m=>m.plan)).toEqual([own]);
  const fresh=await openCloud(browser,testInfo,server,{path:link+'&code=newcomer'});
  await expect(status(fresh.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');await expect(cloudSec(fresh.page)).toContainText(/서버.*업데이트|업데이트.*필요/);
  expect(server.db.members.filter(m=>m.plan===target)).toHaveLength(1);expect(server.db.invites[new URL(link).searchParams.get('join')].used).toBeNull();
  expect(server.calls.filter(c=>c.op==='join_plan')).toEqual([]);
  for(const client of [g,s,fresh]){expect(client.errors).toEqual([]);await client.ctx.close();}
+});
+
+test('a failed pending save blocks notebook switching until the original notebook has received it',async({browser},testInfo)=>{
+ test.setTimeout(60000);
+ const server=fakeServer();const {g,s,own,target,link}=await twoNotebooks(browser,testInfo,server);
+ await s.page.goto(link);await s.page.locator('[data-cloud="join"]').click();await expect(status(s.page)).toHaveText('둘이 함께 저장돼요');
+ await openShareWhenClosed(s.page);await s.page.locator(`[data-cloud="switch"][data-plan="${own}"]`).click();await expect(status(s.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');
+ // Reads stay available: only this participant's writes fail.
+ await s.ctx.route(API+'/rpc/merge_plan',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({data:null,error:{code:'XX000',message:'temporary server failure'}})}));
+ await s.page.locator('[data-act="open"][data-id="t09"]').click();await s.page.locator('[data-fk="memo-t09"]').fill('전환 전에 지켜야 할 메모');
+ await expect(status(s.page)).toHaveText('저장하지 못했어요. 다시 시도하는 중…');
+ await openShareWhenClosed(s.page);await s.page.locator(`[data-cloud="switch"][data-plan="${target}"]`).click();
+ await expect(cloudSec(s.page)).toContainText('현재 수첩에 아직 보내지 못한 수정이 있어요',{timeout:7000});
+ await expect(s.page.locator('#hero')).toContainText('수진');expect(server.db.plans[target].tasks.t09).toBeUndefined();
+ expect((await readPending(s.page,'sujin',own)).patch.tasks.t09.memo).toBe('전환 전에 지켜야 할 메모');
+ await s.ctx.unroute(API+'/rpc/merge_plan');await s.page.locator(`[data-cloud="switch"][data-plan="${target}"]`).click();
+ await expect(status(s.page)).toHaveText('둘이 함께 저장돼요');expect(server.db.plans[own].tasks.t09.memo).toBe('전환 전에 지켜야 할 메모');expect(server.db.plans[target].tasks.t09).toBeUndefined();
+ for(const client of [g,s]){expect(client.errors).toEqual([]);await client.ctx.close();}
+});
+
+test('choosing my memo draft preserves it on the server and after reopening',async({browser},testInfo)=>{
+ test.setTimeout(60000);
+ const server=fakeServer();const {g,b}=await couple(browser,testInfo,server);
+ for(const client of [g,b])await client.page.locator('[data-act="open"][data-id="t08"]').click();
+ await b.page.locator('[data-fk="memo-t08"]').fill('내가 쓰던 초안');
+ await expect.poll(()=>shared(server).tasks.t08?.memo).toBe('내가 쓰던 초안');
+ await g.page.locator('[data-fk="memo-t08"]').fill('상대가 저장한 메모');
+ await expect.poll(()=>shared(server).tasks.t08?.memo).toBe('상대가 저장한 메모');
+ const choices=b.page.locator('[data-memo-choice-for="memo-t08"]');
+ await expect(choices).toContainText('내가 쓰던 초안');await expect(choices).toContainText('상대가 저장한 메모');
+ await choices.locator('[data-memo-choice="mine"]').click();
+ await expect.poll(()=>shared(server).tasks.t08?.memo).toBe('내가 쓰던 초안');await expect(choices).toHaveCount(0);
+ await b.page.reload();await expect(status(b.page)).toHaveText('둘이 함께 저장돼요');
+ await b.page.locator('[data-act="open"][data-id="t08"]').click();await expect(b.page.locator('[data-fk="memo-t08"]')).toHaveValue('내가 쓰던 초안');
+ await expect(b.page.locator('[data-memo-choice-for="memo-t08"]')).toHaveCount(0);
+ for(const client of [g,b]){expect(client.errors).toEqual([]);await client.ctx.close();}
+});
+
+test('two tabs of the same account keep different offline notebooks and replay each patch only to its own notebook',async({browser},testInfo)=>{
+ test.setTimeout(60000);
+ const server=fakeServer();const {g,s,own,target,link}=await twoNotebooks(browser,testInfo,server);
+ await s.page.goto(link);await s.page.locator('[data-cloud="join"]').click();await expect(status(s.page)).toHaveText('둘이 함께 저장돼요');
+ const ownPage=await s.ctx.newPage();
+ ownPage.on('pageerror',e=>s.errors.push(e.message));ownPage.on('console',m=>{if(m.type()==='error')s.errors.push(m.text());});
+ await ownPage.clock.setFixedTime(new Date('2026-10-06T03:00:00Z'));await ownPage.goto('/index.html');
+ await expect(status(ownPage)).toHaveText('둘이 함께 저장돼요');await openShareWhenClosed(ownPage);
+ await ownPage.locator(`[data-cloud="switch"][data-plan="${own}"]`).click();await expect(status(ownPage)).toHaveText('혼자 쓰는 중 · 공유에서 초대');
+ // Each tab remembers its own selection even though localStorage is shared.
+ await s.ctx.unroute(API+'/**');await s.ctx.route(API+'/**',r=>r.abort());
+ for(const page of [s.page,ownPage]){await page.reload();await expect(status(page)).toHaveText('연결 안 됨 · 고친 내용은 보관했다가 올려요');}
+ await expect(s.page.locator('#hero')).toContainText('준호');await expect(ownPage.locator('#hero')).toContainText('수진');
+ for(const [page,value] of [[s.page,'함께 쓰는 수첩의 오프라인 메모'],[ownPage,'내 수첩의 오프라인 메모']]){
+  await page.locator('[data-act="open"][data-id="t09"]').click();await page.locator('[data-fk="memo-t09"]').fill(value);
+ }
+ await expect.poll(async()=>(await readPending(s.page,'sujin',target))?.patch?.tasks?.t09?.memo).toBe('함께 쓰는 수첩의 오프라인 메모');
+ await expect.poll(async()=>(await readPending(ownPage,'sujin',own))?.patch?.tasks?.t09?.memo).toBe('내 수첩의 오프라인 메모');
+ expect(server.db.plans[target].tasks.t09).toBeUndefined();expect(server.db.plans[own].tasks.t09.memo).toBe('이전 수첩의 메모');
+ // Reload both while still offline: neither loses its patch or borrows the other tab's notebook.
+ for(const [page,value] of [[s.page,'함께 쓰는 수첩의 오프라인 메모'],[ownPage,'내 수첩의 오프라인 메모']]){
+  await page.reload();await expect(status(page)).toHaveText('연결 안 됨 · 고친 내용은 보관했다가 올려요');
+  await page.locator('[data-act="open"][data-id="t09"]').click();await expect(page.locator('[data-fk="memo-t09"]')).toHaveValue(value);
+ }
+ await s.ctx.unroute(API+'/**');await s.ctx.route(API+'/**',r=>server.handle(r));
+ await Promise.all([s.page,ownPage].map(page=>page.evaluate(()=>window.dispatchEvent(new Event('online')))));
+ await expect.poll(()=>server.db.plans[target].tasks.t09?.memo).toBe('함께 쓰는 수첩의 오프라인 메모');
+ await expect.poll(()=>server.db.plans[own].tasks.t09?.memo).toBe('내 수첩의 오프라인 메모');
+ await expect.poll(()=>readPending(s.page,'sujin',target)).toBeNull();await expect.poll(()=>readPending(ownPage,'sujin',own)).toBeNull();
+ expect(server.db.plans[target].groom).toBe('준호');expect(server.db.plans[own].bride).toBe('수진');
+ expect(g.errors).toEqual([]);expect(s.errors.filter(e=>!/Failed to fetch|ERR_FAILED|net::/.test(e))).toEqual([]);
+ await g.ctx.close();await s.ctx.close();
+});
+
+test('legacy pending edits migrate only after membership is verified and do not replace newer scoped edits',async({browser},testInfo)=>{
+ const server=fakeServer();const g=await openCloud(browser,testInfo,server,{seed:SEED,path:'/index.html?code=groom'});
+ await expect(status(g.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');const plan=server.db.members.find(m=>m.user==='groom').plan;
+ await g.page.evaluate(({plan,key})=>{
+  localStorage.setItem('wd-cloud-pending',JSON.stringify({planId:plan,patch:{tasks:{t15:{done:true},t16:{memo:'이전 저장 방식'}}}}));
+  localStorage.setItem(key,JSON.stringify({planId:plan,patch:{tasks:{t16:{memo:'나중에 수정한 메모'}}}}));
+ },{plan,key:pendingKeyFor('groom',plan)});
+ await g.page.reload();await expect(status(g.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');
+ await expect.poll(()=>server.db.plans[plan].tasks.t15?.done).toBe(true);await expect.poll(()=>server.db.plans[plan].tasks.t16?.memo).toBe('나중에 수정한 메모');
+ expect(await g.page.evaluate(()=>localStorage.getItem('wd-cloud-pending'))).toBeNull();await expect.poll(()=>readPending(g.page,'groom',plan)).toBeNull();
+ // A legacy record for a notebook this account cannot open must never be sent to the current notebook.
+ await g.page.evaluate(()=>localStorage.setItem('wd-cloud-pending',JSON.stringify({planId:'other-person',patch:{tasks:{t18:{done:true}}}})));
+ await g.page.reload();await expect(status(g.page)).toHaveText('혼자 쓰는 중 · 공유에서 초대');
+ expect(server.db.plans[plan].tasks.t18).toBeUndefined();
+ expect(await g.page.evaluate(()=>JSON.parse(localStorage.getItem('wd-cloud-pending')).planId)).toBe('other-person');
+ expect(server.calls.filter(c=>c.op==='merge_plan'&&c.args.p_id==='other-person')).toEqual([]);
+ expect(g.errors).toEqual([]);await g.ctx.close();
 });

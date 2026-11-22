@@ -140,6 +140,42 @@ test('timeline tasks expose individually saved detail checks and group completio
  expect(noArrays(saved)).toBe(true);expect(errors).toEqual([]);
 });
 
+test('finishing the last check folds its phase, which can be reopened and edited again',async({page})=>{
+ const seed=structuredClone(SEED);
+ for(let i=1;i<=44;i++) seed.tasks['t'+String(i).padStart(2,'0')]={done:true};
+ seed.tasks.t01={done:false,memo:'남겨둔 메모'};
+ seed.tasks.ts01a={done:true};seed.tasks.ts01b={done:true};seed.tasks.ts01c={done:false};
+ const {app,errors}=await openApp(page,seed);
+ const phase=app.locator('section.phase[data-phase="0"]');
+ const title=phase.locator('[data-act="open"][data-id="t01"]');
+ const last=phase.locator('[data-act="subtask-toggle"][data-id="ts01c"]');
+ const summary=phase.getByRole('button',{name:/이 구간은 모두 끝냈어요/});
+ await title.click();await last.click();
+ await expect(summary).toBeFocused();await expect(summary).toHaveAttribute('aria-expanded','false');await expect(title).toBeHidden();
+ await expect.poll(async()=>(await stored(app)).tasks.t01.done).toBe(true);
+ await summary.press('Enter');await expect(title).toBeVisible();
+ await expect(title).toHaveAttribute('aria-expanded','false');
+ await title.click();await expect(last).toHaveAttribute('aria-checked','true');
+ await last.click();await expect(last).toHaveAttribute('aria-checked','false');await expect(summary).toHaveCount(0);
+ await expect.poll(async()=>(await stored(app)).tasks.t01.done).toBe(false);
+ await expect(phase.locator('[data-fk="memo-t01"]')).toHaveValue('남겨둔 메모');
+ await last.click();await summary.press('Space');await expect(title).toBeVisible();
+ await summary.click();await expect(title).toBeHidden();
+ expect(errors).toEqual([]);
+});
+
+test('undated custom tasks fold as a group and can be resumed without changing other groups',async({page})=>{
+ const seed=structuredClone(SEED);seed.custom={trip:{title:'약속 시간 조율',done:false}};
+ const {app}=await openApp(page,seed);
+ const group=app.locator('section.phase[data-phase="loose"]'),check=group.getByRole('checkbox');
+ await check.click();
+ const summary=group.getByRole('button',{name:/다시 열기/});
+ await summary.click();await check.click();
+ await expect(check).toHaveAttribute('aria-checked','false');
+ await expect.poll(async()=>(await stored(app)).custom.trip.done).toBe(false);
+ await expect(app.locator('[data-act="open"][data-id="t04"]')).toBeVisible();
+});
+
 const pickRow=(app,id)=>app.locator('tr.price-pick').filter({has:app.locator(`[data-act="price-toggle"][data-id="${id}"]`)});
 const openSection=async(app,id)=>{
  const d=app.locator(`#panel-price details[data-k="${id}"]`);

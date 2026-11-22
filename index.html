@@ -1050,6 +1050,9 @@ body{background:radial-gradient(ellipse at 100% 0,var(--canvas-glow),var(--canva
 .rail,.blist,.glist,.tlist,.glance,.price-builder-main,.plan-review{border-radius:12px;box-shadow:0 3px 12px var(--shadow)}
 .phase-head{border-bottom:0;border-radius:8px 8px 0 0}
 .phase-head .count{color:var(--gold)}
+.phase-done{display:flex;width:100%;min-height:44px;align-items:center;justify-content:space-between;gap:8px;text-align:left;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer}
+.phase-done span:last-child{color:var(--gold);white-space:nowrap}
+.rail[hidden]{display:none}
 .bcat>summary.bcat-head{border-radius:10px;box-shadow:0 2px 6px var(--shadow)}
 .bcat[open]>summary.bcat-head{border-radius:10px 10px 0 0;border-bottom:2px solid var(--gold-line)}
 .bcat[open]>.blist{border-radius:0 0 12px 12px}
@@ -1139,6 +1142,8 @@ button,summary,a,label,select,input,[data-act]{-webkit-tap-highlight-color:trans
 .btn.kakao{background:#FEE500;border-color:#FEE500;color:#191919;font-weight:600}
 #cloudInvite{width:100%;margin-top:8px}
 #cloudSec[hidden]{display:none}
+.cloud-plan-list{display:grid;gap:8px}
+.cloud-plan-list .btn{text-align:left;overflow-wrap:anywhere}
 /* 상태 줄이 경고인데 머리글이 화면 밖이면 아래쪽에 같은 글을 띄워요(연결 끊김을 놓치지 않게). */
 .net-banner{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:30;padding:10px 14px;border-radius:10px;background:var(--surface);color:var(--ink);border:1.5px solid currentColor;box-shadow:0 4px 16px var(--shadow);font-size:15px;line-height:1.45;text-align:center}
 .net-banner[hidden]{display:none}
@@ -1652,7 +1657,7 @@ var ui = {
   tab: lsGet('wd-tab') || 'timeline',
   heroOpen: lsGet('wd-hero') === '1',
   calMonth: '', calDay: '', calDraft: '', lineWho: 'groom', home: lsGet('wd-home') === '1', homePaid: '',
-  hideDone: lsGet('wd-hideDone') === '1',
+  expandedFinished: {},
   showHidden: false,
   open: {},
   openTalk: {},
@@ -2237,35 +2242,42 @@ function timelineHTML(list){
     return total + progress.total - progress.done;
   }, 0);
   var h = upcomingNoteHTML() + (catchN ? '<p class="lead-note">결혼식까지 남은 기간보다 앞선 일 '+catchN+'개는 ‘지금 챙기기’로 표시했어요. 이미 끝낸 일은 체크하고, 필요 없는 일은 열어서 숨기세요.</p>' : '') +
-    '<div class="tools">' +
-    '<button class="toggle" type="button" aria-pressed="'+(ui.hideDone?'true':'false')+'" data-act="hide-done" data-fk="hide-done">완료한 일 숨기기</button>' +
-    (hiddenCount ? '<button class="toggle" type="button" aria-pressed="'+(ui.showHidden?'true':'false')+'" data-act="show-hidden">숨긴 일 보기 ('+hiddenCount+')</button>' : '') +
-    '</div>';
+    (hiddenCount ? '<div class="tools"><button class="toggle" type="button" aria-pressed="'+(ui.showHidden?'true':'false')+'" data-act="show-hidden" data-fk="show-hidden">숨긴 일 보기 ('+hiddenCount+')</button></div>' : '');
 
   var markerDone = !wd;
   var todayLabel = '<li class="today-mark" aria-label="오늘">오늘 '+esc(fmtShort(t0, t0.getFullYear()))+'</li>';
-  var lastShownGroup = -1;
-  groups.forEach(function(g, gi){
-    var shown = g.items.filter(function(it){ return !(ui.hideDone && it.done); });
+  var lastDated = groups.reduce(function(last,g,index){ return g.items.length ? index : last; }, -1);
+  if (loose.length) groups.push({p:{name:'직접 추가한 일', range:'결혼식 날짜를 넣으면 순서대로 정리돼요'}, items:loose});
+  groups.forEach(function(g,index){
+    var key = index === PHASES.length ? 'loose' : String(index);
+    var done = 0, total = 0;
+    g.items.forEach(function(it){
+      if (it.hidden) return;
+      var progress = taskProgress(it); done += progress.done; total += progress.total;
+    });
+    var finished = total > 0 && total === done;
+    if (!finished) delete ui.expandedFinished[key];
     if (!g.items.length) return;
-    var doneN = 0, totalN = 0;
-    g.items.filter(function(i){ return !i.hidden; }).forEach(function(i){ var progress = taskProgress(i); doneN += progress.done; totalN += progress.total; });
-    h += '<section class="phase'+(g.p.after?' after':'')+'"><div class="phase-head"><h3>'+esc(g.p.name)+'</h3><span class="meta">'+esc(g.p.range)+'</span><span class="meta count">'+doneN+'/'+totalN+'</span></div><ul class="rail">';
-    if (!shown.length) h += '<li class="empty">이 구간은 모두 끝냈어요.</li>';
-    shown.forEach(function(it){
-      if (!markerDone && it.due && diffDays(it.due, t0) >= 0) { h += todayLabel; markerDone = true; }
+    var folded = finished && !ui.expandedFinished[key];
+    h += '<section class="phase'+(g.p.after?' after':'')+'" data-phase="'+key+'"><div class="phase-head"><h3>'+esc(g.p.name)+'</h3><span class="meta">'+esc(g.p.range)+'</span><span class="meta count">'+done+'/'+total+'</span></div>';
+    if (finished) {
+      h += '<button class="phase-done" type="button" data-act="phase-done" data-phase-key="'+key+'" data-fk="phase-done-'+key+'" aria-expanded="'+(!folded)+'" aria-controls="phase-list-'+key+'"><span>이 구간은 모두 끝냈어요.</span><span>'+(folded?'다시 열기':'접기')+'</span></button>';
+    }
+    h += '<ul class="rail" id="phase-list-'+key+'"'+(folded?' hidden':'')+'>';
+    var markerHere = false;
+    g.items.forEach(function(it){
+      if (!markerDone && it.due && diffDays(it.due, t0) >= 0) {
+        markerHere = markerDone = true;
+        if (!folded) h += todayLabel;
+      }
       h += taskHTML(it, wd, t0);
     });
-    h += '</ul></section>';
-    lastShownGroup = gi;
+    if (!markerDone && index === lastDated) {
+      markerHere = markerDone = true;
+      if (!folded) h += todayLabel;
+    }
+    h += '</ul>' + (folded && markerHere ? '<ul class="rail">'+todayLabel+'</ul>' : '') + '</section>';
   });
-  if (!markerDone && lastShownGroup >= 0) h = h.replace(/<\/ul><\/section>$/, todayLabel + '</ul></section>');
-
-  if (loose.length) {
-    h += '<section class="phase"><div class="phase-head"><h3>직접 추가한 일</h3><span class="meta">결혼식 날짜를 넣으면 순서대로 정리돼요</span></div><ul class="rail">';
-    loose.filter(function(it){ return !(ui.hideDone && it.done); }).forEach(function(it){ h += taskHTML(it, wd, t0); });
-    h += '</ul></section>';
-  }
 
   if (!Store.readOnly) {
     h += '<div class="add"><h3>할 일 추가</h3><div id="addForm" class="addrow">' +
@@ -3960,6 +3972,18 @@ function patchItem(kind, id, obj){
   var p = {}; p[kind === 'c' ? 'custom' : 'tasks'] = {}; p[kind === 'c' ? 'custom' : 'tasks'][id] = obj; return p;
 }
 
+function completeTimelineTask(button, id, done, patch){
+  var phase = button.closest('[data-phase]');
+  if (done) ui.open[id] = false;
+  commit(patch);
+  if (!done || !phase) return;
+  var key = phase.dataset.phase;
+  var summary = document.querySelector('[data-phase-key="'+key+'"][aria-expanded="false"]');
+  var title = document.querySelector('[data-act="open"][data-id="'+CSS.escape(id)+'"]');
+  var target = summary || (button.dataset.act === 'subtask-toggle' && title);
+  if (target) target.focus({preventScroll:true});
+}
+
 document.addEventListener('click', function(e){
   var b = e.target.closest('[data-act]');
   /* 줄의 이름 말고 금액·화살표 쪽을 눌러도 열리고 닫혀요. */
@@ -3981,8 +4005,8 @@ document.addEventListener('click', function(e){
       var nextDone = b.getAttribute('aria-checked') !== 'true', groupPatch = {tasks:{}};
       groupPatch.tasks[id] = {done:nextDone};
       taskDetails.forEach(function(sub){ groupPatch.tasks[sub.id] = {done:nextDone}; });
-      commit(groupPatch);
-    } else commit(patchItem(kind, id, {done: !cur.done}));
+      completeTimelineTask(b, id, nextDone, groupPatch);
+    } else completeTimelineTask(b, id, !cur.done, patchItem(kind, id, {done: !cur.done}));
   } else if (act === 'subtask-toggle') {
     var parentId = b.getAttribute('data-parent'), parent = buildTasks(state).filter(function(it){ return it.id === parentId; })[0];
     var nextSubDone = b.getAttribute('aria-checked') !== 'true', subPatch = {tasks:{}}, allSubDone = true;
@@ -3992,7 +4016,7 @@ document.addEventListener('click', function(e){
       if (!checked) allSubDone = false;
     });
     if (parentId) subPatch.tasks[parentId] = {done:allSubDone};
-    commit(subPatch);
+    completeTimelineTask(b, parentId, allSubDone, subPatch);
   } else if (act === 'chk') {
     var ck = b.getAttribute('data-c'), ckPatch = {checks:{}};
     ckPatch.checks[ck] = b.getAttribute('aria-checked') !== 'true';
@@ -4010,8 +4034,9 @@ document.addEventListener('click', function(e){
   } else if (act === 'delete') {
     ui.open[id] = false;
     commit(patchItem('c', id, {deleted: true}));
-  } else if (act === 'hide-done') {
-    ui.hideDone = !ui.hideDone; lsSet('wd-hideDone', ui.hideDone ? '1' : '0'); render();
+  } else if (act === 'phase-done') {
+    var key = b.dataset.phaseKey;
+    ui.expandedFinished[key] = !ui.expandedFinished[key]; render();
   } else if (act === 'show-hidden') {
     ui.showHidden = !ui.showHidden; render();
   } else if (act === 'talk-open') {
@@ -4031,7 +4056,9 @@ document.addEventListener('click', function(e){
     /* 달력의 할 일을 누르면 진행 순서 탭으로 가서 그 일을 펼쳐요. */
     ui.tab = 'timeline'; lsSet('wd-tab', 'timeline'); ui.open[id] = true; render();
     var calSel = '[data-act="open"][data-id="'+id+'"]', calTo = document.querySelector(calSel);
-    if (!calTo && ui.hideDone) { ui.hideDone = false; lsSet('wd-hideDone', '0'); render(); calTo = document.querySelector(calSel); }
+    if (calTo && calTo.closest('.rail[hidden]')) {
+      ui.expandedFinished[calTo.closest('[data-phase]').dataset.phase] = true; render(); calTo = document.querySelector(calSel);
+    }
     if (calTo) { calTo.scrollIntoView({block:'center'}); try { calTo.focus({preventScroll:true}); } catch(e11){} }
   } else if (act === 'bl-who') {
     /* 입력 중인 모임 이름·날짜·금액은 다시 그려도 남도록 옮겨 담아요. */
@@ -4656,21 +4683,61 @@ function cloudRpc(fn, args){
 /* 공동 수첩의 마지막 사본과 아직 못 올린 수정은 이 기기에 따로 보관해요(이 기기 자체 기록 wedding-plan-v1과 섞지 않아요).
    연결이 끊긴 채 앱을 닫거나 새로 열어도 고친 내용이 남고, 연결되면 올라가요. 로그아웃하면 사본은 지워요. */
 var CLOUD_CACHE = 'wd-cloud-cache', CLOUD_PENDING = 'wd-cloud-pending';
-function cloudCacheGet(){ try { var c = JSON.parse(lsGet(CLOUD_CACHE) || 'null'); return isObj(c) && c.planId && isObj(c.base) ? c : null; } catch(e){ return null; } }
-function cloudCacheSet(){ if (Cloud.planId && isObj(Store.base)) lsSet(CLOUD_CACHE, JSON.stringify({planId:Cloud.planId, name:cloudName(), members:Cloud.members, base:Store.base})); }
-function pendingGet(planId){ try { var p = JSON.parse(lsGet(CLOUD_PENDING) || 'null'); return isObj(p) && p.planId === planId && isObj(p.patch) ? p.patch : null; } catch(e){ return null; } }
-function pendingAdd(planId, body){ lsSet(CLOUD_PENDING, JSON.stringify({planId:planId, patch:mergeInto(pendingGet(planId) || {}, body)})); }
-/* 이번에 올라간 것만 지워요. 그사이 새로 들어와 아직 못 보낸 수정(Store.queue)은 계속 보관해요. */
-function pendingClear(planId){
-  if (!pendingGet(planId)) return;
-  if (isEmpty(Store.queue)) { try { localStorage.removeItem(CLOUD_PENDING); } catch(e){} }
-  else lsSet(CLOUD_PENDING, JSON.stringify({planId:planId, patch:clone(Store.queue)}));
+function cloudJSON(key){ try { return JSON.parse(lsGet(key) || 'null'); } catch(e){ return null; } }
+function cloudStoredUser(){
+  try {
+    var project = new URL(CLOUD.url).hostname.split('.')[0], session = cloudJSON('sb-' + project + '-auth-token');
+    return session && session.user && session.user.id ? session.user : null;
+  } catch(e){ return null; }
+}
+function cloudAccountPrefix(kind){ return kind + ':' + encodeURIComponent(Cloud.user.id) + ':'; }
+function cloudNotebookKey(kind,id){ return cloudAccountPrefix(kind) + encodeURIComponent(id); }
+function cloudCacheGet(){
+  if (!Cloud.user || !Cloud.user.id) return null;
+  var id = Cloud.planId || cloudSelected(), c = id && cloudJSON(cloudNotebookKey(CLOUD_CACHE,id));
+  return c && c.userId === Cloud.user.id && c.planId === id && isObj(c.base) ? c : null;
+}
+function cloudCacheSet(){
+  if (!Cloud.planId || !Cloud.user || !Cloud.user.id || !isObj(Store.base)) return;
+  lsSet(cloudNotebookKey(CLOUD_CACHE,Cloud.planId),JSON.stringify({userId:Cloud.user.id,planId:Cloud.planId,name:cloudName(),members:Cloud.members,base:Store.base}));
+}
+/* 이전 버전에는 계정 구분이 없어서, 서버가 멤버십을 확인해 준 수첩만 옮긴다. */
+function cloudMigrateNotebook(id){
+  [CLOUD_PENDING,CLOUD_CACHE].forEach(function(kind){
+    var old = cloudJSON(kind);
+    if (!old || old.planId !== id) return;
+    var key = cloudNotebookKey(kind,id), current = cloudJSON(key), migrated;
+    if (kind === CLOUD_PENDING && isObj(old.patch)) migrated = {planId:id,patch:mergeInto(clone(old.patch),current && current.patch || {})};
+    else if (kind === CLOUD_CACHE && isObj(old.base)) migrated = current || Object.assign({},old,{userId:Cloud.user.id});
+    if (!migrated) return;
+    try {
+      localStorage.setItem(key,JSON.stringify(migrated));
+      if (lsGet(kind) === JSON.stringify(old)) localStorage.removeItem(kind);
+    } catch(e){}
+  });
+}
+function pendingGet(planId){
+  if (!Cloud.user || !Cloud.user.id) return null;
+  var p = cloudJSON(cloudNotebookKey(CLOUD_PENDING,planId));
+  return p && p.planId === planId && isObj(p.patch) ? p.patch : null;
+}
+function pendingAdd(planId, body){
+  var patch = mergeInto(pendingGet(planId) || {},body), text = JSON.stringify({planId:planId,patch:patch});
+  lsSet(cloudNotebookKey(CLOUD_PENDING,planId),text);
+  return {patch:patch,text:text};
+}
+function pendingClear(planId,sent){
+  var key = cloudNotebookKey(CLOUD_PENDING,planId);
+  if (lsGet(key) !== sent.text) return;
+  if (isEmpty(Store.queue)) { try { localStorage.removeItem(key); } catch(e){} }
+  else lsSet(key,JSON.stringify({planId:planId,patch:clone(Store.queue)}));
 }
 /* claude.ai 공유 저장과 같은 모양(onSnapshot·set·update)의 문서 하나 */
 function cloudRef(planId){
   function send(body){
-    pendingAdd(planId, body);   /* 보내기 전에 먼저 이 기기에 적어 둬요 */
-    return cloudRpc('merge_plan', {p_id:planId, p_patch:body}).then(function(){ pendingClear(planId); }, function(e){ throw cloudErr(e); });
+    rememberSentMemo(body);
+    var sent = pendingAdd(planId, body);   /* 보내기 전에 먼저 이 기기에 적어 둬요 */
+    return cloudRpc('merge_plan', {p_id:planId, p_patch:sent.patch}).then(function(){ pendingClear(planId,sent); }, function(e){ throw cloudErr(e); });
   }
   return {
     set: send, update: send,
@@ -4715,8 +4782,17 @@ function cloudPlanList(){
   });
 }
 function cloudSelectionKey(){ return 'wd-cloud-selected:' + Cloud.user.id; }
+function cloudSelected(){
+  var key = cloudSelectionKey();
+  try { return sessionStorage.getItem(key) || lsGet(key); } catch(e){ return lsGet(key); }
+}
+function cloudRemember(id){
+  var key = cloudSelectionKey();
+  try { sessionStorage.setItem(key,id); } catch(e){}
+  lsSet(key,id);
+}
 function cloudPick(rows){
-  var last = lsGet(cloudSelectionKey());
+  var last = cloudSelected();
   return rows.find(function(row){ return row.plan_id === last; }) || rows[0];
 }
 function cloudLabel(row){
@@ -4763,13 +4839,14 @@ function startCloud(){
     }).then(function(id){
       if (!id) throw new Error('no plan');
       cloudCleanUrl();
-      lsSet(cloudSelectionKey(),String(id));
+      cloudRemember(String(id));
       cloudUse(String(id));
       if (showDlg) openShareDlg();
     });
   }).catch(function(){ cloudOffline(); });
 }
 function cloudUse(id){
+  cloudMigrateNotebook(id);
   Cloud.planId = id; Cloud.offline = false;
   Store.mode = 'db';
   Store.ref = cloudRef(id);
@@ -4778,10 +4855,10 @@ function cloudUse(id){
 }
 /* 연결이 안 되는데 이 기기에 공동 수첩 사본이 있으면 그걸 보여 주고, 연결되면 다시 붙어요. */
 function cloudOffline(){
+  if (!Cloud.user) Cloud.user = cloudStoredUser();
   var c = cloudCacheGet();
   if (c && cloudHasSession()) {
     Cloud.planId = c.planId; Cloud.offline = true; Cloud.members = typeof c.members === 'number' ? c.members : -1;
-    if (!Cloud.user) Cloud.user = {user_metadata:{name:c.name}};
     Store.mode = 'db';
     Store.ref = cloudOfflineRef(c.planId, mergeInto(clone(c.base), pendingGet(c.planId) || {}));
     cloudWatch();
@@ -4801,6 +4878,7 @@ function cloudReconnect(){
   cloudLoad().then(function(sb){ return sb.auth.getSession(); }).then(function(r){
     var session = r && r.data && r.data.session;
     if (!session) throw new Error('no session');
+    if (!Cloud.user || Cloud.user.id !== session.user.id) { location.reload(); throw new Error('account changed'); }
     Cloud.user = session.user;
     return cloudPlanList();
   }).then(function(rows){
@@ -4822,10 +4900,13 @@ var cloudLastInput = {fk:'', at:0}, cloudSettleTimer = null;
 var memoChoices = {}, memoScope = '', typedMemo = null;
 function memoScopeReady(){
   var scope = 'wd-memo-choices:' + (Cloud.user && Cloud.user.id || '') + ':' + Cloud.planId;
-  if (scope !== memoScope) {
-    memoScope = scope; typedMemo = null;
-    try { memoChoices = JSON.parse(sessionStorage.getItem(scope)) || {}; } catch(e){ memoChoices = {}; }
-  }
+  if (scope === memoScope) return;
+  memoScope = scope;
+  typedMemo = null;
+  try {
+    var stored = JSON.parse(sessionStorage.getItem(scope));
+    memoChoices = isObj(stored) ? stored : {};
+  } catch(e){ memoChoices = {}; }
 }
 function keepMemoChoices(){
   try {
@@ -4833,47 +4914,62 @@ function keepMemoChoices(){
     else sessionStorage.setItem(memoScope, JSON.stringify(memoChoices));
   } catch(e){}
 }
-function memoFieldPath(t){
-  var d = t.dataset;
+function memoFieldPath(field){
+  var d = field.dataset;
   if (d.talkMemo) return ['talks', d.talkMemo, 'memo'];
   if (d.gmemo) return ['guests', d.gmemo, 'memo'];
-  if (d.qmemo) return ['budget','quotes',d.qmemo,'memo'];
+  if (d.qmemo) return ['budget', 'quotes', d.qmemo, 'memo'];
   if (d.bmemo) return ['budget', d.bmemo === 'c' ? 'custom' : 'items', d.id, 'memo'];
   if (d.memo) return [d.memo === 'c' ? 'custom' : 'tasks', d.id, 'memo'];
   return null;
 }
 function readMemo(body,path){
-  return path.reduce(function(obj,key){ return obj && obj[key]; },body) || '';
+  return path.reduce(function(obj,key){ return obj && obj[key]; },body);
 }
 document.addEventListener('input', function(e){
-  var t=e.target, fk=t.dataset && t.dataset.fk;
+  var field = e.target, fk = field.dataset && field.dataset.fk;
   if (!fk) return;
-  cloudLastInput={fk:fk,at:cloudNow()};
-  if (!Cloud.planId || t.tagName !== 'TEXTAREA') return;
+  cloudLastInput = {fk:fk, at:cloudNow()};
+  if (!Cloud.planId || field.tagName !== 'TEXTAREA') return;
   memoScopeReady();
-  var path=memoFieldPath(t);
+  var path = memoFieldPath(field);
   if (!path) return;
-  if (!typedMemo || typedMemo.fk!==fk) typedMemo={fk:fk,path:path,values:new Set()};
-  typedMemo.values.add(t.value);
-  if (memoChoices[fk]) { memoChoices[fk].mine=t.value; keepMemoChoices(); }
+  if (!typedMemo || typedMemo.fk !== fk) typedMemo = {fk:fk, path:path, sent:[]};
+  if (memoChoices[fk]) {
+    memoChoices[fk].mine = field.value;
+    keepMemoChoices();
+    var box = document.querySelector('[data-memo-choice-for="'+CSS.escape(fk)+'"]');
+    if (box) box.querySelector('[data-memo-mine]').textContent = field.value || '(빈 메모)';
+  }
 },true);
+function rememberSentMemo(patch){
+  if (!typedMemo) return;
+  var value = readMemo(patch, typedMemo.path);
+  if (typeof value !== 'string') return;
+  typedMemo.sent.push({value:value, stamp:patch.updatedAt});
+  if (typedMemo.sent.length > 8) typedMemo.sent.shift();
+}
 function compareRemoteMemo(before,after){
   memoScopeReady();
-  var t=typedMemo, active=document.activeElement;
-  if (!t || !active || active.dataset.fk!==t.fk || !before) return;
-  var previous=readMemo(before,t.path), next=readMemo(after,t.path);
-  if (next===previous || next===active.value || t.values.has(next)) return;
-  var mine=memoChoices[t.fk] ? memoChoices[t.fk].mine : active.value;
-  memoChoices[t.fk]={mine:mine,remote:next}; keepMemoChoices();
+  var edit = typedMemo, active = document.activeElement;
+  if (!edit || !active || active.dataset.fk !== edit.fk || !before || !after) return false;
+  var previous = readMemo(before,edit.path) || '', next = readMemo(after,edit.path) || '';
+  if (next === previous || next === active.value) return false;
+  if (edit.sent.some(function(sent){ return sent.stamp === after.updatedAt && sent.value === next; })) return false;
+  var choice = memoChoices[edit.fk];
+  memoChoices[edit.fk] = {mine:choice ? choice.mine : active.value, remote:next};
+  keepMemoChoices();
+  return true;
 }
 function renderMemoChoices(){
   memoScopeReady();
   Object.keys(memoChoices).forEach(function(fk){
-    var field=document.querySelector('textarea[data-fk="'+CSS.escape(fk)+'"]');
+    var field = document.querySelector('textarea[data-fk="'+CSS.escape(fk)+'"]');
     if (!field) return;
-    var choice=memoChoices[fk], box=document.createElement('section');
-    box.className='memo-choices'; box.dataset.memoChoiceFor=fk;
-    box.innerHTML='<strong>같은 메모를 둘이 수정했어요</strong><p>내가 쓰던 내용 · '+esc(choice.mine || '(빈 메모)')+'</p>'+
+    var choice = memoChoices[fk], box = document.createElement('section');
+    box.className = 'memo-choices';
+    box.dataset.memoChoiceFor = fk;
+    box.innerHTML = '<strong>같은 메모를 둘이 수정했어요</strong><p>내가 쓰던 내용 · <span data-memo-mine>'+esc(choice.mine || '(빈 메모)')+'</span></p>'+
       '<p>상대가 저장한 내용 · '+esc(choice.remote || '(빈 메모)')+'</p><div class="dlg-actions">'+
       '<button type="button" class="btn" data-memo-choice="mine">내 초안 사용</button>'+
       '<button type="button" class="btn" data-memo-choice="remote">상대 내용 사용</button></div>';
@@ -4881,13 +4977,18 @@ function renderMemoChoices(){
   });
 }
 document.addEventListener('click',function(e){
-  var btn=e.target.closest('[data-memo-choice]');
+  var btn = e.target.closest('[data-memo-choice]');
   if (!btn || Store.readOnly || !Cloud.planId) return;
-  var box=btn.closest('[data-memo-choice-for]'), fk=box.dataset.memoChoiceFor;
-  var field=document.querySelector('textarea[data-fk="'+CSS.escape(fk)+'"]'), choice=memoChoices[fk];
+  var box = btn.closest('[data-memo-choice-for]'), fk = box.dataset.memoChoiceFor;
+  var field = document.querySelector('textarea[data-fk="'+CSS.escape(fk)+'"]'), choice = memoChoices[fk];
   if (!field || !choice) return;
-  delete memoChoices[fk]; keepMemoChoices(); box.remove(); typedMemo=null;
-  field.value=choice[btn.dataset.memoChoice]; field.focus(); field.dispatchEvent(new Event('input',{bubbles:true}));
+  delete memoChoices[fk];
+  keepMemoChoices();
+  box.remove();
+  field.value = choice[btn.dataset.memoChoice];
+  field.focus();
+  field.dispatchEvent(new Event('input',{bubbles:true}));
+  typedMemo = null;
 });
 function cloudRepaint(){
   var a = document.activeElement, fk = a && a.dataset && a.dataset.fk, keep = null;
@@ -4912,7 +5013,7 @@ function cloudWatch(){
     if (Store.ref !== ref) return;   /* 다시 연결해 문서가 바뀌었으면 예전 것은 무시 */
     Store.exists = !!snap.exists;
     var incoming = snap.exists ? clone(snap.data()) : null;
-    compareRemoteMemo(Store.base, incoming);
+    var hasNewChoice = compareRemoteMemo(Store.base, incoming);
     Store.base = incoming;
     var wasReady = Store.ready;
     Store.ready = true;
@@ -4926,7 +5027,7 @@ function cloudWatch(){
     }
     if (cloudNow() - Cloud.membersAt > 20000) cloudMembers();
     if (!wasReady) { render(); baseStatus(); return; }
-    if (JSON.stringify(state) !== lastSig) cloudRepaint();
+    if (hasNewChoice || JSON.stringify(state) !== lastSig) cloudRepaint();
     if (!Store.inflight && isEmpty(Store.queue) && !document.getElementById('status').classList.contains('warn')) baseStatus();
   }, function(){
     if (Store.ref !== ref) return;
@@ -4973,6 +5074,8 @@ function cloudRender(){
   if (Cloud.planId) {
     if (Cloud.askJoin) {
       h += '<p class="hint cloud-ask">초대 링크로 열었어요. 초대받은 수첩으로 옮길까요?</p>';
+      var original = Cloud.plans.find(function(row){ return row.plan_id === Cloud.planId; });
+      if (original) h += '<p class="hint">현재 수첩 <b>' + esc(cloudLabel(original)) + '</b></p>';
       if (Cloud.targetLabel) h += '<p class="hint">초대받은 수첩 <b>' + esc(Cloud.targetLabel) + '</b></p>';
       h += '<p class="hint">지금 수첩은 보관돼요. 공유 창에서 언제든 다시 열 수 있어요.</p>';
       h += '<div class="dlg-actions"><button class="btn" type="button" data-cloud="stay">지금 수첩 계속 쓰기</button><button class="btn primary" type="button" data-cloud="join"' + (Cloud.busy ? ' disabled' : '') + '>초대받은 수첩으로 옮기기</button></div>';
@@ -4981,9 +5084,10 @@ function cloudRender(){
       if (current && Cloud.plans.length > 1) h += '<p class="hint">현재 수첩 <b>' + esc(cloudLabel(current)) + '</b></p>';
       var who = '<b>' + esc(cloudName()) + '</b>님으로 카카오 로그인했어요. ';
       h += '<p class="hint">' + who + (Cloud.offline ? '지금은 연결이 안 돼서, 고친 내용을 이 휴대폰에 보관했다가 연결되면 올려요.' : Cloud.members >= 2 ? '둘이 같은 기록을 함께 쓰고 있어요.' : '아직 혼자 쓰는 수첩이에요. 초대 링크를 보내면 상대도 같은 기록을 함께 봐요. 상대가 이미 로그인했다면, 상대가 이 초대 링크를 열어야 같은 수첩이 돼요.') + '</p>';
-      h += '<div class="dlg-actions"><button class="btn" type="button" data-cloud="logout">로그아웃</button>' + (Cloud.members >= 2 || Cloud.offline ? '' : '<button class="btn primary" type="button" data-cloud="invite"' + (Cloud.busy ? ' disabled' : '') + '>초대 링크 보내기</button>') + '</div>';
+      h += '<div class="dlg-actions"><button class="btn" type="button" data-cloud="logout">로그아웃</button>' + (Cloud.members >= 2 || Cloud.offline || Cloud.legacy ? '' : '<button class="btn primary" type="button" data-cloud="invite"' + (Cloud.busy ? ' disabled' : '') + '>초대 링크 보내기</button>') + '</div>';
+      if (Cloud.legacy && !Cloud.msg && Cloud.members < 2) h += '<p class="hint">' + esc(cloudUpgradeMsg) + '</p>';
       if (Cloud.plans.length > 1 && !Cloud.offline) {
-        h += '<p class="hint">다른 수첩 열기</p><div class="dlg-actions">';
+        h += '<p class="hint">다른 수첩 열기</p><div class="cloud-plan-list">';
         Cloud.plans.forEach(function(row){ if (row.plan_id !== Cloud.planId) h += '<button class="btn" type="button" data-cloud="switch" data-plan="' + esc(row.plan_id) + '"' + (Cloud.busy ? ' disabled' : '') + '>' + esc(cloudLabel(row)) + '</button>'; });
         h += '</div>';
       }
@@ -5039,8 +5143,8 @@ function cloudMove(next){
     if (id === Cloud.planId) { Cloud.askJoin = ''; Cloud.msg = '이미 이 수첩을 함께 쓰고 있어요.'; return; }
     // 수락 중에 새로 쓴 내용도 현재 수첩으로 먼저 보내고 화면을 다시 열어요.
     return cloudSaveBeforeMove().then(function(){
-      localStorage.setItem(cloudSelectionKey(),String(id));
-      localStorage.removeItem(CLOUD_CACHE);
+      cloudRemember(String(id));
+      if (cloudSelected() !== String(id)) throw new Error('notebook selection unavailable');
       location.replace(cloudBase());
     });
   }).catch(function(e){
@@ -5058,10 +5162,18 @@ function cloudJoinAsked(){
   cloudMove(function(){ return cloudRpc('accept_plan_invite', {p_code:code}); });
 }
 function cloudLogout(){
-  flushNow();
-  try { localStorage.removeItem(CLOUD_CACHE); } catch(e){}
-  var done = function(){ Cloud.planId = ''; location.replace(cloudBase()); };
-  (Cloud.sb ? Cloud.sb.auth.signOut() : Promise.resolve()).then(done, done);
+  Cloud.busy = true; Cloud.msg = ''; cloudRender();
+  var prefix = cloudAccountPrefix(CLOUD_CACHE);
+  cloudSaveBeforeMove().then(function(){ return Cloud.sb.auth.signOut(); }).then(function(r){
+    if (r && r.error) throw r.error;
+    for (var i=localStorage.length-1;i>=0;i--) {
+      var key = localStorage.key(i);
+      if (key && key.indexOf(prefix) === 0) localStorage.removeItem(key);
+    }
+    Cloud.planId = ''; location.replace(cloudBase());
+  }).catch(function(){
+    Cloud.busy = false; Cloud.msg = '현재 수첩의 저장과 연결 상태를 확인한 뒤 로그아웃해 주세요.'; cloudRender();
+  });
 }
 document.getElementById('cloudBody').addEventListener('click', function(e){
   var b = e.target.closest && e.target.closest('[data-cloud]');
